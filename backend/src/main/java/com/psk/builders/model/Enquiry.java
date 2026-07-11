@@ -1,0 +1,1 @@
+package com.psk.builders.model;import jakarta.persistence.*;import lombok.*;import java.time.*;@Entity @Data @NoArgsConstructor public class Enquiry{@Id @GeneratedValue(strategy=GenerationType.IDENTITY) Long id;String name;String phone;String email;String service;@Column(length=2000) String message;LocalDateTime createdAt;@PrePersist void create(){createdAt=LocalDateTime.now();}}
