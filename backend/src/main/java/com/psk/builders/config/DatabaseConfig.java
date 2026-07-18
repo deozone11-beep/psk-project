@@ -18,10 +18,20 @@ public class DatabaseConfig {
             if (databaseUrl.startsWith("postgres://") || databaseUrl.startsWith("postgresql://")) {
                 URI dbUri = new URI(databaseUrl);
                 String userInfo = dbUri.getUserInfo();
-                String username = userInfo.contains(":") ? userInfo.split(":")[0] : userInfo;
-                String password = userInfo.contains(":") ? userInfo.split(":")[1] : "";
+                String username = "";
+                String password = "";
+                if (userInfo != null) {
+                    int colonIndex = userInfo.indexOf(':');
+                    if (colonIndex != -1) {
+                        username = userInfo.substring(0, colonIndex);
+                        password = userInfo.substring(colonIndex + 1);
+                    } else {
+                        username = userInfo;
+                    }
+                }
                 String portPart = dbUri.getPort() == -1 ? "" : ":" + dbUri.getPort();
-                String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + portPart + dbUri.getPath();
+                String queryPart = dbUri.getRawQuery() != null ? "?" + dbUri.getRawQuery() : "";
+                String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + portPart + dbUri.getPath() + queryPart;
                 
                 return DataSourceBuilder.create()
                         .driverClassName("org.postgresql.Driver")
@@ -32,10 +42,20 @@ public class DatabaseConfig {
             } else if (databaseUrl.startsWith("mysql://")) {
                 URI dbUri = new URI(databaseUrl);
                 String userInfo = dbUri.getUserInfo();
-                String username = userInfo.contains(":") ? userInfo.split(":")[0] : userInfo;
-                String password = userInfo.contains(":") ? userInfo.split(":")[1] : "";
+                String username = "";
+                String password = "";
+                if (userInfo != null) {
+                    int colonIndex = userInfo.indexOf(':');
+                    if (colonIndex != -1) {
+                        username = userInfo.substring(0, colonIndex);
+                        password = userInfo.substring(colonIndex + 1);
+                    } else {
+                        username = userInfo;
+                    }
+                }
                 String portPart = dbUri.getPort() == -1 ? "" : ":" + dbUri.getPort();
-                String dbUrl = "jdbc:mysql://" + dbUri.getHost() + portPart + dbUri.getPath();
+                String queryPart = dbUri.getRawQuery() != null ? "?" + dbUri.getRawQuery() : "";
+                String dbUrl = "jdbc:mysql://" + dbUri.getHost() + portPart + dbUri.getPath() + queryPart;
                 
                 return DataSourceBuilder.create()
                         .driverClassName("com.mysql.cj.jdbc.Driver")
