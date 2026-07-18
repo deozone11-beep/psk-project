@@ -34,6 +34,8 @@ React + Spring Boot + MySQL website.
 | Owner | `owner` | `psk@owner123` |
 | Admin/Staff | `admin` | `psk@admin123` |
 | Demo customer | `customer1` | `customer123` |
+| Engineer| `engineer` | `psk@engineer123` |
+
 
 Change defaults via `application.properties` (`owner.password`, `admin.password`, `demo.customer.password`) or the matching `OWNER_PASSWORD` / `ADMIN_PASSWORD` / `DEMO_CUSTOMER_PASSWORD` env vars, **before** first run (they're only used to seed accounts).
 

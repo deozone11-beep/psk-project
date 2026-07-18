@@ -28,10 +28,12 @@ public class AdminController {
     final ProjectUpdateRepository updates;
     final ProjectRepository projects;
     final PasswordEncoder encoder;
+    final ProjectFileRepository files;
 
     AdminController(EnquiryRepository enquiries, SettingsRepository settings, EmployeeRepository employees,
                      AttendanceRepository attendance, PaymentRepository payments, AppUserRepository users,
-                     ProjectUpdateRepository updates, ProjectRepository projects, PasswordEncoder encoder) {
+                     ProjectUpdateRepository updates, ProjectRepository projects, PasswordEncoder encoder,
+                     ProjectFileRepository files) {
         this.enquiries = enquiries;
         this.settings = settings;
         this.employees = employees;
@@ -41,6 +43,7 @@ public class AdminController {
         this.updates = updates;
         this.projects = projects;
         this.encoder = encoder;
+        this.files = files;
     }
 
     @GetMapping("/whoami")
@@ -149,10 +152,13 @@ public class AdminController {
     record RateUpdate(@NotNull @Positive Double ratePerSqft) {}
 
     @PutMapping("/settings")
-    Settings updateRate(@Valid @RequestBody RateUpdate body) {
+    ResponseEntity<?> updateRate(@Valid @RequestBody RateUpdate body, org.springframework.security.core.Authentication auth) {
+        if (auth.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            return ResponseEntity.status(403).body(Map.of("message", "Only administrators can update settings"));
+        }
         Settings s = settings.findById(1L).orElse(new Settings(1L, 1650.0));
         s.setRatePerSqft(body.ratePerSqft());
-        return settings.save(s);
+        return ResponseEntity.ok(settings.save(s));
     }
 
     // ---------- Employees ----------
@@ -240,7 +246,7 @@ public class AdminController {
     @GetMapping("/customers")
     List<AppUser> listCustomers() { return users.findByRoleOrderByDisplayName(AppUser.Role.CUSTOMER); }
 
-    record CustomerRequest(String username, String password, String displayName, String phone, String projectName, Double estimatedSqft) {}
+    record CustomerRequest(String username, String password, String displayName, String phone, String projectName, Double estimatedSqft, String email) {}
 
     @PostMapping("/customers")
     ResponseEntity<?> createCustomer(@RequestBody CustomerRequest r) {
@@ -251,7 +257,7 @@ public class AdminController {
         if (users.findByUsername(r.username()).isPresent())
             return ResponseEntity.badRequest().body(Map.of("message", "Username already taken"));
         AppUser u = new AppUser(null, r.username(), encoder.encode(r.password()), AppUser.Role.CUSTOMER,
-                r.displayName(), r.phone(), r.projectName(), r.estimatedSqft());
+                r.displayName(), r.phone(), r.projectName(), r.estimatedSqft(), r.email());
         return ResponseEntity.ok(users.save(u));
     }
 
@@ -262,6 +268,7 @@ public class AdminController {
             u.setPhone(r.phone());
             u.setProjectName(r.projectName());
             u.setEstimatedSqft(r.estimatedSqft());
+            u.setEmail(r.email());
             if (r.password() != null && !r.password().isBlank()) u.setPasswordHash(encoder.encode(r.password()));
             return ResponseEntity.ok(users.save(u));
         }).orElse(ResponseEntity.notFound().build());
@@ -290,20 +297,25 @@ public class AdminController {
     ResponseEntity<?> createUpdate(@RequestParam Long customerId, @RequestParam String title,
                                     @RequestParam(required = false) String description,
                                     @RequestParam(required = false) String workDate,
-                                    @RequestParam(required = false) MultipartFile photo) throws IOException {
+                                    @RequestParam(value = "photos", required = false) MultipartFile[] photos) throws IOException {
         if (title == null || title.isBlank())
             return ResponseEntity.badRequest().body(Map.of("message", "Title is required"));
         AppUser customer = users.findById(customerId).orElse(null);
         if (customer == null) return ResponseEntity.badRequest().body(Map.of("message", "Customer not found"));
 
-        String photoUrl;
-        try {
-            photoUrl = saveProjectPhoto(photo);
-        } catch (IOException ex) {
-            return ResponseEntity.internalServerError().body(Map.of("message", "Could not save photo"));
+        List<String> photoUrls = new ArrayList<>();
+        if (photos != null && photos.length > 0) {
+            for (MultipartFile photo : photos) {
+                if (photo != null && !photo.isEmpty()) {
+                    String photoUrl = saveProjectPhoto(photo);
+                    if (photoUrl == null) {
+                        return ResponseEntity.badRequest().body(Map.of("message", "Every photo must be JPEG/PNG/WEBP/GIF and under 3MB"));
+                    }
+                    photoUrls.add(photoUrl);
+                }
+            }
         }
-        if (photo != null && !photo.isEmpty() && photoUrl == null)
-            return ResponseEntity.badRequest().body(Map.of("message", "Photo must be JPEG/PNG/WEBP/GIF and under 3MB"));
+        String joinedUrls = photoUrls.isEmpty() ? null : String.join("|||", photoUrls);
 
         LocalDate date;
         try {
@@ -311,7 +323,7 @@ public class AdminController {
         } catch (Exception ex) {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid date"));
         }
-        ProjectUpdate u = new ProjectUpdate(null, customer, title, description, photoUrl, date, null);
+        ProjectUpdate u = new ProjectUpdate(null, customer, title, description, joinedUrls, date, null);
         return ResponseEntity.ok(updates.save(u));
     }
 
@@ -319,6 +331,40 @@ public class AdminController {
     ResponseEntity<?> deleteUpdate(@PathVariable Long id) {
         if (!updates.existsById(id)) return ResponseEntity.notFound().build();
         updates.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------- Project Files ----------
+    @GetMapping("/files")
+    List<ProjectFile> getFiles(@RequestParam Long customerId) {
+        return files.findByCustomer_IdOrderByCreatedAtDesc(customerId);
+    }
+
+    @PostMapping(value = "/files", consumes = "multipart/form-data")
+    ResponseEntity<?> uploadFile(@RequestParam Long customerId,
+                                  @RequestParam String fileName,
+                                  @RequestParam String category,
+                                  @RequestParam MultipartFile file,
+                                  org.springframework.security.core.Authentication auth) throws IOException {
+        AppUser customer = users.findById(customerId).orElse(null);
+        if (customer == null) return ResponseEntity.badRequest().body(Map.of("message", "Customer not found"));
+        if (file == null || file.isEmpty()) return ResponseEntity.badRequest().body(Map.of("message", "File is empty"));
+
+        String mimeType = file.getContentType();
+        String base64 = Base64.getEncoder().encodeToString(file.getBytes());
+        String dataUri = "data:" + (mimeType != null ? mimeType : "application/octet-stream") + ";base64," + base64;
+
+        AppUser current = users.findByUsername(auth.getName()).orElse(null);
+        String uploaderRole = current != null ? current.getRole().name() : "ADMIN";
+
+        ProjectFile pf = new ProjectFile(null, customer, fileName, category, dataUri, auth.getName(), uploaderRole, null);
+        return ResponseEntity.ok(files.save(pf));
+    }
+
+    @DeleteMapping("/files/{id}")
+    ResponseEntity<?> deleteFile(@PathVariable Long id) {
+        if (!files.existsById(id)) return ResponseEntity.notFound().build();
+        files.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

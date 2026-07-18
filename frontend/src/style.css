@@ -335,3 +335,83 @@ section[id]{scroll-margin-top:76px}
 .introTag{font-size:.88rem;margin-bottom:28px}
 .introHint{padding:10px 18px;font-size:.65rem;letter-spacing:1.5px}
 }
+
+/* ===== CUSTOMER PORTAL NEW STYLES ===== */
+.forgotLink {
+  color: #ff8a7a;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 16px;
+  text-decoration: underline;
+  display: inline-block;
+  transition: color 0.2s;
+}
+.forgotLink:hover {
+  color: #e2262b;
+}
+.activeCust {
+  border-left: 4px solid #e2262b !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.updateSlideshow {
+  position: relative;
+  width: 160px;
+  height: 130px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+.updateSlideshow img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: 0;
+}
+.updateSlideshow img.active {
+  opacity: 1;
+  z-index: 1;
+}
+.updateSlideshow .slideDots {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  z-index: 2;
+}
+.updateSlideshow .slideDots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transition: 0.3s;
+  display: block;
+}
+.updateSlideshow .slideDots span.on {
+  background: #fff;
+  width: 12px;
+  border-radius: 2px;
+}
+.portalUpdateImgWrap {
+  width: 160px;
+  height: 130px;
+  flex-shrink: 0;
+  position: relative;
+}
+@media (max-width: 600px) {
+  .portalDocGrid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+}

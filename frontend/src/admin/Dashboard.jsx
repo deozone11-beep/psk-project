@@ -21,7 +21,14 @@ const TABS = [
 ];
 
 export default function Dashboard({ creds, onLogout }) {
-  const [tab, setTab] = useState('enquiries');
+  const availableTabs = TABS.filter((t) => {
+    if (creds.role === 'ENGINEER') {
+      return ['customers', 'updates', 'attendance', 'payments'].includes(t.id);
+    }
+    return true;
+  });
+
+  const [tab, setTab] = useState(() => creds.role === 'ENGINEER' ? 'customers' : 'enquiries');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const activeTabMeta = TABS.find((t) => t.id === tab);
 
@@ -41,14 +48,14 @@ export default function Dashboard({ creds, onLogout }) {
           <button className="adminSidebarClose" onClick={() => setSidebarOpen(false)}><X size={20} /></button>
         </div>
         <nav className="adminSidebarNav">
-          {TABS.map((t) => (
+          {availableTabs.map((t) => (
             <button key={t.id} className={'adminSidebarBtn' + (tab === t.id ? ' active' : '')} onClick={() => selectTab(t.id)}>
               <t.icon size={17} /> {t.label}
             </button>
           ))}
         </nav>
         <div className="adminSidebarFoot">
-          <div className="adminSidebarRole">{creds.role === 'ADMIN' ? 'Owner / Staff' : creds.role}</div>
+          <div className="adminSidebarRole">{creds.role === 'ADMIN' ? 'Owner / Staff' : 'Site Engineer'}</div>
           <button className="adminSidebarLogout" onClick={onLogout}><LogOut size={16} /> Logout</button>
         </div>
       </aside>

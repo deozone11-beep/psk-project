@@ -15,9 +15,9 @@ export default function AdminApp() {
   }
 
   useEffect(() => {
-    if (!auth || auth.role !== 'ADMIN') window.location.href = '/login';
+    if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'ENGINEER')) window.location.href = '/login';
   }, [auth]);
 
-  if (!auth || auth.role !== 'ADMIN') return null; // redirecting via the effect above
+  if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'ENGINEER')) return null; // redirecting via the effect above
   return <Dashboard creds={auth} onLogout={logout} />;
 }

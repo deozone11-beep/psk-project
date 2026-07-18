@@ -18,6 +18,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  // Forgot password form states
+  const [isForgot, setIsForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const tab = ROLE_TABS.find((t) => t.id === activeTab);
 
@@ -25,6 +32,7 @@ export default function LoginPage() {
     e.preventDefault();
     setBusy(true);
     setError('');
+    setMsg('');
     try {
       const r = await fetch(`${API}/auth/login`, {
         method: 'POST',
@@ -35,11 +43,44 @@ export default function LoginPage() {
       if (!r.ok) throw new Error(body?.message || 'Invalid username or password');
 
       sessionStorage.setItem('psk_auth', JSON.stringify(body));
-      // Where we land depends on the account's real role, not the tab clicked —
-      // an owner/admin account works from any tab, a customer account only reaches the portal.
+      // Where we land depends on the account's real role — ADMIN or ENGINEER goes to admin dashboard
       window.location.href = body.role === 'CUSTOMER' ? '/portal' : '/admin';
     } catch (err) {
       setError(err.message || 'Login failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitReset(e) {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      const r = await fetch(`${API}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email: forgotEmail, newPassword }),
+      });
+      const body = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(body?.message || 'Invalid username or email verification failed');
+      setMsg(body?.message || 'Password reset successfully!');
+      // Reset forgot states
+      setUsername('');
+      setForgotEmail('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => {
+        setIsForgot(false);
+        setMsg('');
+      }, 3000);
+    } catch (err) {
+      setError(err.message || 'Reset failed');
     } finally {
       setBusy(false);
     }
@@ -53,22 +94,45 @@ export default function LoginPage() {
           <img src="/logo-icon.png" alt="" className="loginBrandIcon" />
           <span>PSK <b>Brothers</b></span>
         </a>
-        <div className="loginTabs">
-          {ROLE_TABS.map((t) => (
-            <button key={t.id} type="button" className={'loginTab' + (activeTab === t.id ? ' active' : '')} onClick={() => { setActiveTab(t.id); setError(''); }}>
-              <t.icon size={16} /> {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="loginIcon"><Lock size={22} /></div>
-        <h2>{tab.label} Login</h2>
-        <p>{tab.blurb}</p>
-        <form onSubmit={submit}>
-          <input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
-          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          {error && <div className="adminError">{error}</div>}
-          <button className="primary" disabled={busy}>{busy ? 'Checking...' : 'Login'} <ArrowRight size={16} /></button>
-        </form>
+
+        {!isForgot ? (
+          <>
+            <div className="loginTabs">
+              {ROLE_TABS.map((t) => (
+                <button key={t.id} type="button" className={'loginTab' + (activeTab === t.id ? ' active' : '')} onClick={() => { setActiveTab(t.id); setError(''); }}>
+                  <t.icon size={16} /> {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="loginIcon"><Lock size={22} /></div>
+            <h2>{tab.label} Login</h2>
+            <p>{tab.blurb}</p>
+            <form onSubmit={submit}>
+              <input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
+              <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              {error && <div className="adminError">{error}</div>}
+              {msg && <div style={{ color: 'green', fontSize: '0.82rem', margin: '8px 0' }}>{msg}</div>}
+              <button className="primary" disabled={busy}>{busy ? 'Checking...' : 'Login'} <ArrowRight size={16} /></button>
+            </form>
+            <button type="button" className="forgotLink" onClick={() => { setIsForgot(true); setError(''); setMsg(''); }}>Forgot Password?</button>
+          </>
+        ) : (
+          <>
+            <div className="loginIcon"><Lock size={22} /></div>
+            <h2>Reset Password</h2>
+            <p>Enter your username (Mobile Number) and registered Email address to set a new password.</p>
+            <form onSubmit={submitReset}>
+              <input placeholder="Username (Mobile Number)" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
+              <input type="email" placeholder="Registered Email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required />
+              <input type="password" placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+              <input type="password" placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+              {error && <div className="adminError">{error}</div>}
+              {msg && <div style={{ color: 'green', fontSize: '0.82rem', margin: '8px 0' }}>{msg}</div>}
+              <button className="primary" disabled={busy}>{busy ? 'Resetting...' : 'Reset Password'} <ArrowRight size={16} /></button>
+            </form>
+            <button type="button" className="forgotLink" onClick={() => { setIsForgot(false); setError(''); setMsg(''); }}>Back to Login</button>
+          </>
+        )}
         <a href="/" className="loginBack">← Back to site</a>
       </div>
     </div>

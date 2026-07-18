@@ -72,12 +72,12 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/forgot-password").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/services/**", "/api/projects/**", "/api/testimonials/**", "/api/settings").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/enquiries").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/customer/**").hasAnyRole("ADMIN", "CUSTOMER")
+                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ENGINEER")
+                .requestMatchers("/api/customer/**").hasAnyRole("ADMIN", "CUSTOMER", "ENGINEER")
                 .anyRequest().permitAll()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

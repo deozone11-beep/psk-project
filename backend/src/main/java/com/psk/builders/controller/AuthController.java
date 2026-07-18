@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -22,11 +23,13 @@ public class AuthController {
     final AuthenticationManager authManager;
     final JwtUtil jwtUtil;
     final AppUserRepository users;
+    final PasswordEncoder encoder;
 
-    public AuthController(AuthenticationManager authManager, JwtUtil jwtUtil, AppUserRepository users) {
+    public AuthController(AuthenticationManager authManager, JwtUtil jwtUtil, AppUserRepository users, PasswordEncoder encoder) {
         this.authManager = authManager;
         this.jwtUtil = jwtUtil;
         this.users = users;
+        this.encoder = encoder;
     }
 
     record LoginRequest(String username, String password) {}
@@ -45,5 +48,21 @@ public class AuthController {
         if (u == null) return ResponseEntity.status(401).body(Map.of("message", "Invalid username or password"));
         String token = jwtUtil.generateToken(u.getUsername(), u.getRole().name(), u.getDisplayName());
         return ResponseEntity.ok(new LoginResponse(token, u.getRole().name(), u.getUsername(), u.getDisplayName()));
+    }
+
+    @PostMapping("/forgot-password")
+    ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
+        String username = body.get("username");
+        String email = body.get("email");
+        String newPassword = body.get("newPassword");
+        if (username == null || email == null || newPassword == null || username.isBlank() || email.isBlank() || newPassword.isBlank())
+            return ResponseEntity.badRequest().body(Map.of("message", "Username, email and new password are required"));
+        AppUser u = users.findByUsername(username).orElse(null);
+        if (u == null || u.getEmail() == null || !u.getEmail().equalsIgnoreCase(email.trim())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid username or email"));
+        }
+        u.setPasswordHash(encoder.encode(newPassword));
+        users.save(u);
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 }

@@ -8,25 +8,25 @@
 
 /* ===== ADMIN DASHBOARD SHELL (sidebar + topbar + footer) ===== */
 .adminShell{min-height:100vh;display:flex;background:#f3f4f1}
-.adminSidebar{width:250px;flex-shrink:0;background:#1c1c1e;color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:30;transition:transform .3s ease}
-.adminSidebarTop{display:flex;align-items:center;justify-content:space-between;padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.adminSidebar{width:260px;flex-shrink:0;background:linear-gradient(180deg, #111413 0%, #1c201e 100%);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:30;transition:transform .3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow: 4px 0 24px rgba(0,0,0,0.15);border-right: 1px solid rgba(255,255,255,0.05)}
+.adminSidebarTop{display:flex;align-items:center;justify-content:space-between;padding:22px 20px;border-bottom:1px solid rgba(255,255,255,0.04)}
 .adminBrand{display:flex;align-items:center;gap:9px;text-decoration:none;color:#fff;min-width:0}
 .adminBrandIcon{height:30px;width:30px;object-fit:contain;flex-shrink:0}
 .adminBrand span{font-family:Manrope,sans-serif;font-weight:800;font-size:.92rem;letter-spacing:.3px;line-height:1.15;color:#fff;white-space:nowrap}
-.adminBrand span b{color:#ff6a5e;font-weight:800}
+.adminBrand span b{color:#f0c866;font-weight:800}
 .adminSidebarClose{display:none;background:none;border:none;color:#fff;cursor:pointer}
-.adminSidebarNav{flex:1;display:flex;flex-direction:column;gap:2px;padding:16px 12px;overflow-y:auto;background:transparent;position:static}
-.adminSidebarBtn{display:flex;align-items:center;gap:12px;background:none;border:none;color:#c7cbc9;padding:12px 14px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;text-align:left;transition:.15s}
-.adminSidebarBtn:hover{background:rgba(255,255,255,.06);color:#fff}
-.adminSidebarBtn.active{background:#e2262b;color:#fff}
-.adminSidebarFoot{padding:16px 20px 22px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:10px}
-.adminSidebarRole{font-size:.68rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#77807d}
-.adminSidebarLogout{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;padding:11px 14px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer}
-.adminSidebarLogout:hover{background:rgba(226,38,43,.85);border-color:#e2262b}
-.adminSidebarBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:29}
-.adminMain{flex:1;min-width:0;margin-left:250px;display:flex;flex-direction:column;min-height:100vh}
-.adminTopbar{background:#fff;border-bottom:1px solid #ececea;padding:20px 32px;display:flex;align-items:center;gap:16px;height:auto;position:static;width:auto;z-index:auto}
-.adminTopbar h1{font-family:Manrope,sans-serif;font-size:1.3rem;margin:0;color:#17201d}
+.adminSidebarNav{flex:1;display:flex;flex-direction:column;gap:4px;padding:20px 12px;overflow-y:auto;background:transparent;position:static}
+.adminSidebarBtn{display:flex;align-items:center;gap:12px;background:none;border:none;color:#c7cbc9;padding:12px 16px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;text-align:left;transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1)}
+.adminSidebarBtn:hover{background:rgba(240, 200, 102, 0.08);color:#f0c866;transform:translateX(4px)}
+.adminSidebarBtn.active{background:linear-gradient(90deg, #e2262b 0%, #ff5252 100%);box-shadow: 0 4px 12px rgba(226,38,43,0.3);color:#fff}
+.adminSidebarFoot{padding:18px 20px 22px;border-top:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:10px}
+.adminSidebarRole{font-size:.68rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#77807d;padding-left:4px}
+.adminSidebarLogout{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#fff;padding:11px 14px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+.adminSidebarLogout:hover{background:rgba(226,38,43,.9);border-color:#e2262b;box-shadow:0 4px 10px rgba(226,38,43,0.2)}
+.adminSidebarBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:29;backdrop-filter:blur(4px)}
+.adminMain{flex:1;min-width:0;margin-left:260px;display:flex;flex-direction:column;min-height:100vh}
+.adminTopbar{background:rgba(255,255,255,0.96);backdrop-filter:blur(12px);border-bottom:1px solid #ececea;padding:22px 32px;display:flex;align-items:center;gap:16px;height:auto;position:sticky;top:0;width:auto;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,0.02)}
+.adminTopbar h1{font-family:Manrope,sans-serif;font-size:1.35rem;font-weight:800;margin:0;color:#17201d;letter-spacing:-0.5px}
 .adminTopbar p{margin:2px 0 0;font-size:.8rem;color:#77807d}
 .adminMenuBtn{display:none;background:none;border:1px solid #d8dcda;border-radius:6px;padding:8px;cursor:pointer;color:#17201d}
 .adminFooter{margin-top:auto;padding:20px 32px;display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:#77807d;border-top:1px solid #ececea}
@@ -91,10 +91,14 @@
 .portalWrap{max-width:820px;margin:0 auto;padding:30px 20px 60px;display:flex;flex-direction:column;gap:24px}
 .portalHero h2{font-family:Manrope,sans-serif;font-size:1.7rem;margin:2px 0 8px;color:#17201d}
 .portalProject{display:flex;align-items:center;gap:6px;color:#e2262b;font-weight:700;font-size:.9rem;margin-bottom:16px}
-.portalEstimate{display:flex;gap:24px;flex-wrap:wrap;border-top:1px solid #ececea;padding-top:16px}
-.portalEstimate div{display:flex;flex-direction:column;gap:2px}
-.portalEstimate span{font-size:.68rem;font-weight:700;letter-spacing:1px;color:#77807d;text-transform:uppercase}
-.portalEstimate b{font-size:1.15rem;color:#17201d}
+.portalEstimate{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;border-top:1px solid #ececea;padding-top:20px;margin-top:12px;width:100%}
+.estCard{background:#fdfdfd;border:1px solid #ececea;padding:20px;border-radius:12px;display:flex;flex-direction:column;gap:6px;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:0 1px 3px rgba(0,0,0,0.02)}
+.estCard:hover{transform:translateY(-4px);box-shadow:0 12px 24px rgba(0,0,0,0.06);border-color:#f0c866}
+.estCard span{font-size:.68rem;font-weight:700;letter-spacing:1px;color:#77807d;text-transform:uppercase}
+.estCard b{font-size:1.2rem;color:#17201d}
+.estCard.highlight{background:linear-gradient(135deg, #17201d 0%, #293833 100%);border:none;color:#fff}
+.estCard.highlight span{color:#a4b4ae}
+.estCard.highlight b{color:#f0c866;font-size:1.35rem}
 .portalFeed{margin-top:16px;display:flex;flex-direction:column;gap:16px}
 .portalUpdate{display:flex;gap:16px;background:#f8f8f7;border-radius:8px;overflow:hidden}
 .portalUpdate img{width:160px;height:130px;object-fit:cover;flex-shrink:0}

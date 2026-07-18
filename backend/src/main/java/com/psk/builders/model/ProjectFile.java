@@ -1,26 +1,28 @@
 package com.psk.builders.model;
+
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProjectUpdate {
+public class ProjectFile {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
     @ManyToOne
-    AppUser customer; // which customer this update belongs to
+    AppUser customer;
 
-    String title;
-    @Column(length = 2000)
-    String description;
+    String fileName;
+    String category; // "PLAN", "APPROVAL", "ESTIMATE", "INVOICE", "OTHER"
+
     @Column(columnDefinition = "LONGTEXT")
-    String photoUrl; // holds base64 data URIs separated by |||, nullable
-    LocalDate workDate;
+    String fileData; // base64 encoded string
+
+    String uploadedByUsername;
+    String uploadedByRole; // "ADMIN", "ENGINEER", "CUSTOMER"
     LocalDateTime createdAt;
 
     @PrePersist

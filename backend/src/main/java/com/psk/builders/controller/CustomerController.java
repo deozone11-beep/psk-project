@@ -18,11 +18,14 @@ public class CustomerController {
     final AppUserRepository users;
     final ProjectUpdateRepository updates;
     final SettingsRepository settings;
+    final ProjectFileRepository files;
 
-    CustomerController(AppUserRepository users, ProjectUpdateRepository updates, SettingsRepository settings) {
+    CustomerController(AppUserRepository users, ProjectUpdateRepository updates, SettingsRepository settings,
+                       ProjectFileRepository files) {
         this.users = users;
         this.updates = updates;
         this.settings = settings;
+        this.files = files;
     }
 
     private AppUser currentUser(Authentication auth) {
@@ -49,5 +52,52 @@ public class CustomerController {
         AppUser u = currentUser(auth);
         if (u == null) return List.of();
         return updates.findByCustomer_IdOrderByWorkDateDesc(u.getId());
+    }
+
+    // ---------- Customer Project Files ----------
+    @GetMapping("/files")
+    ResponseEntity<?> getMyFiles(Authentication auth) {
+        AppUser u = currentUser(auth);
+        if (u == null) return ResponseEntity.status(404).body(Map.of("message", "Account not found"));
+        return ResponseEntity.ok(files.findByCustomer_IdOrderByCreatedAtDesc(u.getId()));
+    }
+
+    @PostMapping(value = "/files", consumes = "multipart/form-data")
+    ResponseEntity<?> uploadMyFile(@RequestParam String fileName,
+                                    @RequestParam String category,
+                                    @RequestParam org.springframework.web.multipart.MultipartFile file,
+                                    Authentication auth) throws java.io.IOException {
+        AppUser u = currentUser(auth);
+        if (u == null) return ResponseEntity.status(404).body(Map.of("message", "Account not found"));
+        if (file == null || file.isEmpty()) return ResponseEntity.badRequest().body(Map.of("message", "File is empty"));
+
+        String mimeType = file.getContentType();
+        String base64 = java.util.Base64.getEncoder().encodeToString(file.getBytes());
+        String dataUri = "data:" + (mimeType != null ? mimeType : "application/octet-stream") + ";base64," + base64;
+
+        ProjectFile pf = new ProjectFile(null, u, fileName, category, dataUri, u.getUsername(), "CUSTOMER", null);
+        return ResponseEntity.ok(files.save(pf));
+    }
+
+    @DeleteMapping("/files/{id}")
+    ResponseEntity<?> deleteMyFile(@PathVariable Long id, Authentication auth) {
+        AppUser u = currentUser(auth);
+        if (u == null) return ResponseEntity.status(404).body(Map.of("message", "Account not found"));
+
+        ProjectFile pf = files.findById(id).orElse(null);
+        if (pf == null) return ResponseEntity.notFound().build();
+
+        // Check if this file belongs to the logged-in customer
+        if (!pf.getCustomer().getId().equals(u.getId())) {
+            return ResponseEntity.status(403).body(Map.of("message", "You can only manage your own files"));
+        }
+
+        // Check uploader role. Customers CANNOT delete files uploaded by ADMIN or ENGINEER!
+        if (!"CUSTOMER".equalsIgnoreCase(pf.getUploadedByRole())) {
+            return ResponseEntity.status(403).body(Map.of("message", "Access denied: you cannot delete official files"));
+        }
+
+        files.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }

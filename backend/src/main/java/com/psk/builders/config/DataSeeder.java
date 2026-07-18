@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -23,11 +26,27 @@ public class DataSeeder {
             AppUserRepository users,
             ProjectUpdateRepository updates,
             PasswordEncoder encoder,
+            DataSource dataSource,
             @Value("${owner.password:psk@owner123}") String ownerPassword,
             @Value("${admin.password:psk@admin123}") String adminPassword,
             @Value("${demo.customer.password:customer123}") String demoCustomerPassword
     ) {
         return args -> {
+            // Fix role column constraint if running on MySQL
+            try (Connection conn = dataSource.getConnection()) {
+                String dbProduct = conn.getMetaData().getDatabaseProductName();
+                if (dbProduct != null && dbProduct.toLowerCase().contains("mysql")) {
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.executeUpdate("ALTER TABLE app_user MODIFY COLUMN role VARCHAR(50)");
+                        stmt.executeUpdate("ALTER TABLE project_file MODIFY COLUMN file_data LONGTEXT");
+                        stmt.executeUpdate("ALTER TABLE project_update MODIFY COLUMN photo_url LONGTEXT");
+                    } catch (Exception ex) {
+                        System.err.println("Could not alter columns: " + ex.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Database metadata fetch failed: " + e.getMessage());
+            }
             if (services.count() == 0) {
                 services.saveAll(List.of(
                     new ServiceItem(null, "Residential Construction", "Beautiful, durable homes with transparent estimates."),
@@ -58,16 +77,19 @@ public class DataSeeder {
 
             // Staff logins: owner + admin/employee — both get full ADMIN access.
             if (users.findByUsername("owner").isEmpty()) {
-                users.save(new AppUser(null, "owner", encoder.encode(ownerPassword), AppUser.Role.ADMIN, "Owner", null, null, null));
+                users.save(new AppUser(null, "owner", encoder.encode(ownerPassword), AppUser.Role.ADMIN, "Owner", null, null, null, "owner@psk.com"));
             }
             if (users.findByUsername("admin").isEmpty()) {
-                users.save(new AppUser(null, "admin", encoder.encode(adminPassword), AppUser.Role.ADMIN, "Admin / Staff", null, null, null));
+                users.save(new AppUser(null, "admin", encoder.encode(adminPassword), AppUser.Role.ADMIN, "Admin / Staff", null, null, null, "admin@psk.com"));
+            }
+            if (users.findByUsername("engineer").isEmpty()) {
+                users.save(new AppUser(null, "engineer", encoder.encode("psk@engineer123"), AppUser.Role.ENGINEER, "Site Engineer", null, null, null, "engineer@psk.com"));
             }
 
             // Demo customer login, so the customer portal can be tested immediately.
             if (users.findByUsername("customer1").isEmpty()) {
                 AppUser demo = users.save(new AppUser(null, "customer1", encoder.encode(demoCustomerPassword),
-                        AppUser.Role.CUSTOMER, "Ramesh Kumar", "9876543210", "Modern Family Residence", 1800.0));
+                        AppUser.Role.CUSTOMER, "Ramesh Kumar", "9876543210", "Modern Family Residence", 1800.0, "customer1@gmail.com"));
 
                 updates.save(new ProjectUpdate(null, demo, "Foundation completed",
                         "Foundation work finished and approved by our site engineer. Moving to structure work next.",
