@@ -23,10 +23,10 @@
 .about .eyebrow::before{background:#ff8a7a}
 
 /* ===== INTRO / SPLASH SCREEN ===== */
-.introScreen{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;cursor:pointer;background-color:#0a0a0b;background-image:url('/splash-bg.jpg');background-position:center 28%;background-size:cover;background-repeat:no-repeat;transition:opacity .6s ease;opacity:1}
+.introScreen{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;cursor:pointer;background-color:#0a0a0b;background-image:url('/splash-bg.jpg');background-position:center center;background-size:cover;background-repeat:no-repeat;transition:opacity .6s ease;opacity:1}
 .introScreen.leaving{opacity:0;pointer-events:none}
-.introGrid{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,8,.08) 0%,rgba(6,6,8,.2) 35%,rgba(6,6,8,.55) 65%,rgba(6,6,8,.88) 100%),radial-gradient(900px 500px at 80% 8%,rgba(226,38,43,.08),transparent 55%);pointer-events:none}
-.introContent{position:relative;text-align:center;padding:0 6% 7%;max-width:700px;transform:none}
+.introGrid{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,8,0.05) 0%,rgba(6,6,8,0.12) 40%,rgba(6,6,8,0.25) 75%,rgba(6,6,8,0.45) 100%),radial-gradient(900px 500px at 80% 8%,rgba(226,38,43,0.05),transparent 55%);pointer-events:none}
+.introContent{position:relative;text-align:center;padding:45px 50px 35px;max-width:720px;transform:none;background:rgba(10,10,12,0.38);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:24px;border:1px solid rgba(255,255,255,0.08);margin-bottom:6vh;box-shadow:0 30px 60px -15px rgba(0,0,0,0.5)}
 .introLogoWrap{background:#fff;display:inline-flex;padding:14px 24px;border-radius:10px;margin-bottom:32px;box-shadow:0 20px 50px -20px rgba(0,0,0,.6)}
 .introLogo{height:40px;display:block}
 .introEyebrow{justify-content:center;color:#ff8a7a;font-size:.8rem;letter-spacing:3.5px}
@@ -41,7 +41,7 @@
 @keyframes introAccentLine{0%{width:0;opacity:0}100%{width:60px;opacity:1}}
 .introContent::before{content:'';display:block;width:60px;height:3px;background:linear-gradient(90deg,#e2262b,#f0c866);margin:0 auto 20px;border-radius:2px;animation:introAccentLine .8s ease-out .3s both}
 @media(max-width:600px){
-.introContent{padding:0 5% 10%;max-width:100%}
+.introContent{padding:30px 24px 25px;max-width:92%;margin-bottom:4vh}
 .introTitle{font-size:clamp(2.2rem,8vw,3.2rem);margin:12px 0 14px}
 .introTitle br{display:none}
 .introTag{margin-bottom:32px;font-size:.95rem}
