@@ -18,7 +18,7 @@ public class ProjectUpdate {
     String title;
     @Column(length = 2000)
     String description;
-    @Lob @Column(columnDefinition = "LONGTEXT")
+    @Column(length = 16777215)
     String photoUrl; // now holds a base64 data URI (data:image/...;base64,...), nullable — text-only updates allowed
     LocalDate workDate;
     LocalDateTime createdAt;

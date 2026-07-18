@@ -24,8 +24,7 @@ public class Project {
     // exact same proven pattern as ProjectUpdate.photoUrl (@Lob LONGTEXT), instead of a
     // separate @ElementCollection table, which can hit MySQL "BLOB/TEXT column used in
     // key" errors on some setups. get/setImageUrls() below convert to/from a real List.
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(length = 16777215)
     @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     String imageUrlsJson;
 
