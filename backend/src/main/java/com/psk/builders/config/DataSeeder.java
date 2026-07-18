@@ -32,7 +32,7 @@ public class DataSeeder {
             @Value("${demo.customer.password:customer123}") String demoCustomerPassword
     ) {
         return args -> {
-            // Fix role column constraint if running on MySQL
+            // Fix role column constraint if running on MySQL or PostgreSQL
             try (Connection conn = dataSource.getConnection()) {
                 String dbProduct = conn.getMetaData().getDatabaseProductName();
                 if (dbProduct != null && dbProduct.toLowerCase().contains("mysql")) {
@@ -42,6 +42,12 @@ public class DataSeeder {
                         stmt.executeUpdate("ALTER TABLE project_update MODIFY COLUMN photo_url LONGTEXT");
                     } catch (Exception ex) {
                         System.err.println("Could not alter columns: " + ex.getMessage());
+                    }
+                } else if (dbProduct != null && dbProduct.toLowerCase().contains("postgresql")) {
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.executeUpdate("ALTER TABLE app_user DROP CONSTRAINT IF EXISTS app_user_role_check");
+                    } catch (Exception ex) {
+                        System.err.println("Could not drop PostgreSQL check constraint: " + ex.getMessage());
                     }
                 }
             } catch (Exception e) {
