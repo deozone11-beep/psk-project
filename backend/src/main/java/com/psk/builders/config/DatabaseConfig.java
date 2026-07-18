@@ -20,7 +20,8 @@ public class DatabaseConfig {
                 String userInfo = dbUri.getUserInfo();
                 String username = userInfo.contains(":") ? userInfo.split(":")[0] : userInfo;
                 String password = userInfo.contains(":") ? userInfo.split(":")[1] : "";
-                String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ":" + dbUri.getPort() + dbUri.getPath();
+                String portPart = dbUri.getPort() == -1 ? "" : ":" + dbUri.getPort();
+                String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + portPart + dbUri.getPath();
                 
                 return DataSourceBuilder.create()
                         .driverClassName("org.postgresql.Driver")
@@ -33,7 +34,8 @@ public class DatabaseConfig {
                 String userInfo = dbUri.getUserInfo();
                 String username = userInfo.contains(":") ? userInfo.split(":")[0] : userInfo;
                 String password = userInfo.contains(":") ? userInfo.split(":")[1] : "";
-                String dbUrl = "jdbc:mysql://" + dbUri.getHost() + ":" + dbUri.getPort() + dbUri.getPath();
+                String portPart = dbUri.getPort() == -1 ? "" : ":" + dbUri.getPort();
+                String dbUrl = "jdbc:mysql://" + dbUri.getHost() + portPart + dbUri.getPath();
                 
                 return DataSourceBuilder.create()
                         .driverClassName("com.mysql.cj.jdbc.Driver")
