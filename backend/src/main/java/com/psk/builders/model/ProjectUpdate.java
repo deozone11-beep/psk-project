@@ -18,7 +18,7 @@ public class ProjectUpdate {
     String title;
     @Column(length = 2000)
     String description;
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(length = 16777215)
     String photoUrl; // holds base64 data URIs separated by |||, nullable
     LocalDate workDate;
     LocalDateTime createdAt;

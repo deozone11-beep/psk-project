@@ -18,7 +18,7 @@ public class ProjectFile {
     String fileName;
     String category; // "PLAN", "APPROVAL", "ESTIMATE", "INVOICE", "OTHER"
 
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(length = 16777215)
     String fileData; // base64 encoded string
 
     String uploadedByUsername;
