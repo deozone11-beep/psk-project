@@ -181,26 +181,16 @@ function ProjectSlideshow({images}){
 function TrustHands(){
   return (
     <div className="trustHandWrap">
-      <svg viewBox="0 0 240 200" width="220" height="184">
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
         <defs>
-          <linearGradient id="handG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#f0b98a"/><stop offset="1" stopColor="#c9895a"/>
-          </linearGradient>
+          <clipPath id="cloudClip" clipPathUnits="objectBoundingBox">
+            <path d="M 0.2, 0.9 C 0.05, 0.9, 0, 0.75, 0.05, 0.55 C 0.02, 0.35, 0.15, 0.2, 0.3, 0.25 C 0.35, 0.05, 0.55, 0.02, 0.7, 0.1 C 0.85, 0.1, 0.98, 0.25, 0.95, 0.45 C 1, 0.6, 0.98, 0.8, 0.85, 0.9 C 0.75, 0.95, 0.35, 0.95, 0.2, 0.9 Z" />
+          </clipPath>
         </defs>
-        <circle cx="120" cy="105" r="92" fill="#e2262b" opacity=".06"/>
-        <circle cx="120" cy="105" r="70" fill="#e2262b" opacity=".08"/>
-        {/* cupped hands (stylised, no fingers — reads cleaner at small size) */}
-        <path d="M28,148 C16,104 46,72 92,80 C88,55 152,55 148,80 C194,72 224,104 212,148 C210,168 186,178 120,178 C54,178 30,168 28,148 Z"
-              fill="url(#handG)" stroke="#8a5a34" strokeWidth="2"/>
-        <circle cx="58" cy="88" r="11" fill="url(#handG)" stroke="#8a5a34" strokeWidth="2"/>
-        <circle cx="182" cy="88" r="11" fill="url(#handG)" stroke="#8a5a34" strokeWidth="2"/>
-        {/* small house resting in the palms */}
-        <rect x="98" y="98" width="44" height="32" fill="#fff" stroke="#2a2a2e" strokeWidth="2"/>
-        <polygon points="92,98 120,76 148,98" fill="#e2262b" stroke="#2a2a2e" strokeWidth="2"/>
-        <rect x="113" y="112" width="14" height="18" fill="#2a2a2e"/>
-        <rect x="102" y="104" width="9" height="9" fill="#ffd873"/>
-        <rect x="129" y="104" width="9" height="9" fill="#ffd873"/>
       </svg>
+      <div className="trustHandsClipWrap">
+        <img src="/trust-hands.png" alt="Your vision, safe in our hands" className="trustHandsImg"/>
+      </div>
       <div className="trustBadge"><CheckCircle2 size={15}/> On-time handover, guaranteed</div>
     </div>
   );
@@ -222,7 +212,7 @@ function App(){const[d,setD]=useState(fallback),[open,setOpen]=useState(false),[
     return ()=>io.disconnect();
   },[]);function goNext(){const f=formRef.current;const name=f.elements['name'],phone=f.elements['phone'];if(!name.value.trim()||!phone.checkValidity()){f.reportValidity();return}setStep(2)}
 function commitSqft(val){let n=Math.round(Number(val));if(!Number.isFinite(n))n=sqft;n=Math.min(100000,Math.max(500,n));setSqft(n);setEditingSqft(false)}
-async function submit(e){e.preventDefault();const form=e.currentTarget;setMsg('Sending...');try{let r=await fetch(`${API}/enquiries`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});if(!r.ok){const errBody=await r.json().catch(()=>null);console.error('Enquiry failed:',r.status,errBody);setMsg(errBody?.message||`Error ${r.status}. Check console for details.`);return}setMsg('Thank you! We will contact you shortly.');form.reset();setStep(1)}catch(err){console.error('Unexpected error:',err);setMsg('Something went wrong — check console (F12) for the real error.')}}return <div className="site"><header className={scrolled?'scrolled':''}><a className="logo" href="#home"><img src="/logo.png" alt="PSK Brothers Builders & Constructions"/></a><nav className={open?'open':''}>{['Home','About','Services','Why','Pillars','Calculator','Process','Projects','Testimonials','Contact'].map(x=><a key={x} onClick={()=>setOpen(false)} href={'#'+x.toLowerCase()}>{x}</a>)}<a className="loginNav" href="/login">Portal</a><a className="primary navCta" href="#contact">GET A QUOTE</a></nav><button className={'menu'+(!scrolled&&!open?' onHero':'')} onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</button></header><main>
+async function submit(e){e.preventDefault();const form=e.currentTarget;setMsg('Sending...');try{let r=await fetch(`${API}/enquiries`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});if(!r.ok){const errBody=await r.json().catch(()=>null);console.error('Enquiry failed:',r.status,errBody);setMsg(errBody?.message||`Error ${r.status}. Check console for details.`);return}setMsg('Thank you! We will contact you shortly.');form.reset();setStep(1)}catch(err){console.error('Unexpected error:',err);setMsg('Something went wrong — check console (F12) for the real error.')}}return <div className="site"><header className={scrolled?'scrolled':''}><a className="logo" href="#home"><img src="/logo.png" alt="PSK Brothers Builders & Constructions"/></a><nav className={open?'open':''}>{['Home','About','Services','Why','Pillars','Calculator','Process','Projects','Testimonials','Contact'].map(x=><a key={x} onClick={()=>setOpen(false)} href={'#'+x.toLowerCase()}>{x}</a>)}<a className="loginNav" href="/login">Login</a><a className="primary navCta" href="#contact">GET A QUOTE</a></nav><button className={'menu'+(!scrolled&&!open?' onHero':'')} onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</button></header><main>
 <section id="home" className="hero"><div className="shade"/><div className="heroText"><p className="eyebrow">BUILDING TRUST. CREATING LANDMARKS.</p><h1>We build spaces<br/>that inspire <em>life.</em></h1><p>Quality construction, honest communication and dependable delivery for homes and businesses across Tamil Nadu.</p><a className="primary" href="#projects">VIEW OUR WORK <ArrowRight size={18}/></a><a className="call" href="tel:+919003177934"><Phone size={18}/> +91 90031 77934 <br/>+91 99414 26479</a></div><div className="stats"><span><b>10+</b>YEARS EXPERIENCE</span><span><b>75+</b>PROJECTS COMPLETED</span><span><b>100%</b>QUALITY COMMITMENT</span></div></section>
 <section id="about" className="about wrap"><div><p className="eyebrow">WHO WE ARE</p><h2>Strong foundations.<br/>Lasting relationships.</h2><p>PSK Brothers Builders & Constructions is committed to quality workmanship, transparent pricing and timely delivery.</p>{['Skilled and experienced team','Quality materials and standards','Clear estimates and regular updates'].map(x=><div className="check" key={x}><CheckCircle2/> {x}</div>)}</div><div className="aboutImg"><img src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80"/><b>Built with<br/>responsibility.</b></div></section>
 <section id="services" className="light"><div className="wrap"><p className="eyebrow">WHAT WE DO</p><h2>Complete construction solutions</h2><div className="grid services">{(d.services || []).map((x,i)=>x && <article key={x.id}><ServiceIcon title={x.title} idKey={x.id}/><i>0{i+1}</i><h3>{x.title}</h3><p>{x.description}</p><a href="#contact">ENQUIRE <ArrowRight size={15}/></a></article>)}</div></div></section>
@@ -247,7 +237,7 @@ function IntroScreen({onEnter}){
       <div className="introContent">
         <p className="eyebrow introEyebrow">WELCOME TO</p>
         <h1 className="introTitle">PSK Brothers<br/><em>Builders &amp; Constructions</em></h1>
-        <p className="introTag">Building trust. Creating landmarks.</p>
+        <p className="introTag">Building trust. Creating landmarks.<br/><span className="introSubTag">We build what you imagine.</span></p>
         <div className="introHint"><span className="introChevron">⌄</span>Tap anywhere to enter</div>
       </div>
     </div>
