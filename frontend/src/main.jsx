@@ -9,6 +9,7 @@ const buildingTiers=[
   {max:50000,label:'RESIDENTIAL COMPLEX',stage:'MULTI-BLOCK',floors:8},
   {max:100000,label:'COMMERCIAL TOWER',stage:'HIGH-RISE',floors:12}
 ];
+
 function getTier(sqft){for(const t of buildingTiers){if(sqft<=t.max)return t}return buildingTiers[buildingTiers.length-1]}
 function BuildingArt({sqft}){
   const t=getTier(sqft);
@@ -80,6 +81,7 @@ function BuildingArt({sqft}){
     </div>
   );
 }
+
 function ServiceIcon({title,idKey}){
   const k=(title||'').toLowerCase();
   const uid='svc'+idKey;
@@ -203,10 +205,25 @@ function TrustHands(){
     </div>
   );
 }
-function App(){const[d,setD]=useState(fallback),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[sqft,setSqft]=useState(1500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null);useEffect(()=>{['services','projects','testimonials'].forEach(key=>{fetch(`${API}/${key}`).then(r=>{if(!r.ok)throw new Error('bad response');return r.json()}).then(data=>{if(Array.isArray(data))setD(prev=>({...prev,[key]:data}))}).catch(()=>{/* keep fallback data for this section */})});fetch(`${API}/settings`).then(r=>r.json()).then(s=>s.ratePerSqft&&setRate(s.ratePerSqft)).catch(()=>{})},[]);function goNext(){const f=formRef.current;const name=f.elements['name'],phone=f.elements['phone'];if(!name.value.trim()||!phone.checkValidity()){f.reportValidity();return}setStep(2)}
+function App(){const[d,setD]=useState(fallback),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[sqft,setSqft]=useState(1500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null),[scrolled,setScrolled]=useState(false);useEffect(()=>{const onScroll=()=>setScrolled(window.scrollY>40);onScroll();window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll)},[]);useEffect(()=>{['services','projects','testimonials'].forEach(key=>{fetch(`${API}/${key}`).then(r=>{if(!r.ok)throw new Error('bad response');return r.json()}).then(data=>{if(Array.isArray(data))setD(prev=>({...prev,[key]:data}))}).catch(()=>{/* keep fallback data for this section */})});fetch(`${API}/settings`).then(r=>r.json()).then(s=>s.ratePerSqft&&setRate(s.ratePerSqft)).catch(()=>{})},[]);useEffect(()=>{
+    const sections=document.querySelectorAll('main > section');
+    const targets=[];
+    sections.forEach(sec=>{
+      if(sec.classList.contains('hero'))return;
+      const inner=sec.querySelector(':scope > .wrap')||sec.querySelector(':scope > div');
+      const t=inner||sec;
+      t.classList.add('reveal');
+      targets.push(t);
+    });
+    const io=new IntersectionObserver(entries=>{
+      entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});
+    },{threshold:.12});
+    targets.forEach(t=>io.observe(t));
+    return ()=>io.disconnect();
+  },[]);function goNext(){const f=formRef.current;const name=f.elements['name'],phone=f.elements['phone'];if(!name.value.trim()||!phone.checkValidity()){f.reportValidity();return}setStep(2)}
 function commitSqft(val){let n=Math.round(Number(val));if(!Number.isFinite(n))n=sqft;n=Math.min(100000,Math.max(500,n));setSqft(n);setEditingSqft(false)}
-async function submit(e){e.preventDefault();const form=e.currentTarget;setMsg('Sending...');try{let r=await fetch(`${API}/enquiries`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});if(!r.ok){const errBody=await r.json().catch(()=>null);console.error('Enquiry failed:',r.status,errBody);setMsg(errBody?.message||`Error ${r.status}. Check console for details.`);return}setMsg('Thank you! We will contact you shortly.');form.reset();setStep(1)}catch(err){console.error('Unexpected error:',err);setMsg('Something went wrong — check console (F12) for the real error.')}}return <div className="site"><header><a className="logo" href="#home"><img src="/logo.png" alt="PSK Brothers Builders & Constructions"/></a><nav className={open?'open':''}>{['Home','About','Services','Why','Pillars','Calculator','Process','Projects','Testimonials','Contact'].map(x=><a key={x} onClick={()=>setOpen(false)} href={'#'+x.toLowerCase()}>{x}</a>)}<a className="primary" href="#contact">GET A QUOTE</a></nav><button className="menu" onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</button></header><main>
-<section id="home" className="hero"><div className="shade"/><div className="heroText"><p className="eyebrow">BUILDING TRUST. CREATING LANDMARKS.</p><h1>We build spaces<br/>that inspire <em>life.</em></h1><p>Quality construction, honest communication and dependable delivery for homes and businesses across Tamil Nadu.</p><a className="primary" href="#projects">VIEW OUR WORK <ArrowRight size={18}/></a><a className="call" href="tel:+919876543210"><Phone size={18}/> +91 98765 43210</a></div><div className="stats"><span><b>10+</b>YEARS EXPERIENCE</span><span><b>75+</b>PROJECTS COMPLETED</span><span><b>100%</b>QUALITY COMMITMENT</span></div></section>
+async function submit(e){e.preventDefault();const form=e.currentTarget;setMsg('Sending...');try{let r=await fetch(`${API}/enquiries`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});if(!r.ok){const errBody=await r.json().catch(()=>null);console.error('Enquiry failed:',r.status,errBody);setMsg(errBody?.message||`Error ${r.status}. Check console for details.`);return}setMsg('Thank you! We will contact you shortly.');form.reset();setStep(1)}catch(err){console.error('Unexpected error:',err);setMsg('Something went wrong — check console (F12) for the real error.')}}return <div className="site"><header className={scrolled?'scrolled':''}><a className="logo" href="#home"><img src="/logo.png" alt="PSK Brothers Builders & Constructions"/></a><nav className={open?'open':''}>{['Home','About','Services','Why','Pillars','Calculator','Process','Projects','Testimonials','Contact'].map(x=><a key={x} onClick={()=>setOpen(false)} href={'#'+x.toLowerCase()}>{x}</a>)}<a className="primary navCta" href="#contact">GET A QUOTE</a></nav><button className={'menu'+(!scrolled&&!open?' onHero':'')} onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</button></header><main>
+<section id="home" className="hero"><div className="shade"/><div className="heroText"><p className="eyebrow">BUILDING TRUST. CREATING LANDMARKS.</p><h1>We build spaces<br/>that inspire <em>life.</em></h1><p>Quality construction, honest communication and dependable delivery for homes and businesses across Tamil Nadu.</p><a className="primary" href="#projects">VIEW OUR WORK <ArrowRight size={18}/></a><a className="call" href="tel:+919003177934"><Phone size={18}/> +91 90031 77934 <br/>+91 99414 26479</a></div><div className="stats"><span><b>10+</b>YEARS EXPERIENCE</span><span><b>75+</b>PROJECTS COMPLETED</span><span><b>100%</b>QUALITY COMMITMENT</span></div></section>
 <section id="about" className="about wrap"><div><p className="eyebrow">WHO WE ARE</p><h2>Strong foundations.<br/>Lasting relationships.</h2><p>PSK Brothers Builders & Constructions is committed to quality workmanship, transparent pricing and timely delivery.</p>{['Skilled and experienced team','Quality materials and standards','Clear estimates and regular updates'].map(x=><div className="check" key={x}><CheckCircle2/> {x}</div>)}</div><div className="aboutImg"><img src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80"/><b>Built with<br/>responsibility.</b></div></section>
 <section id="services" className="light"><div className="wrap"><p className="eyebrow">WHAT WE DO</p><h2>Complete construction solutions</h2><div className="grid services">{d.services.map((x,i)=><article key={x.id}><ServiceIcon title={x.title} idKey={x.id}/><i>0{i+1}</i><h3>{x.title}</h3><p>{x.description}</p><a href="#contact">ENQUIRE <ArrowRight size={15}/></a></article>)}</div></div></section>
 <section id="projects" className="wrap"><p className="eyebrow">SELECTED PROJECTS</p><h2>Work we're proud of</h2><div className="grid projects">{d.projects.map(x=><article key={x.id}><ProjectSlideshow images={x.imageUrls&&x.imageUrls.length?x.imageUrls:(x.imageUrl?[x.imageUrl]:[])}/><span className={'statusPill'+(x.status==='Completed'?' done':'')}>{x.status==='Completed'?<CheckCircle2 size={13}/>:<Hammer size={13}/>} {x.status}</span><div><small>{x.location}</small><h3>{x.title}</h3></div></article>)}</div></section>
@@ -216,4 +233,35 @@ async function submit(e){e.preventDefault();const form=e.currentTarget;setMsg('S
 <section id="process" className="light"><div className="wrap"><p className="eyebrow">HOW IT WORKS</p><h2>From first call to handover</h2><div className="grid process">{[['01','Enquiry','Tell us about your project — home, office or renovation.'],['02','Site Visit','Our team visits your site and understands your requirements.'],['03','Estimate & Plan','You get a clear, itemised cost estimate and timeline.'],['04','Execution & Handover','We build with regular updates, and hand over on schedule.']].map(([n,t,d2])=><div key={n} className="processCard"><span>{n}</span><h3>{t}</h3><p>{d2}</p></div>)}</div></div></section>
 <section id="testimonials" className="light"><div className="wrap"><p className="eyebrow">CLIENT WORDS</p><h2>What our clients say</h2><div className="grid testimonials">{d.testimonials.map(x=><article key={x.id}><div className="stars">{'★'.repeat(x.rating)}{'☆'.repeat(5-x.rating)}</div><p>"{x.message}"</p><b>{x.customerName}</b><span>{x.location}</span></article>)}</div></div></section>
 <section className="promise"><div><p className="eyebrow">THE PSK PROMISE</p><h2>Your vision. Safe in our hands.</h2><p>From first conversation to final handover, we bring care, clarity and craftsmanship to every square foot — no shortcuts, no surprises.</p><a className="primary" href="#contact">START YOUR PROJECT <ArrowRight/></a></div><TrustHands/></section>
-<section id="contact" className="contact wrap"><div><p className="eyebrow">LET'S BUILD TOGETHER</p><h2>Tell us about your project.</h2><p>Planning a home, office or renovation? Our team will call you.</p><p><Phone/> +91 98765 43210</p><p><Mail/> pskbrothersbuilders@gmail.com</p><p><MapPin/> Coimbatore, Tamil Nadu</p></div><form onSubmit={submit} ref={formRef} className="multiStep"><div className="stepDots"><span className={step>=1?'on':''}/><span className={step>=2?'on':''}/></div><div style={{display:step===1?'contents':'none'}}><input name="name" placeholder="Your name" required/><input name="phone" placeholder="Phone number" required/><input name="email" type="email" placeholder="Email address (optional)"/><button type="button" className="primary stepNext" onClick={goNext}>NEXT <ArrowRight/></button></div><div style={{display:step===2?'contents':'none'}}><select name="service" required={step===2}><option value="">Select service</option>{d.services.map(x=><option key={x.id} value={x.title}>{x.title}</option>)}</select><textarea name="message" placeholder="Tell us about your project" required={step===2}/><div className="stepBtnRow"><button type="button" className="stepBack" onClick={()=>setStep(1)}>BACK</button><button className="primary">SEND ENQUIRY <ArrowRight/></button></div></div><small>{msg}</small></form></section></main><footer><div className="logo footer-logo"><img src="/logo.png" alt="PSK Brothers Builders & Constructions"/></div><p>© 2026 PSK Brothers Builders & Constructions.</p><a className="portalLink" href="/login">Login →</a></footer></div>};createRoot(document.getElementById('root')).render(window.location.pathname.startsWith('/admin')?<AdminApp/>:window.location.pathname.startsWith('/portal')?<CustomerApp/>:window.location.pathname.startsWith('/login')?<LoginPage/>:<App/>);
+<section id="contact" className="contact wrap"><div><p className="eyebrow">LET'S BUILD TOGETHER</p><h2>Tell us about your project.</h2><p>Planning a home, office or renovation? Our team will call you.</p><p><Phone/> +91 90031 77934 <br></br> +91 99414 26479</p><p><Mail/> pskbrothersbuilders@gmail.com</p><p><MapPin/> Chooolaimedu, Chennai, Tamil Nadu - 600094</p></div><form onSubmit={submit} ref={formRef} className="multiStep"><div className="stepDots"><span className={step>=1?'on':''}/><span className={step>=2?'on':''}/></div><div style={{display:step===1?'contents':'none'}}><input name="name" placeholder="Your name" required/><input name="phone" placeholder="Phone number" required/><input name="email" type="email" placeholder="Email address (optional)"/><button type="button" className="primary stepNext" onClick={goNext}>NEXT <ArrowRight/></button></div><div style={{display:step===2?'contents':'none'}}><select name="service" required={step===2}><option value="">Select service</option>{d.services.map(x=><option key={x.id} value={x.title}>{x.title}</option>)}</select><textarea name="message" placeholder="Tell us about your project" required={step===2}/><div className="stepBtnRow"><button type="button" className="stepBack" onClick={()=>setStep(1)}>BACK</button><button className="primary">SEND ENQUIRY <ArrowRight/></button></div></div><small>{msg}</small></form></section></main><footer><div className="logo footer-logo"><img src="/logo.png" alt="PSK Brothers Builders & Constructions"/></div><p className="footerCopy">© 2026 PSK Brothers Builders & Constructions.</p><a className="portalLink" href="/login">Login →</a></footer></div>};
+function IntroScreen({onEnter}){
+  const [leaving,setLeaving]=useState(false);
+  function handleEnter(){
+    if(leaving)return;
+    setLeaving(true);
+    setTimeout(onEnter,600);
+  }
+  return (
+    <div className={'introScreen'+(leaving?' leaving':'')} onClick={handleEnter}>
+      <div className="introGrid"/>
+      <div className="introContent">
+        <p className="eyebrow introEyebrow">WELCOME TO</p>
+        <h1 className="introTitle">PSK Brothers<br/><em>Builders &amp; Constructions</em></h1>
+        <p className="introTag">Building trust. Creating landmarks.</p>
+        <div className="introHint"><span className="introChevron">⌄</span>Tap anywhere to enter</div>
+      </div>
+    </div>
+  );
+}
+
+function SiteWithIntro(){
+  const [entered,setEntered]=useState(()=>{
+    try{return sessionStorage.getItem('psk_entered')==='1'}catch(e){return false}
+  });
+  function enter(){
+    try{sessionStorage.setItem('psk_entered','1')}catch(e){}
+    setEntered(true);
+  }
+  return entered?<App/>:<IntroScreen onEnter={enter}/>;
+}
+createRoot(document.getElementById('root')).render(window.location.pathname.startsWith('/admin')?<AdminApp/>:window.location.pathname.startsWith('/portal')?<CustomerApp/>:window.location.pathname.startsWith('/login')?<LoginPage/>:<SiteWithIntro/>);
