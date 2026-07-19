@@ -149,15 +149,19 @@ public class AdminController {
     }
 
     // ---------- Rate / Settings ----------
-    record RateUpdate(@NotNull @Positive Double ratePerSqft) {}
+    record RateUpdate(
+            @NotNull @Positive Double ratePerSqft,
+            @NotNull @Positive Double otherBuilderRatePerSqft
+    ) {}
 
     @PutMapping("/settings")
     ResponseEntity<?> updateRate(@Valid @RequestBody RateUpdate body, org.springframework.security.core.Authentication auth) {
         if (auth.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
             return ResponseEntity.status(403).body(Map.of("message", "Only administrators can update settings"));
         }
-        Settings s = settings.findById(1L).orElse(new Settings(1L, 1650.0));
+        Settings s = settings.findById(1L).orElse(new Settings(1L, 1650.0, 1980.0));
         s.setRatePerSqft(body.ratePerSqft());
+        s.setOtherBuilderRatePerSqft(body.otherBuilderRatePerSqft());
         return ResponseEntity.ok(settings.save(s));
     }
 

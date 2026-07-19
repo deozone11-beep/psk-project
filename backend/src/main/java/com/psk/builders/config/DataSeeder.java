@@ -78,7 +78,7 @@ public class DataSeeder {
                 ));
             }
             if (settings.count() == 0) {
-                settings.save(new Settings(1L, 1650.0));
+                settings.save(new Settings(1L, 1650.0, 1980.0));
             }
 
             // Staff logins: owner + admin/employee — both get full ADMIN access.
