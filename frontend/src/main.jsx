@@ -677,6 +677,7 @@ function IntroScreen({onEnter}){
       <div className="introSweepLine"/>
       <div className="introGrid"/>
       <div className="introContent">
+        <span className="introAccentBar"/>
         <p className="eyebrow introEyebrow">WELCOME TO</p>
         <h1 className="introTitle">PSK Brothers<em>Builders &amp; Constructions</em></h1>
         <p className="introTag">Building trust. Creating landmarks.<br/><span className="introSubTag">We build what you imagine.</span></p>
