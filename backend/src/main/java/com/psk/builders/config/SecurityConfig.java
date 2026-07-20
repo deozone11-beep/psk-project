@@ -51,12 +51,22 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+        List<String> parsedOrigins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .map(s -> s.endsWith("/") ? s.substring(0, s.length() - 1) : s)
                 .filter(s -> !s.isEmpty())
                 .toList();
+
+        // Programmatically guarantee production domains are always allowed, even if env var overrides the fallback
+        java.util.Set<String> combined = new java.util.HashSet<>(parsedOrigins);
+        combined.add("https://psk-brothers.vercel.app");
+        combined.add("https://www.psk-brothers.vercel.app");
+        combined.add("http://localhost:5173");
+        combined.add("http://127.0.0.1:5173");
+
+        List<String> origins = new java.util.ArrayList<>(combined);
         System.out.println("Configured CORS Allowed Origins: " + origins);
+
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
