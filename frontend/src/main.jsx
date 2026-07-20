@@ -727,12 +727,10 @@ return <div className="site">
   <a className="portalLink" href="/login">Login →</a>
 </footer>
 </div>};
-function IntroScreen({onEnter}){
-  const [leaving,setLeaving]=useState(false);
+function IntroScreen({onEnter, leaving}){
   function handleEnter(){
     if(leaving)return;
-    setLeaving(true);
-    setTimeout(onEnter,3100);
+    onEnter();
   }
   return (
     <div className={'introScreen'+(leaving?' leaving':'')} onClick={handleEnter}>
@@ -745,7 +743,32 @@ function IntroScreen({onEnter}){
         <p className="introTag">Building trust. Creating landmarks.<br/><span className="introSubTag">We build what you imagine.</span></p>
         <div className="introHint"><span className="introChevron">⌄</span>Tap anywhere to enter</div>
       </div>
-      {leaving&& (
+    </div>
+  );
+}
+
+function SiteWithIntro(){
+  const [entered,setEntered]=useState(()=>{
+    try{return sessionStorage.getItem('psk_entered')==='1'}catch(e){return false}
+  });
+  const [showIntro,setShowIntro]=useState(!entered);
+  const [transitioning,setTransitioning]=useState(false);
+
+  function enter(){
+    setTransitioning(true);
+    setTimeout(()=>{
+      try{sessionStorage.setItem('psk_entered','1')}catch(e){}
+      setEntered(true);
+    },3100);
+    setTimeout(()=>{
+      setShowIntro(false);
+      setTransitioning(false);
+    },3800);
+  }
+  return (
+    <div style={{position:'relative',width:'100%',height:'100%'}}>
+      {showIntro && <IntroScreen onEnter={enter} leaving={transitioning} />}
+      {transitioning && (
         <div className="pulseWipeContainer">
           <div className="pulseWipeCenter">
             <svg className="pulseBuildingSvg" viewBox="0 0 300 200">
@@ -769,25 +792,6 @@ function IntroScreen({onEnter}){
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function SiteWithIntro(){
-  const [entered,setEntered]=useState(()=>{
-    try{return sessionStorage.getItem('psk_entered')==='1'}catch(e){return false}
-  });
-  const [showIntro,setShowIntro]=useState(!entered);
-  function enter(){
-    try{sessionStorage.setItem('psk_entered','1')}catch(e){}
-    setEntered(true);
-    setTimeout(()=>{
-      setShowIntro(false);
-    },700);
-  }
-  return (
-    <div style={{position:'relative',width:'100%',height:'100%'}}>
-      {showIntro && <IntroScreen onEnter={enter}/>}
       <div style={{visibility:entered?'visible':'hidden'}}><App/></div>
     </div>
   );

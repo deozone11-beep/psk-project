@@ -28,7 +28,7 @@
 @keyframes introFadeUp{0%{opacity:0;transform:translateY(28px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes introBlink{0%,100%{opacity:1}50%{opacity:.4}}
 .introScreen{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:flex-start;cursor:pointer;background-color:#0a0a0b;background-image:url('/splash-bg.jpg');background-position:center center;background-size:cover;background-repeat:no-repeat;transition:opacity .5s ease;opacity:1}
-.introScreen.leaving{opacity:0;pointer-events:none;transition:opacity .2s ease .75s}
+.introScreen.leaving{opacity:0;pointer-events:none;transition:opacity .5s ease}
 .introGrid{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,8,0.15) 0%,rgba(6,6,8,0.1) 30%,rgba(6,6,8,0.55) 65%,rgba(6,6,8,0.88) 100%);pointer-events:none}
 @keyframes introAccentSweep{0%{transform:scaleX(0);opacity:0}100%{transform:scaleX(1);opacity:1}}
 @keyframes pulseFadeBg {
