@@ -44,8 +44,8 @@
 @media(max-width:600px){
 .introScreen{background-size:cover}
 .introContent{padding:0 5% 0;max-width:100%;margin-bottom:10vh}
-.introTitle{font-size:clamp(2.2rem,8vw,3.2rem);margin:12px 0 14px}
-.introTitle br{display:none}
+.introTitle{font-size:clamp(1.9rem,7vw,3.2rem);margin:12px 0 14px;text-align:center}
+.introTitle br{display:block}
 .introTag{margin-bottom:32px;font-size:.95rem}
 .introEyebrow{font-size:.7rem;letter-spacing:2.5px}
 .introHint{padding:12px 22px;font-size:.7rem}
