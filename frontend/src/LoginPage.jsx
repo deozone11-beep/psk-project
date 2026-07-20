@@ -33,6 +33,11 @@ export default function LoginPage() {
 
   const tab = ROLE_TABS.find((t) => t.id === activeTab);
 
+  React.useEffect(() => {
+    // Fire-and-forget fetch to wake up Render server as soon as login page is loaded
+    fetch(`${API}/settings`).catch(() => {});
+  }, []);
+
   async function submit(e) {
     e.preventDefault();
     setBusy(true);
