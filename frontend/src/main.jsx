@@ -674,10 +674,11 @@ function IntroScreen({onEnter}){
   }
   return (
     <div className={'introScreen'+(leaving?' leaving':'')} onClick={handleEnter}>
+      <div className="introSweepLine"/>
       <div className="introGrid"/>
       <div className="introContent">
         <p className="eyebrow introEyebrow">WELCOME TO</p>
-        <h1 className="introTitle">PSK Brothers<br/><em>Builders &amp; Constructions</em></h1>
+        <h1 className="introTitle">PSK Brothers<em>Builders &amp; Constructions</em></h1>
         <p className="introTag">Building trust. Creating landmarks.<br/><span className="introSubTag">We build what you imagine.</span></p>
         <div className="introHint"><span className="introChevron">⌄</span>Tap anywhere to enter</div>
       </div>
