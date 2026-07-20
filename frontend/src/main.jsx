@@ -401,7 +401,7 @@ function GlobalLoader({message}){
       <svg viewBox="0 0 1000 200">
         <path
           className="pulseLoadingPath"
-          d="M 0,100 L 350,100 L 360,70 L 370,130 L 380,100 L 420,100 L 430,45 L 440,155 L 450,100 L 470,100 L 485,100 L 485,75 L 505,75 L 505,55 L 515,55 L 515,75 L 535,75 L 535,45 L 560,15 L 585,45 L 585,100 L 1000,100"
+          d="M 0,130 L 320,130 L 335,90 L 350,170 L 365,130 L 390,130 L 405,40 L 420,190 L 435,130 L 460,130 L 470,130 L 470,90 L 495,90 L 495,60 L 515,60 L 515,30 L 535,30 L 560,5 L 585,30 L 585,60 L 605,60 L 605,130 L 1000,130"
           fill="none"
           stroke="url(#pulseGradLoader)"
           strokeWidth="3.5"
@@ -774,7 +774,7 @@ function SiteWithIntro(){
             <svg className="pulseBuildingSvg" viewBox="0 0 1000 200">
               <path
                 className="pulseBuildingPath"
-                d="M 0,100 L 350,100 L 360,70 L 370,130 L 380,100 L 420,100 L 430,45 L 440,155 L 450,100 L 470,100 L 485,100 L 485,75 L 505,75 L 505,55 L 515,55 L 515,75 L 535,75 L 535,45 L 560,15 L 585,45 L 585,100 L 1000,100"
+                d="M 0,130 L 320,130 L 335,90 L 350,170 L 365,130 L 390,130 L 405,40 L 420,190 L 435,130 L 460,130 L 470,130 L 470,90 L 495,90 L 495,60 L 515,60 L 515,30 L 535,30 L 560,5 L 585,30 L 585,60 L 605,60 L 605,130 L 1000,130"
                 fill="none"
                 stroke="url(#pulseGrad)"
                 strokeWidth="3.5"
