@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Lock, User, Hammer, ShieldCheck, ArrowRight } from 'lucide-react';
 import './login.css';
 
-const API = '/api';
+const API = import.meta.env.VITE_API_URL || '/api';
 
 // Each tab is just a UI convenience — the actual role (and what dashboard opens)
 // always comes from the account itself, decided by the server, never guessed client-side.

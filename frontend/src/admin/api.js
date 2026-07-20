@@ -1,4 +1,4 @@
-export const API = '/api';
+export const API = import.meta.env.VITE_API_URL || '/api';
 
 export function authHeader(auth) {
   return { Authorization: 'Bearer ' + auth.token };

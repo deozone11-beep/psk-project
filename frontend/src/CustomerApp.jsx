@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { LogOut, MapPin, Calendar, FileText, Upload, Trash2, Download, LayoutDashboard, Camera, Menu, X } from 'lucide-react';
 import './admin/admin.css';
 
-const API = '/api';
+const API = import.meta.env.VITE_API_URL || '/api';
 
 const TABS = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
