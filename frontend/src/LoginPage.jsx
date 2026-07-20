@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, User, Hammer, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Lock, User, Hammer, ShieldCheck, ArrowRight, Eye, EyeOff, Mail } from 'lucide-react';
 import './login.css';
 
 const API = import.meta.env.VITE_API_URL || '/api';
@@ -19,6 +19,11 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+
+  // Password visibility states
+  const [showPassword, setShowPassword] = useState(false);
+  const [showForgotNew, setShowForgotNew] = useState(false);
+  const [showForgotConfirm, setShowForgotConfirm] = useState(false);
 
   // Forgot password form states
   const [isForgot, setIsForgot] = useState(false);
@@ -100,7 +105,7 @@ export default function LoginPage() {
             <div className="loginTabs">
               {ROLE_TABS.map((t) => (
                 <button key={t.id} type="button" className={'loginTab' + (activeTab === t.id ? ' active' : '')} onClick={() => { setActiveTab(t.id); setError(''); }}>
-                  <t.icon size={16} /> {t.label}
+                  <t.icon size={15} /> {t.label}
                 </button>
               ))}
             </div>
@@ -108,8 +113,17 @@ export default function LoginPage() {
             <h2>{tab.label} Login</h2>
             <p>{tab.blurb}</p>
             <form onSubmit={submit}>
-              <input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
-              <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <div className="loginInputGroup">
+                <User size={18} className="loginInputIcon" />
+                <input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
+              </div>
+              <div className="loginInputGroup">
+                <Lock size={18} className="loginInputIcon" />
+                <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <button type="button" className="passwordToggleBtn" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               {error && <div className="adminError">{error}</div>}
               {msg && <div style={{ color: 'green', fontSize: '0.82rem', margin: '8px 0' }}>{msg}</div>}
               <button className="primary" disabled={busy}>{busy ? 'Checking...' : 'Login'} <ArrowRight size={16} /></button>
@@ -122,10 +136,28 @@ export default function LoginPage() {
             <h2>Reset Password</h2>
             <p>Enter your username (Mobile Number) and registered Email address to set a new password.</p>
             <form onSubmit={submitReset}>
-              <input placeholder="Username (Mobile Number)" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
-              <input type="email" placeholder="Registered Email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required />
-              <input type="password" placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-              <input type="password" placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+              <div className="loginInputGroup">
+                <User size={18} className="loginInputIcon" />
+                <input placeholder="Username (Mobile Number)" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
+              </div>
+              <div className="loginInputGroup">
+                <Mail size={18} className="loginInputIcon" />
+                <input type="email" placeholder="Registered Email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required />
+              </div>
+              <div className="loginInputGroup">
+                <Lock size={18} className="loginInputIcon" />
+                <input type={showForgotNew ? 'text' : 'password'} placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                <button type="button" className="passwordToggleBtn" onClick={() => setShowForgotNew(!showForgotNew)}>
+                  {showForgotNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <div className="loginInputGroup">
+                <Lock size={18} className="loginInputIcon" />
+                <input type={showForgotConfirm ? 'text' : 'password'} placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                <button type="button" className="passwordToggleBtn" onClick={() => setShowForgotConfirm(!showForgotConfirm)}>
+                  {showForgotConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               {error && <div className="adminError">{error}</div>}
               {msg && <div style={{ color: 'green', fontSize: '0.82rem', margin: '8px 0' }}>{msg}</div>}
               <button className="primary" disabled={busy}>{busy ? 'Resetting...' : 'Reset Password'} <ArrowRight size={16} /></button>
