@@ -670,7 +670,7 @@ function IntroScreen({onEnter}){
   function handleEnter(){
     if(leaving)return;
     setLeaving(true);
-    setTimeout(onEnter,900);
+    setTimeout(onEnter,1100);
   }
   return (
     <div className={'introScreen'+(leaving?' leaving':'')} onClick={handleEnter}>

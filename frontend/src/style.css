@@ -31,10 +31,75 @@
 .introScreen.leaving{opacity:0;pointer-events:none;transition:opacity .2s ease .75s}
 .introGrid{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,8,0.15) 0%,rgba(6,6,8,0.1) 30%,rgba(6,6,8,0.55) 65%,rgba(6,6,8,0.88) 100%);pointer-events:none}
 @keyframes introAccentSweep{0%{transform:scaleX(0);opacity:0}100%{transform:scaleX(1);opacity:1}}
-@keyframes logoExpandAnim{0%{transform:scale(0.25);opacity:0}20%{opacity:1}85%{opacity:1}100%{transform:scale(30);opacity:0}}
-@keyframes logoExpandBg{0%{background:rgba(10,10,11,0)}15%{background:rgba(10,10,11,0.92)}80%{background:rgba(10,10,11,0.92)}100%{background:rgba(10,10,11,0)}}
-.introLogoExpand{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;animation:logoExpandBg .9s ease both;pointer-events:none}
-.introLogoExpand img{height:64px;animation:logoExpandAnim .9s cubic-bezier(.2,.8,.4,1) both;filter:drop-shadow(0 0 40px rgba(240,200,102,.6))} 
+@keyframes jcbWipeAnimation {
+  0% { transform: translateX(-100%); }
+  45%, 55% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes jcbWheelRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes jcbArmMove {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(-2deg); }
+}
+.jcbWipeContainer {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  transform: translateX(-100%);
+}
+.jcbWipeContainer.animate {
+  animation: jcbWipeAnimation 1.8s cubic-bezier(.76, 0, .24, 1) both;
+}
+.jcbWipeBanner {
+  position: absolute;
+  inset: 0;
+  background: #0a0a0c;
+  box-shadow: 0 0 80px rgba(0,0,0,0.9);
+}
+.jcbWipeEdge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  background: linear-gradient(180deg, #e2262b, #f0c866, #e2262b);
+  box-shadow: 0 0 24px rgba(240, 200, 102, 0.7);
+}
+.jcbWipeVehicle {
+  position: absolute;
+  right: -130px;
+  bottom: 12vh;
+  width: 130px;
+  height: 86px;
+  z-index: 410;
+}
+.jcbSvg {
+  width: 100%;
+  height: 100%;
+}
+.jcbWheel {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: jcbWheelRotate 0.3s linear infinite;
+}
+.jcbFrontArm {
+  transform-box: fill-box;
+  transform-origin: 20px 50px;
+  animation: jcbArmMove 1.1s ease-in-out infinite;
+}
+.jcbFrontBucket {
+  transform-box: fill-box;
+  transform-origin: 108px 60px;
+  animation: jcbArmMove 1.1s ease-in-out infinite;
+}
 .introSweepLine{display:none}
 .introContent{position:relative;text-align:left;padding:0 6% 9vh;max-width:760px;box-shadow:none}
 .introEyebrow{justify-content:flex-start;color:#ff8a7a;font-size:.75rem;letter-spacing:3.5px;animation:introFadeUp .6s ease .95s both}
