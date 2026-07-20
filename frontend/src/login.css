@@ -222,3 +222,13 @@
   font-weight: 600;
   border: 1px solid rgba(200, 30, 34, 0.1);
 }
+.loginInputGroup input:-webkit-autofill,
+.loginInputGroup input:-webkit-autofill:hover, 
+.loginInputGroup input:-webkit-autofill:focus, 
+.loginInputGroup input:-webkit-autofill:active {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: #17201d !important;
+  transition: background-color 5000s ease-in-out 0s;
+  box-shadow: inset 0 0 20px 20px rgba(255, 255, 255, 0.85) !important;
+}
+
