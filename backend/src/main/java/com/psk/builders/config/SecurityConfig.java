@@ -45,7 +45,7 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}")
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173,https://psk-brothers.vercel.app,https://www.psk-brothers.vercel.app}")
     String allowedOrigins;
 
     @Bean
