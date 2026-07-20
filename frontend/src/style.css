@@ -49,7 +49,7 @@
   pointer-events: none;
 }
 .pulseWipeCenter {
-  width: min(90vw, 360px);
+  width: 100vw;
   height: 240px;
   display: flex;
   align-items: center;
@@ -60,25 +60,25 @@
   height: 100%;
 }
 @keyframes drawStroke {
-  0% { stroke-dashoffset: 1000; filter: drop-shadow(0 0 2px rgba(226,38,43,0.5)); }
+  0% { stroke-dashoffset: 2000; filter: drop-shadow(0 0 2px rgba(226,38,43,0.5)); }
   75% { stroke-dashoffset: 0; filter: drop-shadow(0 0 10px rgba(240,200,102,0.85)); opacity: 1; transform: scale(1); }
-  88% { stroke-dashoffset: 0; transform: scale(1.08); filter: drop-shadow(0 0 30px rgba(255,255,255,1)); opacity: 1; }
-  100% { stroke-dashoffset: 0; transform: scale(1.22); filter: drop-shadow(0 0 50px rgba(255,255,255,0)); opacity: 0; }
+  88% { stroke-dashoffset: 0; transform: scale(1.04); filter: drop-shadow(0 0 30px rgba(255,255,255,1)); opacity: 1; }
+  100% { stroke-dashoffset: 0; transform: scale(1.1); filter: drop-shadow(0 0 50px rgba(255,255,255,0)); opacity: 0; }
 }
 .pulseBuildingPath {
-  stroke-dasharray: 1000;
-  stroke-dashoffset: 1000;
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
   animation: drawStroke 3.8s cubic-bezier(.25, 1, .5, 1) both;
 }
 @keyframes pulseLoadingLoop {
-  0% { stroke-dashoffset: 1000; opacity: 0; }
+  0% { stroke-dashoffset: 2000; opacity: 0; }
   15% { opacity: 1; }
   75% { stroke-dashoffset: 0; opacity: 1; }
   100% { stroke-dashoffset: 0; opacity: 0; }
 }
 .pulseLoadingPath {
-  stroke-dasharray: 1000;
-  stroke-dashoffset: 1000;
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
   animation: pulseLoadingLoop 2.4s ease-in-out infinite;
 }
 .globalLoader {
@@ -99,7 +99,7 @@
   text-transform: uppercase;
 }
 .globalLoader svg {
-  width: min(80vw, 280px);
+  width: 100vw;
   height: 180px;
   filter: drop-shadow(0 0 12px rgba(240,200,102,0.5));
 }

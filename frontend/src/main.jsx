@@ -398,10 +398,10 @@ const BOT_RESPONSES = {
 function GlobalLoader({message}){
   return (
     <div className="globalLoader">
-      <svg viewBox="0 0 300 200">
+      <svg viewBox="0 0 1000 200">
         <path
           className="pulseLoadingPath"
-          d="M 10,100 L 40,100 L 45,75 L 50,125 L 55,100 L 75,100 L 80,50 L 85,150 L 90,100 L 110,100 L 125,100 L 125,70 L 145,70 L 145,50 L 155,50 L 155,70 L 175,70 L 175,40 L 200,15 L 225,40 L 225,100 L 290,100"
+          d="M 0,100 L 350,100 L 360,70 L 370,130 L 380,100 L 420,100 L 430,45 L 440,155 L 450,100 L 470,100 L 485,100 L 485,75 L 505,75 L 505,55 L 515,55 L 515,75 L 535,75 L 535,45 L 560,15 L 585,45 L 585,100 L 1000,100"
           fill="none"
           stroke="url(#pulseGradLoader)"
           strokeWidth="3.5"
@@ -771,10 +771,10 @@ function SiteWithIntro(){
       {transitioning && (
         <div className="pulseWipeContainer">
           <div className="pulseWipeCenter">
-            <svg className="pulseBuildingSvg" viewBox="0 0 300 200">
+            <svg className="pulseBuildingSvg" viewBox="0 0 1000 200">
               <path
                 className="pulseBuildingPath"
-                d="M 10,100 L 40,100 L 45,75 L 50,125 L 55,100 L 75,100 L 80,50 L 85,150 L 90,100 L 110,100 L 125,100 L 125,70 L 145,70 L 145,50 L 155,50 L 155,70 L 175,70 L 175,40 L 200,15 L 225,40 L 225,100 L 290,100"
+                d="M 0,100 L 350,100 L 360,70 L 370,130 L 380,100 L 420,100 L 430,45 L 440,155 L 450,100 L 470,100 L 485,100 L 485,75 L 505,75 L 505,55 L 515,55 L 515,75 L 535,75 L 535,45 L 560,15 L 585,45 L 585,100 L 1000,100"
                 fill="none"
                 stroke="url(#pulseGrad)"
                 strokeWidth="3.5"
