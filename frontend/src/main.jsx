@@ -670,7 +670,7 @@ function IntroScreen({onEnter}){
   function handleEnter(){
     if(leaving)return;
     setLeaving(true);
-    setTimeout(onEnter,400);
+    setTimeout(onEnter,900);
   }
   return (
     <div className={'introScreen'+(leaving?' leaving':'')} onClick={handleEnter}>
@@ -683,6 +683,7 @@ function IntroScreen({onEnter}){
         <p className="introTag">Building trust. Creating landmarks.<br/><span className="introSubTag">We build what you imagine.</span></p>
         <div className="introHint"><span className="introChevron">⌄</span>Tap anywhere to enter</div>
       </div>
+      {leaving&&<div className="introLogoExpand"><img src="/logo.png" alt="PSK Brothers"/></div>}
     </div>
   );
 }

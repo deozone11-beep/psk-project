@@ -28,9 +28,13 @@
 @keyframes introFadeUp{0%{opacity:0;transform:translateY(28px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes introBlink{0%,100%{opacity:1}50%{opacity:.4}}
 .introScreen{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:flex-start;cursor:pointer;background-color:#0a0a0b;background-image:url('/splash-bg.jpg');background-position:center center;background-size:cover;background-repeat:no-repeat;transition:opacity .5s ease;opacity:1}
-.introScreen.leaving{opacity:0;pointer-events:none}
+.introScreen.leaving{opacity:0;pointer-events:none;transition:opacity .2s ease .75s}
 .introGrid{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,8,0.15) 0%,rgba(6,6,8,0.1) 30%,rgba(6,6,8,0.55) 65%,rgba(6,6,8,0.88) 100%);pointer-events:none}
 @keyframes introAccentSweep{0%{transform:scaleX(0);opacity:0}100%{transform:scaleX(1);opacity:1}}
+@keyframes logoExpandAnim{0%{transform:scale(0.25);opacity:0}20%{opacity:1}85%{opacity:1}100%{transform:scale(30);opacity:0}}
+@keyframes logoExpandBg{0%{background:rgba(10,10,11,0)}15%{background:rgba(10,10,11,0.92)}80%{background:rgba(10,10,11,0.92)}100%{background:rgba(10,10,11,0)}}
+.introLogoExpand{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;animation:logoExpandBg .9s ease both;pointer-events:none}
+.introLogoExpand img{height:64px;animation:logoExpandAnim .9s cubic-bezier(.2,.8,.4,1) both;filter:drop-shadow(0 0 40px rgba(240,200,102,.6))} 
 .introSweepLine{display:none}
 .introContent{position:relative;text-align:left;padding:0 6% 9vh;max-width:760px;box-shadow:none}
 .introEyebrow{justify-content:flex-start;color:#ff8a7a;font-size:.75rem;letter-spacing:3.5px;animation:introFadeUp .6s ease .95s both}
