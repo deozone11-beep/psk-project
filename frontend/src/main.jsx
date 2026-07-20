@@ -670,7 +670,7 @@ function IntroScreen({onEnter}){
   function handleEnter(){
     if(leaving)return;
     setLeaving(true);
-    setTimeout(onEnter,600);
+    setTimeout(onEnter,400);
   }
   return (
     <div className={'introScreen'+(leaving?' leaving':'')} onClick={handleEnter}>
@@ -693,6 +693,11 @@ function SiteWithIntro(){
     try{sessionStorage.setItem('psk_entered','1')}catch(e){}
     setEntered(true);
   }
-  return entered?<App/>:<IntroScreen onEnter={enter}/>;
+  return (
+    <div style={{position:'relative',width:'100%',height:'100%'}}>
+      {!entered && <IntroScreen onEnter={enter}/>}
+      <div style={{visibility:entered?'visible':'hidden'}}><App/></div>
+    </div>
+  );
 }
 createRoot(document.getElementById('root')).render(window.location.pathname.startsWith('/admin')?<AdminApp/>:window.location.pathname.startsWith('/portal')?<CustomerApp/>:window.location.pathname.startsWith('/login')?<LoginPage/>:<SiteWithIntro/>);
