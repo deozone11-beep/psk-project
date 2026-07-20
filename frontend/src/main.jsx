@@ -670,7 +670,7 @@ function IntroScreen({onEnter}){
   function handleEnter(){
     if(leaving)return;
     setLeaving(true);
-    setTimeout(onEnter,1100);
+    setTimeout(onEnter,1550);
   }
   return (
     <div className={'introScreen'+(leaving?' leaving':'')} onClick={handleEnter}>
@@ -683,7 +683,30 @@ function IntroScreen({onEnter}){
         <p className="introTag">Building trust. Creating landmarks.<br/><span className="introSubTag">We build what you imagine.</span></p>
         <div className="introHint"><span className="introChevron">⌄</span>Tap anywhere to enter</div>
       </div>
-      {leaving&&<div className="introLogoExpand"><img src="/logo.png" alt="PSK Brothers"/></div>}
+      {leaving&& (
+        <div className="pulseWipeContainer">
+          <div className="pulseWipeCenter">
+            <svg className="pulseBuildingSvg" viewBox="0 0 300 200">
+              <path
+                className="pulseBuildingPath"
+                d="M 10,100 L 40,100 L 45,75 L 50,125 L 55,100 L 75,100 L 80,50 L 85,150 L 90,100 L 110,100 L 125,100 L 125,70 L 145,70 L 145,50 L 155,50 L 155,70 L 175,70 L 175,40 L 200,15 L 225,40 L 225,100 L 290,100"
+                fill="none"
+                stroke="url(#pulseGrad)"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <defs>
+                <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#e2262b" />
+                  <stop offset="50%" stopColor="#f0c866" />
+                  <stop offset="100%" stopColor="#e2262b" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -692,13 +715,17 @@ function SiteWithIntro(){
   const [entered,setEntered]=useState(()=>{
     try{return sessionStorage.getItem('psk_entered')==='1'}catch(e){return false}
   });
+  const [showIntro,setShowIntro]=useState(!entered);
   function enter(){
     try{sessionStorage.setItem('psk_entered','1')}catch(e){}
     setEntered(true);
+    setTimeout(()=>{
+      setShowIntro(false);
+    },450);
   }
   return (
     <div style={{position:'relative',width:'100%',height:'100%'}}>
-      {!entered && <IntroScreen onEnter={enter}/>}
+      {showIntro && <IntroScreen onEnter={enter}/>}
       <div style={{visibility:entered?'visible':'hidden'}}><App/></div>
     </div>
   );
