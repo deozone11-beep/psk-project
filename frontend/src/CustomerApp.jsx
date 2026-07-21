@@ -25,27 +25,207 @@ function formatDateNice(dateStr) {
   }
 }
 
-function UpdateSlideshow({ images }) {
+function UpdateSlideshow({ images, title }) {
   const [idx, setIdx] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(0);
+
   useEffect(() => {
-    if (!images || images.length <= 1) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % images.length), 6500);
+    if (!images || images.length <= 1 || lightboxOpen) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % images.length), 5000);
     return () => clearInterval(t);
-  }, [images ? images.join(',') : '']);
+  }, [images ? images.join(',') : '', lightboxOpen]);
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (!lightboxOpen) return;
+      if (e.key === 'Escape') setLightboxOpen(false);
+      if (e.key === 'ArrowRight') setLightboxIdx((i) => (i + 1) % images.length);
+      if (e.key === 'ArrowLeft') setLightboxIdx((i) => (i - 1 + images.length) % images.length);
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxOpen, images]);
+
   if (!images || images.length === 0) return null;
+
+  function openLightbox(index) {
+    setLightboxIdx(index);
+    setLightboxOpen(true);
+  }
+
   return (
-    <div className="updateSlideshow">
-      {images.map((src, i) => (
-        <img key={i} src={src} alt="" className={i === idx ? 'active' : ''} />
-      ))}
-      {images.length > 1 && (
-        <div className="slideDots">
-          {images.map((_, i) => (
-            <span key={i} className={i === idx ? 'on' : ''} />
-          ))}
+    <>
+      <div className="updateSlideshow" style={{ position: 'relative', cursor: 'pointer' }} onClick={() => openLightbox(idx)}>
+        {images.map((src, i) => (
+          <img key={i} src={src} alt="" className={i === idx ? 'active' : ''} />
+        ))}
+
+        {/* Hover / Tap Hint Overlay */}
+        <div style={{
+          position: 'absolute',
+          bottom: '12px',
+          right: '12px',
+          background: 'rgba(15, 23, 42, 0.85)',
+          color: '#ffffff',
+          padding: '6px 12px',
+          borderRadius: '20px',
+          fontSize: '0.72rem',
+          fontWeight: '700',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          backdropFilter: 'blur(4px)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 4
+        }}>
+          <span>📷 {images.length > 1 ? `${images.length} Photos (Tap to expand)` : 'Tap to expand'}</span>
+        </div>
+
+        {images.length > 1 && (
+          <div className="slideDots">
+            {images.map((_, i) => (
+              <span key={i} className={i === idx ? 'on' : ''} onClick={(e) => { e.stopPropagation(); setIdx(i); }} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* FULLSCREEN LIGHTBOX MODAL */}
+      {lightboxOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0, 0, 0, 0.92)',
+            zIndex: 99999,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '20px',
+            backdropFilter: 'blur(10px)'
+          }}
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* Lightbox Header */}
+          <div 
+            style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#ffffff', zIndex: 100000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <span style={{ fontSize: '0.85rem', fontWeight: '800', background: 'rgba(255,255,255,0.15)', padding: '4px 12px', borderRadius: '12px' }}>
+                Photo {lightboxIdx + 1} of {images.length}
+              </span>
+              {title && <span style={{ marginLeft: '12px', fontSize: '0.95rem', fontWeight: '600', color: '#e2e8f0' }}>{title}</span>}
+            </div>
+            <button 
+              onClick={() => setLightboxOpen(false)} 
+              style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#ffffff', width: '38px', height: '38px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Lightbox Main Image & Nav Arrows */}
+          <div 
+            style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', maxHeight: '78vh' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {images.length > 1 && (
+              <button
+                onClick={() => setLightboxIdx((i) => (i - 1 + images.length) % images.length)}
+                style={{
+                  position: 'absolute',
+                  left: '10px',
+                  background: 'rgba(255, 255, 255, 0.25)',
+                  border: 'none',
+                  color: '#ffffff',
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backdropFilter: 'blur(6px)',
+                  zIndex: 100001
+                }}
+              >
+                <ChevronLeft size={26} />
+              </button>
+            )}
+
+            <img 
+              src={images[lightboxIdx]} 
+              alt="" 
+              style={{
+                maxWidth: '90vw',
+                maxHeight: '75vh',
+                objectFit: 'contain',
+                borderRadius: '12px',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                transition: 'all 0.2s ease-in-out'
+              }}
+            />
+
+            {images.length > 1 && (
+              <button
+                onClick={() => setLightboxIdx((i) => (i + 1) % images.length)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  background: 'rgba(255, 255, 255, 0.25)',
+                  border: 'none',
+                  color: '#ffffff',
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backdropFilter: 'blur(6px)',
+                  zIndex: 100001
+                }}
+              >
+                <ChevronRight size={26} />
+              </button>
+            )}
+          </div>
+
+          {/* Lightbox Bottom Thumbnail Bar */}
+          {images.length > 1 && (
+            <div 
+              style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '10px 0', maxWidth: '90vw' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {images.map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt=""
+                  onClick={() => setLightboxIdx(i)}
+                  style={{
+                    width: '60px',
+                    height: '60px',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    border: i === lightboxIdx ? '3px solid #e2262b' : '2px solid transparent',
+                    opacity: i === lightboxIdx ? 1 : 0.6,
+                    transition: 'all 0.15s'
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -681,7 +861,7 @@ function Portal({ creds, onLogout }) {
 
                             {imgs.length > 0 && (
                               <div style={{ marginTop: '4px' }}>
-                                <UpdateSlideshow images={imgs} />
+                                <UpdateSlideshow images={imgs} title={u.title} />
                               </div>
                             )}
                           </div>
