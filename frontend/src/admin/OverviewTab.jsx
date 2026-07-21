@@ -18,9 +18,156 @@ import {
   UserCheck,
   HardHat,
   FileText,
-  Zap
+  Zap,
+  BarChart3,
+  PieChart
 } from 'lucide-react';
 import { api } from './api';
+
+// 1. Weekly Activity Bar Chart SVG Component (Matching Donezo SaaS Bar Chart)
+function WeeklyActivityChart({ attendanceData, updatesData }) {
+  const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const todayIdx = new Date().getDay(); // 0 is Sun
+
+  const now = new Date();
+  const currentSunday = new Date(now);
+  currentSunday.setDate(now.getDate() - now.getDay());
+
+  const weekData = daysOfWeek.map((dayLabel, i) => {
+    const d = new Date(currentSunday);
+    d.setDate(currentSunday.getDate() + i);
+    const dateStr = d.toLocaleDateString('en-CA');
+    
+    const attCount = attendanceData.filter(a => a.date === dateStr && a.present).length;
+    const updateCount = updatesData.filter(u => u.workDate === dateStr).length;
+    const totalActivity = attCount + updateCount;
+
+    return {
+      label: dayLabel,
+      dateStr,
+      attCount,
+      updateCount,
+      val: totalActivity,
+      isToday: i === todayIdx
+    };
+  });
+
+  const maxVal = Math.max(...weekData.map(d => d.val), 5);
+
+  return (
+    <div style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.04)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BarChart3 size={18} style={{ color: '#e2262b' }} /> Weekly Site Analytics
+          </h4>
+          <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: '500' }}>Daily attendance &amp; site updates logged (Sun - Sat)</span>
+        </div>
+        <span style={{ background: '#fef2f2', color: '#e2262b', fontSize: '0.72rem', fontWeight: '800', padding: '4px 10px', borderRadius: '12px' }}>
+          This Week
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '140px', padding: '10px 10px 0' }}>
+        {weekData.map((d, i) => {
+          const heightPercent = Math.max(16, Math.round((d.val / maxVal) * 100));
+          return (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flex: 1 }}>
+              <div 
+                title={`${d.dateStr}: ${d.attCount} Present Workers, ${d.updateCount} Site Updates`}
+                style={{
+                  width: '32px',
+                  height: `${heightPercent}%`,
+                  background: d.isToday 
+                    ? 'linear-gradient(180deg, #e2262b 0%, #ff5252 100%)' 
+                    : (d.val > 0 ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)' : '#f1f5f9'),
+                  borderRadius: '16px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: d.isToday ? '0 8px 18px rgba(226,38,43,0.35)' : (d.val > 0 ? '0 4px 10px rgba(16,185,129,0.2)' : 'none'),
+                  cursor: 'pointer'
+                }}
+              />
+              <span style={{ fontSize: '0.78rem', fontWeight: d.isToday ? '800' : '600', color: d.isToday ? '#e2262b' : '#64748b' }}>
+                {d.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// 2. Arc Gauge Progress Component (Matching Donezo 41% Arc Gauge)
+function ProjectProgressGauge({ activeSites }) {
+  const avgProgress = activeSites.length > 0
+    ? Math.round(activeSites.reduce((sum, s) => sum + s.progress, 0) / activeSites.length)
+    : 0;
+
+  const radius = 70;
+  const strokeWidth = 14;
+  const circumference = Math.PI * radius; // half circle arc length
+  const dashOffset = circumference * (1 - avgProgress / 100);
+
+  return (
+    <div style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.04)' }}>
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <PieChart size={18} style={{ color: '#10b981' }} /> Overall Project Progress
+        </h4>
+        <span style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: '700', background: '#ecfdf5', padding: '3px 8px', borderRadius: '10px' }}>
+          {activeSites.length} Job Sites
+        </span>
+      </div>
+
+      <div style={{ position: 'relative', width: '200px', height: '110px', display: 'flex', justifyContent: 'center', marginTop: '6px' }}>
+        <svg width="200" height="110" viewBox="0 0 200 110">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#e2262b" />
+              <stop offset="100%" stopColor="#10b981" />
+            </linearGradient>
+          </defs>
+          {/* Background Arc */}
+          <path
+            d="M 25 100 A 75 75 0 0 1 175 100"
+            fill="transparent"
+            stroke="#f1f5f9"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+          {/* Progress Arc */}
+          <path
+            d="M 25 100 A 75 75 0 0 1 175 100"
+            fill="transparent"
+            stroke="url(#gaugeGrad)"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+            style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+          />
+        </svg>
+        <div style={{ position: 'absolute', bottom: '2px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <span style={{ fontSize: '2rem', fontWeight: '900', color: '#0f172a', lineHeight: '1' }}>{avgProgress}%</span>
+          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700', marginTop: '3px' }}>Milestone Target</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '16px', fontSize: '0.76rem', color: '#64748b', fontWeight: '700', marginTop: '2px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} /> Completed
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#e2262b' }} /> In-Progress
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#cbd5e1' }} /> Planning
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function OverviewTab({ creds, setTab }) {
   const [stats, setStats] = useState({
@@ -34,6 +181,8 @@ export default function OverviewTab({ creds, setTab }) {
   const [roleBreakdown, setRoleBreakdown] = useState([]);
   const [activeSites, setActiveSites] = useState([]);
   const [recentActions, setRecentActions] = useState([]);
+  const [rawAttendance, setRawAttendance] = useState([]);
+  const [rawUpdates, setRawUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,6 +200,9 @@ export default function OverviewTab({ creds, setTab }) {
         api('/admin/customers', creds).catch(() => []),
         api('/admin/updates', creds).catch(() => [])
       ]);
+
+      setRawAttendance(attendance);
+      setRawUpdates(updates);
 
       const todayStr = new Date().toLocaleDateString('en-CA');
       const activeEmps = employees.filter(e => e.active !== false);
@@ -356,6 +508,12 @@ export default function OverviewTab({ creds, setTab }) {
           </div>
         </div>
 
+      </div>
+
+      {/* Visual Analytics Charts Grid (Donezo SaaS Style Bar & Arc Donut Gauge) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        <WeeklyActivityChart attendanceData={rawAttendance} updatesData={rawUpdates} />
+        <ProjectProgressGauge activeSites={activeSites} />
       </div>
 
       {/* Main Grid: Job Site Progress & Operations Feed */}
