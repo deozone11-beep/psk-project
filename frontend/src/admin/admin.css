@@ -55,10 +55,10 @@
   max-width: 1100px;
   width: 100%;
   margin: 0 auto;
-  padding: 32px 24px 60px;
+  padding: 18px 24px 40px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 20px;
 }
 
 /* ===== ADMIN DASHBOARD SHELL (sidebar + topbar + footer) ===== */
@@ -235,10 +235,10 @@
 }
 
 .adminTopbar {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid #e2e8f0;
-  padding: 24px 32px;
+  padding: 12px 24px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -249,16 +249,16 @@
 
 .adminTopbar h1 {
   font-family: 'Manrope', sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 800;
   margin: 0;
   color: #0f172a;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.4px;
 }
 
 .adminTopbar p {
-  margin: 3px 0 0;
-  font-size: 0.82rem;
+  margin: 1px 0 0;
+  font-size: 0.78rem;
   color: #64748b;
   font-weight: 500;
 }

@@ -324,63 +324,47 @@ export default function OverviewTab({ creds, setTab }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
-      {/* Live Operational Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: '#ffffff', padding: '16px 20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 0 4px rgba(16, 185, 129, 0.18)' }} />
-          <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0f172a', letterSpacing: '0.3px' }}>
-            LIVE OPERATIONS CONTROL CENTER
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', fontWeight: '700', color: '#64748b' }}>
-          <Calendar size={14} style={{ color: '#e2262b' }} />
-          <span>{todayFormatted}</span>
-        </div>
-      </div>
-
-      {/* Quick Actions Command Center */}
-      <section className="adminCard" style={{ padding: '22px 26px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', boxShadow: '0 12px 30px rgba(0,0,0,0.18)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+      {/* Compact Command Center Header Bar */}
+      <section className="adminCard" style={{ padding: '14px 20px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h4 style={{ margin: 0, color: '#ffffff', fontSize: '1.05rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap size={18} style={{ color: '#e2262b' }} /> Quick Operations Command Shortcuts
-            </h4>
-            <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: '0.8rem', fontWeight: '500' }}>Direct action shortcuts to manage daily site operations and customer updates.</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.25)' }} />
+              <h4 style={{ margin: 0, color: '#ffffff', fontSize: '0.95rem', fontWeight: '800', letterSpacing: '0.2px' }}>
+                LIVE OPERATIONS CONTROL CENTER
+              </h4>
+            </div>
+            <p style={{ margin: '2px 0 0 16px', color: '#94a3b8', fontSize: '0.76rem', fontWeight: '500' }}>
+              {todayFormatted} · Direct shortcuts for daily operations &amp; site updates
+            </p>
           </div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {creds.role === 'ADMIN' && (
               <button 
                 onClick={() => setTab && setTab('enquiries')}
-                style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24', padding: '9px 16px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
-                onMouseOver={(e) => { e.currentTarget.style.background = '#f59e0b'; e.currentTarget.style.color = '#ffffff'; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)'; e.currentTarget.style.color = '#fbbf24'; }}
+                style={{ background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fbbf24', padding: '7px 14px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}
               >
-                <Mail size={14} /> Review Leads ({stats.pendingLeads})
+                <Mail size={13} /> Leads ({stats.pendingLeads})
               </button>
             )}
             <button 
               onClick={() => setTab && setTab('attendance')}
-              style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: '9px 16px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
-              onMouseOver={(e) => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = '#ffffff'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)'; e.currentTarget.style.color = '#34d399'; }}
+              style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: '7px 14px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}
             >
-              <UserCheck size={14} /> Log Attendance
+              <UserCheck size={13} /> Attendance
             </button>
             <button 
               onClick={() => setTab && setTab('updates')}
-              style={{ background: 'rgba(226, 38, 43, 0.2)', border: '1px solid rgba(226, 38, 43, 0.4)', color: '#ff6b6b', padding: '9px 16px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
-              onMouseOver={(e) => { e.currentTarget.style.background = '#e2262b'; e.currentTarget.style.color = '#ffffff'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(226, 38, 43, 0.2)'; e.currentTarget.style.color = '#ff6b6b'; }}
+              style={{ background: 'rgba(226, 38, 43, 0.2)', border: '1px solid rgba(226, 38, 43, 0.4)', color: '#ff6b6b', padding: '7px 14px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}
             >
-              <Compass size={14} /> Upload Site Update
+              <Compass size={13} /> Site Update
             </button>
             <button 
               onClick={() => setTab && setTab('payments')}
-              style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', color: '#60a5fa', padding: '9px 16px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
-              onMouseOver={(e) => { e.currentTarget.style.background = '#3b82f6'; e.currentTarget.style.color = '#ffffff'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'; e.currentTarget.style.color = '#60a5fa'; }}
+              style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', color: '#60a5fa', padding: '7px 14px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}
             >
-              <Wallet size={14} /> Pay Wages
+              <Wallet size={13} /> Wages
             </button>
           </div>
         </div>
