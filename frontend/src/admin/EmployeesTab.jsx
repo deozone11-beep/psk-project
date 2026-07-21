@@ -2,14 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Pencil, Shield, User, Lock, X, Key, Check } from 'lucide-react';
 import { api } from './api';
 
+const COMMON_ROLES = [
+  'Mason',
+  'Helper / Chithal',
+  'Carpenter',
+  'Steel Fitter / Bar Bender',
+  'Plumber',
+  'Electrician',
+  'Painter',
+  'Supervisor',
+  'Site Engineer',
+  'Other'
+];
+
 export default function EmployeesTab({ creds }) {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingEmp, setEditingEmp] = useState(null); // null means adding
+  const [selectedCommonRole, setSelectedCommonRole] = useState('Mason');
   const [form, setForm] = useState({
     name: '',
-    role: '',
+    role: 'Mason',
     phone: '',
     dailyWage: '',
     username: '',
@@ -31,9 +45,10 @@ export default function EmployeesTab({ creds }) {
 
   function openAdd() {
     setEditingEmp(null);
+    setSelectedCommonRole('Mason');
     setForm({
       name: '',
-      role: '',
+      role: 'Mason',
       phone: '',
       dailyWage: '',
       username: '',
@@ -47,6 +62,8 @@ export default function EmployeesTab({ creds }) {
 
   function openEdit(emp) {
     setEditingEmp(emp);
+    const isCommon = COMMON_ROLES.includes(emp.role);
+    setSelectedCommonRole(isCommon ? emp.role : 'Other');
     setForm({
       name: emp.name || '',
       role: emp.role || '',
@@ -67,17 +84,16 @@ export default function EmployeesTab({ creds }) {
     try {
       const payload = {
         ...form,
+        role: selectedCommonRole === 'Other' ? form.role : selectedCommonRole,
         dailyWage: Number(form.dailyWage)
       };
       
-      // If no login is selected, clear username and password
       if (form.loginRole === 'NONE') {
         payload.username = null;
         payload.password = null;
       }
 
       if (editingEmp) {
-        // Edit Employee
         const res = await api(`/admin/employees/${editingEmp.id}`, creds, {
           method: 'PUT',
           body: JSON.stringify(payload)
@@ -85,7 +101,6 @@ export default function EmployeesTab({ creds }) {
         if (res.message) throw new Error(res.message);
         setMsg('Employee updated successfully ✓');
       } else {
-        // Add Employee
         const res = await api('/admin/employees', creds, {
           method: 'POST',
           body: JSON.stringify(payload)
@@ -113,6 +128,15 @@ export default function EmployeesTab({ creds }) {
     }
   }
 
+  // Filter display based on user privileges
+  const displayList = list.filter(e => {
+    if (creds.username === 'owner') {
+      // Owner CANNOT see/edit Admin profiles or accounts
+      return e.loginRole !== 'ADMIN';
+    }
+    return true;
+  });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -126,14 +150,14 @@ export default function EmployeesTab({ creds }) {
       </div>
 
       <section className="adminCard" style={{ padding: '24px' }}>
-        <h3>All Staff &amp; Workers ({list.length})</h3>
+        <h3>All Staff &amp; Workers ({displayList.length})</h3>
         {loading ? (
           <p className="adminHint">Loading list...</p>
-        ) : list.length === 0 ? (
+        ) : displayList.length === 0 ? (
           <p className="adminHint">No employees found. Add one to get started.</p>
         ) : (
           <div className="tableList">
-            {list.map((e) => (
+            {displayList.map((e) => (
               <div className="tableRow" key={e.id} style={{ borderLeftColor: e.loginRole !== 'NONE' ? '#e2262b' : '#475569' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -201,15 +225,38 @@ export default function EmployeesTab({ creds }) {
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Role/Designation</label>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Role/Designation *</label>
+                  <select
+                    value={selectedCommonRole}
+                    onChange={(e) => {
+                      setSelectedCommonRole(e.target.value);
+                      if (e.target.value !== 'Other') {
+                        setForm(prev => ({ ...prev, role: e.target.value }));
+                      } else {
+                        setForm(prev => ({ ...prev, role: '' }));
+                      }
+                    }}
+                    style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem', background: '#fff' }}
+                  >
+                    {COMMON_ROLES.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {selectedCommonRole === 'Other' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', animation: 'fadeIn 0.2s ease' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Enter Custom Role/Designation *</label>
                   <input
                     value={form.role}
                     onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    placeholder="E.g. Mason, Engineer"
+                    required
+                    placeholder="E.g. Centering Worker, Welder"
                     style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem' }}
                   />
                 </div>
-              </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -257,7 +304,9 @@ export default function EmployeesTab({ creds }) {
                   >
                     <option value="NONE">No Login Access (General Labor)</option>
                     <option value="ENGINEER">Site Engineer (Can track attendance, upload progress photos)</option>
-                    <option value="ADMIN">Admin / Staff (Full controls — rates, staff, payments)</option>
+                    {creds.username === 'admin' && (
+                      <option value="ADMIN">Admin / Staff (Full controls — rates, staff, payments)</option>
+                    )}
                   </select>
                 </div>
 

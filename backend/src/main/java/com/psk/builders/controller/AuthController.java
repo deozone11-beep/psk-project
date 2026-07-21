@@ -15,10 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-// Single login endpoint for all three roles (owner, admin/staff, customer) — the account's
-// own role decides what the token can do, not which tab the person logged in from.
-// Credentials are checked with the existing bcrypt-backed DaoAuthenticationProvider; on
-// success we issue a JWT instead of expecting Basic auth on every subsequent request.
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -29,7 +25,8 @@ public class AuthController {
     final PasswordEncoder encoder;
     final EnquiryRepository enquiries;
 
-    public AuthController(AuthenticationManager authManager, JwtUtil jwtUtil, AppUserRepository users, PasswordEncoder encoder, EnquiryRepository enquiries) {
+    public AuthController(AuthenticationManager authManager, JwtUtil jwtUtil, AppUserRepository users,
+            PasswordEncoder encoder, EnquiryRepository enquiries) {
         this.authManager = authManager;
         this.jwtUtil = jwtUtil;
         this.users = users;
@@ -37,8 +34,11 @@ public class AuthController {
         this.enquiries = enquiries;
     }
 
-    record LoginRequest(String username, String password) {}
-    record LoginResponse(String token, String role, String username, String displayName) {}
+    record LoginRequest(String username, String password) {
+    }
+
+    record LoginResponse(String token, String role, String username, String displayName) {
+    }
 
     @PostMapping("/login")
     ResponseEntity<?> login(@RequestBody LoginRequest req) {
@@ -50,7 +50,8 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid username or password"));
         }
         AppUser u = users.findByUsername(req.username()).orElse(null);
-        if (u == null) return ResponseEntity.status(401).body(Map.of("message", "Invalid username or password"));
+        if (u == null)
+            return ResponseEntity.status(401).body(Map.of("message", "Invalid username or password"));
         String token = jwtUtil.generateToken(u.getUsername(), u.getRole().name(), u.getDisplayName());
         return ResponseEntity.ok(new LoginResponse(token, u.getRole().name(), u.getUsername(), u.getDisplayName()));
     }
@@ -60,7 +61,8 @@ public class AuthController {
         String username = body.get("username");
         String email = body.get("email");
         String newPassword = body.get("newPassword");
-        if (username == null || email == null || newPassword == null || username.isBlank() || email.isBlank() || newPassword.isBlank())
+        if (username == null || email == null || newPassword == null || username.isBlank() || email.isBlank()
+                || newPassword.isBlank())
             return ResponseEntity.badRequest().body(Map.of("message", "Username, email and new password are required"));
         AppUser u = users.findByUsername(username).orElse(null);
         if (u == null || u.getEmail() == null || !u.getEmail().equalsIgnoreCase(email.trim())) {
@@ -80,7 +82,8 @@ public class AuthController {
 
         List<Enquiry> list = enquiries.findByPhoneOrEmail(identifier.trim(), identifier.trim());
         if (list.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "No active enquiry found with this phone number or email"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "No active enquiry found with this phone number or email"));
         }
 
         Enquiry match = list.stream()
@@ -89,16 +92,16 @@ public class AuthController {
                 .orElse(list.get(0));
 
         if (match.getConvertedCustomerId() != null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "This enquiry has been converted to a main customer account. Please log in using your main account."));
+            return ResponseEntity.badRequest().body(Map.of("message",
+                    "This enquiry has been converted to a main customer account. Please log in using your main account."));
         }
 
         String token = jwtUtil.generateToken(match.getTrackId(), "TEMP_ENQUIRY", match.getName());
         return ResponseEntity.ok(Map.of(
-            "token", token,
-            "role", "TEMP_ENQUIRY",
-            "username", match.getTrackId(),
-            "displayName", match.getName(),
-            "enquiryId", match.getId()
-        ));
+                "token", token,
+                "role", "TEMP_ENQUIRY",
+                "username", match.getTrackId(),
+                "displayName", match.getName(),
+                "enquiryId", match.getId()));
     }
 }
