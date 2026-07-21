@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LogOut, MapPin, Calendar, FileText, Upload, Trash2, Download, LayoutDashboard, Camera, Menu, X, Mail, Clock, Compass, ExternalLink } from 'lucide-react';
+import { LogOut, MapPin, Calendar, FileText, Upload, Trash2, Download, LayoutDashboard, Camera, Menu, X, Mail, Clock, Compass, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import './admin/admin.css';
 
 const API = import.meta.env.VITE_API_URL || '/api';
@@ -273,9 +273,30 @@ function Portal({ creds, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [me, setMe] = useState(null);
   const [updates, setUpdates] = useState([]);
-  const [selectedDateFilter, setSelectedDateFilter] = useState('ALL');
+  const todayObj = new Date();
+  const [calYear, setCalYear] = useState(todayObj.getFullYear());
+  const [calMonth, setCalMonth] = useState(todayObj.getMonth());
+  const [selectedCalDateStr, setSelectedCalDateStr] = useState(todayObj.toISOString().split('T')[0]);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  function prevMonth() {
+    if (calMonth === 0) {
+      setCalMonth(11);
+      setCalYear(y => y - 1);
+    } else {
+      setCalMonth(m => m - 1);
+    }
+  }
+
+  function nextMonth() {
+    if (calMonth === 11) {
+      setCalMonth(0);
+      setCalYear(y => y + 1);
+    } else {
+      setCalMonth(m => m + 1);
+    }
+  }
 
   // Pre-onboarding history states
   const [pastEnquiry, setPastEnquiry] = useState(null);
@@ -302,7 +323,17 @@ function Portal({ creds, onLogout }) {
           return;
         }
         setMe(await meRes.json());
-        setUpdates(await updatesRes.json());
+        const upList = await updatesRes.json();
+        setUpdates(upList);
+        if (upList && upList.length > 0) {
+          const latestDateStr = upList[0].workDate;
+          setSelectedCalDateStr(latestDateStr);
+          const d = new Date(latestDateStr);
+          if (!isNaN(d.getTime())) {
+            setCalYear(d.getFullYear());
+            setCalMonth(d.getMonth());
+          }
+        }
         setFiles(await filesRes.json());
         
         if (pastRes && pastRes.ok) {
@@ -496,97 +527,136 @@ function Portal({ creds, onLogout }) {
           )}
 
           {tab === 'tracking' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', alignItems: 'start' }}>
+              
+              {/* Left Column: Interactive Month Calendar */}
               <section className="adminCard" style={{ padding: '24px', borderRadius: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <div>
-                    <h3 style={{ margin: 0 }}>Construction Progress Photos</h3>
-                    <p className="adminHint" style={{ margin: '4px 0 0' }}>Visual construction site tracking logs updated daily by engineers.</p>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a' }}>
+                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][calMonth]} {calYear}
+                    </h3>
+                    <p className="adminHint" style={{ margin: '2px 0 0', fontSize: '0.78rem' }}>Tap any date with a green dot to view progress photos</p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '6px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                    <Calendar size={16} style={{ color: '#e2262b' }} />
-                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Select Date:</span>
-                    <input 
-                      type="date" 
-                      value={selectedDateFilter === 'ALL' ? '' : selectedDateFilter} 
-                      onChange={(e) => setSelectedDateFilter(e.target.value || 'ALL')}
-                      style={{ border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '4px 8px', fontSize: '0.8rem' }}
-                    />
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button onClick={prevMonth} className="deleteBtn" style={{ padding: '6px 10px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }}><ChevronLeft size={16} /></button>
+                    <button onClick={nextMonth} className="deleteBtn" style={{ padding: '6px 10px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }}><ChevronRight size={16} /></button>
                   </div>
                 </div>
 
-                {/* Calendar Date Chips Bar */}
-                {updates.length > 0 && (
-                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '20px', scrollbarWidth: 'thin' }}>
-                    <button
-                      onClick={() => setSelectedDateFilter('ALL')}
-                      style={{
-                        background: selectedDateFilter === 'ALL' ? '#e2262b' : '#f1f5f9',
-                        color: selectedDateFilter === 'ALL' ? '#ffffff' : '#475569',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '20px',
-                        fontSize: '0.78rem',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s'
-                      }}
-                    >
-                      🌟 All Updates ({updates.length})
-                    </button>
+                {/* Week Headers */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', textAlign: 'center', fontWeight: 'bold', fontSize: '0.78rem', color: '#64748b', marginBottom: '10px' }}>
+                  <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                </div>
 
-                    {Array.from(new Set(updates.map(u => u.workDate)))
-                      .sort((a, b) => new Date(b) - new Date(a))
-                      .map(dateStr => {
+                {/* Calendar Days Grid */}
+                {(() => {
+                  const firstDay = new Date(calYear, calMonth, 1).getDay();
+                  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+                  const blankDays = Array.from({ length: firstDay }, (_, i) => i);
+                  const daysArr = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+                      {blankDays.map(b => (
+                        <div key={`blank-${b}`} style={{ aspectRatio: '1', background: 'transparent' }} />
+                      ))}
+                      {daysArr.map(day => {
+                        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const isSelected = selectedCalDateStr === dateStr;
                         const isToday = dateStr === new Date().toISOString().split('T')[0];
-                        const isSelected = selectedDateFilter === dateStr;
+                        
+                        const dayUpdates = updates.filter(u => u.workDate === dateStr);
+                        const hasPhotos = dayUpdates.length > 0;
+
                         return (
                           <button
-                            key={dateStr}
-                            onClick={() => setSelectedDateFilter(dateStr)}
+                            key={`day-${day}`}
+                            onClick={() => setSelectedCalDateStr(dateStr)}
                             style={{
-                              background: isSelected ? '#e2262b' : (isToday ? '#fef2f2' : '#f1f5f9'),
-                              color: isSelected ? '#ffffff' : (isToday ? '#dc2626' : '#475569'),
-                              border: isToday && !isSelected ? '1px solid #fca5a5' : 'none',
-                              padding: '8px 16px',
-                              borderRadius: '20px',
-                              fontSize: '0.78rem',
-                              fontWeight: '700',
+                              aspectRatio: '1',
+                              border: isSelected ? '2px solid #e2262b' : (isToday ? '1.5px solid #fca5a5' : '1px solid #e2e8f0'),
+                              borderRadius: '10px',
+                              background: isSelected ? '#fff5f5' : (hasPhotos ? '#f0fdf4' : '#ffffff'),
                               cursor: 'pointer',
-                              whiteSpace: 'nowrap',
                               display: 'flex',
+                              flexDirection: 'column',
                               alignItems: 'center',
-                              gap: '6px',
+                              justifyContent: 'center',
+                              position: 'relative',
+                              fontSize: '0.88rem',
+                              fontWeight: isSelected || isToday ? '800' : '600',
+                              color: isSelected ? '#e2262b' : (hasPhotos ? '#15803d' : '#1e293b'),
                               transition: 'all 0.15s'
                             }}
                           >
-                            <Calendar size={13} />
-                            {isToday ? 'Today' : formatDateNice(dateStr)}
+                            <span>{day}</span>
+                            {hasPhotos && (
+                              <span style={{
+                                width: '5px',
+                                height: '5px',
+                                borderRadius: '50%',
+                                background: isSelected ? '#e2262b' : '#16a34a',
+                                position: 'absolute',
+                                bottom: '5px'
+                              }} />
+                            )}
                           </button>
                         );
-                      })
-                    }
+                      })}
+                    </div>
+                  );
+                })()}
+
+                <div style={{ display: 'flex', gap: '16px', marginTop: '20px', fontSize: '0.76rem', color: '#64748b', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a' }} /> Site Log Available
                   </div>
-                )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#e2262b' }} /> Selected Date
+                  </div>
+                </div>
+              </section>
 
-                {/* Filtered Content View */}
+              {/* Right Column: Day Logs & Progress Photos for Selected Date */}
+              <section className="adminCard" style={{ padding: '24px', borderRadius: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '14px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#e2262b' }}>DAY LOGS</span>
+                    <h3 style={{ margin: '2px 0 0', fontSize: '1.2rem', color: '#0f172a' }}>
+                      Site Progress on {formatDateNice(selectedCalDateStr)}
+                    </h3>
+                  </div>
+                  {updates.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const latestDateStr = updates[0].workDate;
+                        setSelectedCalDateStr(latestDateStr);
+                        const d = new Date(latestDateStr);
+                        if (!isNaN(d.getTime())) {
+                          setCalYear(d.getFullYear());
+                          setCalMonth(d.getMonth());
+                        }
+                      }}
+                      style={{ background: '#f8fafc', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer' }}
+                    >
+                      Latest Log
+                    </button>
+                  )}
+                </div>
+
                 {(() => {
-                  const filtered = selectedDateFilter === 'ALL'
-                    ? updates
-                    : updates.filter(u => u.workDate === selectedDateFilter);
+                  const dayLogs = updates.filter(u => u.workDate === selectedCalDateStr);
 
-                  if (filtered.length === 0) {
+                  if (dayLogs.length === 0) {
                     return (
-                      <div style={{ background: '#f8fafc', padding: '30px', borderRadius: '12px', textAlign: 'center', border: '1px dashed #cbd5e1' }}>
+                      <div style={{ background: '#f8fafc', padding: '36px 20px', borderRadius: '12px', textAlign: 'center', border: '1px dashed #cbd5e1' }}>
+                        <Camera size={32} style={{ color: '#cbd5e1', marginBottom: '10px' }} />
                         <p style={{ margin: 0, fontWeight: '700', color: '#64748b' }}>
-                          No site progress photos recorded for {selectedDateFilter === 'ALL' ? 'your project yet' : formatDateNice(selectedDateFilter)}.
+                          No site progress photos recorded on {formatDateNice(selectedCalDateStr)}.
                         </p>
                         <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
-                          Please select another date on the calendar above or tap 'All Updates'.
+                          Tap any date with a green dot on the calendar to view uploaded progress logs.
                         </p>
                       </div>
                     );
@@ -594,44 +664,23 @@ function Portal({ creds, onLogout }) {
 
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      {filtered.map((u, idx) => {
-                        const isLatest = selectedDateFilter === 'ALL' && idx === 0;
+                      {dayLogs.map(u => {
                         const imgs = u.photoUrl ? u.photoUrl.split('|||') : [];
-
                         return (
-                          <div 
-                            key={u.id}
-                            style={{
-                              background: '#ffffff',
-                              borderRadius: '16px',
-                              padding: '24px',
-                              border: isLatest ? '2px solid #e2262b' : '1px solid #e2e8f0',
-                              boxShadow: isLatest ? '0 10px 25px -5px rgba(226, 38, 43, 0.1)' : '0 1px 3px rgba(0,0,0,0.05)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '14px'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                <h4 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '800' }}>{u.title}</h4>
-                                {isLatest && (
-                                  <span style={{ background: '#e2262b', color: '#ffffff', fontSize: '0.68rem', fontWeight: '800', padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    🌟 LATEST UPDATE
-                                  </span>
-                                )}
-                              </div>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '700' }}>
-                                <Calendar size={13} style={{ color: '#e2262b' }} /> {formatDateNice(u.workDate)}
+                          <div key={u.id} style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', fontWeight: '800' }}>{u.title}</h4>
+                              <span style={{ fontSize: '0.76rem', fontWeight: '700', color: '#059669', background: '#ecfdf5', padding: '3px 10px', borderRadius: '12px' }}>
+                                Verified Log
                               </span>
                             </div>
 
                             {u.description && (
-                              <p style={{ margin: 0, color: '#334155', fontSize: '0.92rem', lineHeight: '1.5' }}>{u.description}</p>
+                              <p style={{ margin: 0, color: '#334155', fontSize: '0.9rem', lineHeight: '1.5' }}>{u.description}</p>
                             )}
 
                             {imgs.length > 0 && (
-                              <div style={{ marginTop: '6px' }}>
+                              <div style={{ marginTop: '4px' }}>
                                 <UpdateSlideshow images={imgs} />
                               </div>
                             )}
@@ -642,6 +691,7 @@ function Portal({ creds, onLogout }) {
                   );
                 })()}
               </section>
+
             </div>
           )}
 
