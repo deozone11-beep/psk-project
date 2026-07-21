@@ -45,7 +45,7 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173,https://psk-brothers.vercel.app,https://www.psk-brothers.vercel.app}")
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173,https://psk-brothers.vercel.app,https://www.psk-brothers.vercel.app,https://pskbrothers.com,https://www.pskbrothers.com}")
     String allowedOrigins;
 
     @Bean
@@ -61,6 +61,8 @@ public class SecurityConfig {
         java.util.Set<String> combined = new java.util.HashSet<>(parsedOrigins);
         combined.add("https://psk-brothers.vercel.app");
         combined.add("https://www.psk-brothers.vercel.app");
+        combined.add("https://pskbrothers.com");
+        combined.add("https://www.pskbrothers.com");
         combined.add("http://localhost:5173");
         combined.add("http://127.0.0.1:5173");
 
