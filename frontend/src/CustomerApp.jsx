@@ -14,6 +14,17 @@ function authHeader(auth) {
   return { Authorization: 'Bearer ' + auth.token };
 }
 
+function formatDateNice(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const [y, m, d] = dateStr.split('-');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${d}-${months[parseInt(m, 10) - 1]}-${y}`;
+  } catch (e) {
+    return dateStr;
+  }
+}
+
 function UpdateSlideshow({ images }) {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
@@ -262,6 +273,7 @@ function Portal({ creds, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [me, setMe] = useState(null);
   const [updates, setUpdates] = useState([]);
+  const [selectedDateFilter, setSelectedDateFilter] = useState('ALL');
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -484,23 +496,153 @@ function Portal({ creds, onLogout }) {
           )}
 
           {tab === 'tracking' && (
-            <section className="adminCard">
-              <h3>Construction Progress Photos</h3>
-              <p className="adminHint" style={{ marginBottom: '20px' }}>Visual construction site tracking logs updated daily by engineers.</p>
-              <div className="customerUpdates">
-                {updates.map((u) => (
-                  <div className="customerUpdateCard" key={u.id}>
-                    <div className="updateHeader">
-                      <b>{u.title}</b>
-                      <span>{u.workDate}</span>
-                    </div>
-                    {u.description && <p className="updateDesc">{u.description}</p>}
-                    {u.photoUrl && <UpdateSlideshow images={u.photoUrl.split('|||')} />}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <section className="adminCard" style={{ padding: '24px', borderRadius: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+                  <div>
+                    <h3 style={{ margin: 0 }}>Construction Progress Photos</h3>
+                    <p className="adminHint" style={{ margin: '4px 0 0' }}>Visual construction site tracking logs updated daily by engineers.</p>
                   </div>
-                ))}
-                {updates.length === 0 && <p className="adminHint">No site progress photos uploaded yet.</p>}
-              </div>
-            </section>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f8fafc', padding: '6px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <Calendar size={16} style={{ color: '#e2262b' }} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Select Date:</span>
+                    <input 
+                      type="date" 
+                      value={selectedDateFilter === 'ALL' ? '' : selectedDateFilter} 
+                      onChange={(e) => setSelectedDateFilter(e.target.value || 'ALL')}
+                      style={{ border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '4px 8px', fontSize: '0.8rem' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Calendar Date Chips Bar */}
+                {updates.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '20px', scrollbarWidth: 'thin' }}>
+                    <button
+                      onClick={() => setSelectedDateFilter('ALL')}
+                      style={{
+                        background: selectedDateFilter === 'ALL' ? '#e2262b' : '#f1f5f9',
+                        color: selectedDateFilter === 'ALL' ? '#ffffff' : '#475569',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        fontSize: '0.78rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      🌟 All Updates ({updates.length})
+                    </button>
+
+                    {Array.from(new Set(updates.map(u => u.workDate)))
+                      .sort((a, b) => new Date(b) - new Date(a))
+                      .map(dateStr => {
+                        const isToday = dateStr === new Date().toISOString().split('T')[0];
+                        const isSelected = selectedDateFilter === dateStr;
+                        return (
+                          <button
+                            key={dateStr}
+                            onClick={() => setSelectedDateFilter(dateStr)}
+                            style={{
+                              background: isSelected ? '#e2262b' : (isToday ? '#fef2f2' : '#f1f5f9'),
+                              color: isSelected ? '#ffffff' : (isToday ? '#dc2626' : '#475569'),
+                              border: isToday && !isSelected ? '1px solid #fca5a5' : 'none',
+                              padding: '8px 16px',
+                              borderRadius: '20px',
+                              fontSize: '0.78rem',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <Calendar size={13} />
+                            {isToday ? 'Today' : formatDateNice(dateStr)}
+                          </button>
+                        );
+                      })
+                    }
+                  </div>
+                )}
+
+                {/* Filtered Content View */}
+                {(() => {
+                  const filtered = selectedDateFilter === 'ALL'
+                    ? updates
+                    : updates.filter(u => u.workDate === selectedDateFilter);
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ background: '#f8fafc', padding: '30px', borderRadius: '12px', textAlign: 'center', border: '1px dashed #cbd5e1' }}>
+                        <p style={{ margin: 0, fontWeight: '700', color: '#64748b' }}>
+                          No site progress photos recorded for {selectedDateFilter === 'ALL' ? 'your project yet' : formatDateNice(selectedDateFilter)}.
+                        </p>
+                        <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+                          Please select another date on the calendar above or tap 'All Updates'.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {filtered.map((u, idx) => {
+                        const isLatest = selectedDateFilter === 'ALL' && idx === 0;
+                        const imgs = u.photoUrl ? u.photoUrl.split('|||') : [];
+
+                        return (
+                          <div 
+                            key={u.id}
+                            style={{
+                              background: '#ffffff',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              border: isLatest ? '2px solid #e2262b' : '1px solid #e2e8f0',
+                              boxShadow: isLatest ? '0 10px 25px -5px rgba(226, 38, 43, 0.1)' : '0 1px 3px rgba(0,0,0,0.05)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '14px'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                <h4 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '800' }}>{u.title}</h4>
+                                {isLatest && (
+                                  <span style={{ background: '#e2262b', color: '#ffffff', fontSize: '0.68rem', fontWeight: '800', padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    🌟 LATEST UPDATE
+                                  </span>
+                                )}
+                              </div>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '700' }}>
+                                <Calendar size={13} style={{ color: '#e2262b' }} /> {formatDateNice(u.workDate)}
+                              </span>
+                            </div>
+
+                            {u.description && (
+                              <p style={{ margin: 0, color: '#334155', fontSize: '0.92rem', lineHeight: '1.5' }}>{u.description}</p>
+                            )}
+
+                            {imgs.length > 0 && (
+                              <div style={{ marginTop: '6px' }}>
+                                <UpdateSlideshow images={imgs} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </section>
+            </div>
           )}
 
           {tab === 'documents' && (
