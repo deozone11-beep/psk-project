@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, FolderOpen, FileText, Download, X } from 'lucide-react';
+import { Plus, Trash2, FolderOpen, FileText, Download, X, Eye, EyeOff } from 'lucide-react';
 import { api } from './api';
 
 export default function CustomersTab({ creds }) {
@@ -9,6 +9,11 @@ export default function CustomersTab({ creds }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCust, setSelectedCust] = useState(null);
   const [custFiles, setCustFiles] = useState([]);
+  const [detailedCust, setDetailedCust] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ displayName: '', phone: '', projectName: '', estimatedSqft: '', email: '', password: '' });
+  const [showPasswordCreate, setShowPasswordCreate] = useState(false);
+  const [showPasswordEdit, setShowPasswordEdit] = useState(false);
   const [fileForm, setFileForm] = useState({ name: '', category: 'PLAN', file: null });
   const [fileMsg, setFileMsg] = useState('');
   const [fileBusy, setFileBusy] = useState(false);
@@ -39,6 +44,26 @@ export default function CustomersTab({ creds }) {
       setShowCreateModal(false);
       load();
     } catch (err) { setMsg(err.message); }
+  }
+
+  async function saveEdit(e) {
+    e.preventDefault();
+    try {
+      const updated = await api(`/admin/customers/${detailedCust.id}`, creds, {
+        method: 'PUT',
+        body: JSON.stringify({
+          ...editForm,
+          estimatedSqft: Number(editForm.estimatedSqft) || null
+        })
+      });
+      setDetailedCust(updated);
+      setIsEditing(false);
+      setMsg('Customer details updated successfully ✓');
+      load();
+      setTimeout(() => setMsg(''), 3000);
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   async function del(id) {
@@ -118,8 +143,10 @@ export default function CustomersTab({ creds }) {
         <div className="tableList">
           {list.map((c) => (
             <div className={'tableRow' + (selectedCust?.id === c.id ? ' activeCust' : '')} key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px' }}>
-              <div>
-                <b style={{ color: '#17201d' }}>{c.displayName}</b>
+              <div onClick={() => { setDetailedCust(c); setIsEditing(false); }} style={{ flex: 1, cursor: 'pointer' }}>
+                <b style={{ color: '#17201d', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  👤 {c.displayName}
+                </b>
                 <span className="tableSub">@{c.username} · {c.email} · {c.projectName || 'no project set'} · {c.estimatedSqft ? `${c.estimatedSqft} sqft` : ''}</span>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -248,7 +275,33 @@ export default function CustomersTab({ creds }) {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Password *</label>
-                  <input type="password" placeholder="Min 6 characters" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required style={{ padding: '10px' }} />
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <input 
+                      type={showPasswordCreate ? "text" : "password"} 
+                      placeholder="Min 6 characters" 
+                      value={form.password} 
+                      onChange={(e) => setForm({ ...form, password: e.target.value })} 
+                      required 
+                      style={{ width: '100%', padding: '10px', paddingRight: '40px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }} 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordCreate(!showPasswordCreate)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 0
+                      }}
+                    >
+                      {showPasswordCreate ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Email (For recovery) *</label>
@@ -279,6 +332,217 @@ export default function CustomersTab({ creds }) {
                 </button>
                 <button type="submit" className="primary" style={{ padding: '10px 24px', borderRadius: '8px' }}>
                   Create Customer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Profile View Modal */}
+      {detailedCust && !isEditing && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.45)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            padding: '30px',
+            width: '90%',
+            maxWidth: '500px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+            border: '1px solid rgba(226, 232, 240, 0.8)',
+            animation: 'heroIn 0.3s ease'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>Customer Profile</h3>
+              <button 
+                onClick={() => setDetailedCust(null)}
+                style={{ background: '#f1f5f9', border: 'none', padding: '6px', borderRadius: '50%', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '14px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fef2f2', color: '#e2262b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', fontWeight: '800' }}>
+                  {detailedCust.displayName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <b style={{ fontSize: '1.1rem', color: '#0f172a' }}>{detailedCust.displayName}</b>
+                  <span style={{ display: 'block', fontSize: '0.78rem', color: '#64748b' }}>Project Client Account</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', fontSize: '0.86rem' }}>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Mobile (User ID)</span>
+                  <p style={{ margin: '2px 0 0', fontWeight: '600', color: '#0f172a' }}>{detailedCust.username}</p>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Alternative Phone</span>
+                  <p style={{ margin: '2px 0 0', fontWeight: '600', color: '#0f172a' }}>{detailedCust.phone || '-'}</p>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Recovery Email</span>
+                  <p style={{ margin: '2px 0 0', fontWeight: '600', color: '#0f172a' }}>{detailedCust.email}</p>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Construction Job Site</span>
+                  <p style={{ margin: '2px 0 0', fontWeight: '600', color: '#e2262b' }}>🏢 {detailedCust.projectName || 'Not set'}</p>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Estimated Project Area</span>
+                  <p style={{ margin: '2px 0 0', fontWeight: '600', color: '#0f172a' }}>{detailedCust.estimatedSqft ? `${detailedCust.estimatedSqft.toLocaleString('en-IN')} Sq Ft` : '-'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'stretch' }}>
+              <button 
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditForm({
+                    displayName: detailedCust.displayName,
+                    phone: detailedCust.phone || '',
+                    projectName: detailedCust.projectName || '',
+                    estimatedSqft: detailedCust.estimatedSqft || '',
+                    email: detailedCust.email || '',
+                    password: ''
+                  });
+                }}
+                style={{ flex: 1, background: '#f8fafc', border: '1.5px solid #cbd5e1', color: '#475569', padding: '10px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}
+              >
+                Edit Profile
+              </button>
+              <button 
+                onClick={() => {
+                  setSelectedCust(detailedCust);
+                  setDetailedCust(null);
+                }}
+                style={{ flex: 1, background: '#e2262b', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <FolderOpen size={16} /> Shared Files
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Profile Edit Modal */}
+      {detailedCust && isEditing && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.45)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            padding: '30px',
+            width: '90%',
+            maxWidth: '550px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+            border: '1px solid rgba(226, 232, 240, 0.8)',
+            animation: 'heroIn 0.3s ease'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>Edit Customer Profile</h3>
+              <button 
+                onClick={() => setIsEditing(false)}
+                style={{ background: '#f1f5f9', border: 'none', padding: '6px', borderRadius: '50%', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={saveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: 'transparent', border: 'none', padding: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Customer Name *</label>
+                  <input value={editForm.displayName} onChange={(e) => setEditForm({ ...editForm, displayName: e.target.value })} required style={{ padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b' }}>Mobile (Username - Locked)</label>
+                  <input value={detailedCust.username} disabled style={{ padding: '9px', border: '1.5px solid #e2e8f0', borderRadius: '6px', background: '#f1f5f9', cursor: 'not-allowed' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Alternative Phone</label>
+                  <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} style={{ padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Recovery Email *</label>
+                  <input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} required style={{ padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Project / Job Site Name</label>
+                  <input value={editForm.projectName} onChange={(e) => setEditForm({ ...editForm, projectName: e.target.value })} style={{ padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>New Password (Optional)</label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <input 
+                      type={showPasswordEdit ? "text" : "password"} 
+                      placeholder="Leave blank to keep current" 
+                      value={editForm.password} 
+                      onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} 
+                      style={{ width: '100%', padding: '9px', paddingRight: '40px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }} 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordEdit(!showPasswordEdit)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: 0
+                      }}
+                    >
+                      {showPasswordEdit ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Estimated Area (Sq Ft)</label>
+                <input type="number" value={editForm.estimatedSqft} onChange={(e) => setEditForm({ ...editForm, estimatedSqft: e.target.value })} style={{ padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px', width: '100%' }} />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditing(false)}
+                  style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', color: '#475569', padding: '9px 18px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary" style={{ padding: '9px 20px', borderRadius: '8px' }}>
+                  Save Changes
                 </button>
               </div>
             </form>
