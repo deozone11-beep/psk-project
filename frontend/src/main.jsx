@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{Menu,X,Phone,MapPin,Mail,ArrowRight,CheckCircle2,Pencil,Hammer,MessageSquare,Send}from'lucide-react';import'./style.css';import AdminApp from'./AdminApp.jsx';import CustomerApp from'./CustomerApp.jsx';import LoginPage from'./LoginPage.jsx';
+import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{Menu,X,Phone,MapPin,Mail,ArrowRight,CheckCircle2,Pencil,Hammer,MessageSquare,Send,ChevronLeft,ChevronRight}from'lucide-react';import'./style.css';import AdminApp from'./AdminApp.jsx';import CustomerApp from'./CustomerApp.jsx';import LoginPage from'./LoginPage.jsx';
 const API=import.meta.env.VITE_API_URL||'/api',fallback={services:['Residential Construction','Commercial Buildings','Renovation & Remodeling','Planning & Approval','Interior Works','Turnkey Projects'].map((title,id)=>({id,title,description:'Quality workmanship, transparent pricing and dependable project delivery.'})),projects:[{id:1,title:'Modern Family Residence',location:'Coimbatore',status:'Completed',imageUrl:'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'},{id:2,title:'Premium Villa',location:'Erode',status:'Completed',imageUrl:'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80'},{id:3,title:'Urban Business Centre',location:'Tiruppur',status:'Ongoing',imageUrl:'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'}],testimonials:[{id:1,customerName:'Ramesh Kumar',location:'Coimbatore',message:'PSK Brothers built our home on time and exactly as planned.',rating:5},{id:2,customerName:'Priya Selvam',location:'Erode',message:'Professional team, honest pricing, excellent finish quality.',rating:5},{id:3,customerName:'Arun Prakash',location:'Tiruppur',message:'They handled our office renovation smoothly with minimal disruption.',rating:4}]};
 // Fire-and-forget fetch to warm up Render server immediately on load
 fetch(`${API}/settings`).catch(()=>{});
@@ -423,7 +423,7 @@ function GlobalLoader({message}){
   );
 }
 
-function App(){const[d,setD]=useState(fallback),[appLoading,setAppLoading]=useState(false),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[otherRate,setOtherRate]=useState(1980),[sqft,setSqft]=useState(500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null),[scrolled,setScrolled]=useState(false),[showEnquiryModal,setShowEnquiryModalRaw]=useState(false),[chatOpen,setChatOpen]=useState(false),[chatInput,setChatInput]=useState(''),[lang,setLang]=useState('en'),[chatMessages,setChatMessages]=useState([{sender:'bot',text:'Hello! I am the PSK Brothers Assistant. Ask me anything about our construction rates, projects, processes, or services!',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}]),[chatTyping,setChatTyping]=useState(false),[enquiryStep,setEnquiryStep]=useState(0),[enquiryData,setEnquiryData]=useState({name:'',phone:'',service:'',message:''});const chatBodyRef=useRef(null);const[suggestions,setSuggestions]=useState([]);const suggestTimeout=useRef(null);
+function App(){const[d,setD]=useState(fallback),[lightbox,setLightbox]=useState(null),[appLoading,setAppLoading]=useState(false),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[otherRate,setOtherRate]=useState(1980),[sqft,setSqft]=useState(500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null),[scrolled,setScrolled]=useState(false),[showEnquiryModal,setShowEnquiryModalRaw]=useState(false),[chatOpen,setChatOpen]=useState(false),[chatInput,setChatInput]=useState(''),[lang,setLang]=useState('en'),[chatMessages,setChatMessages]=useState([{sender:'bot',text:'Hello! I am the PSK Brothers Assistant. Ask me anything about our construction rates, projects, processes, or services!',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}]),[chatTyping,setChatTyping]=useState(false),[enquiryStep,setEnquiryStep]=useState(0),[enquiryData,setEnquiryData]=useState({name:'',phone:'',service:'',message:''});const chatBodyRef=useRef(null);const[suggestions,setSuggestions]=useState([]);const suggestTimeout=useRef(null);
 const [coords, setCoords] = useState({ latitude: '', longitude: '' });
 function requestCoords() {
   if (navigator.geolocation) {
@@ -529,7 +529,10 @@ return <div className="site">
 <section id="home" className="hero"><div className="shade"/><div className="heroText"><p className="eyebrow">BUILDING TRUST. CREATING LANDMARKS.</p><h1>We build spaces<br/>that inspire <em>life.</em></h1><p>Quality construction, honest communication and dependable delivery for homes and businesses across Tamil Nadu.</p><a className="primary" href="#projects">VIEW OUR WORK <ArrowRight size={18}/></a><a className="call" href="tel:+919003177934"><Phone size={18}/> +91 90031 77934 <br/>+91 99414 26479</a></div><div className="stats"><span><b>24+</b>YEARS EXPERIENCE</span><span><b>75+</b>PROJECTS COMPLETED</span><span><b>100%</b>QUALITY COMMITMENT</span></div></section>
 <section id="about" className="about wrap"><div><p className="eyebrow">WHO WE ARE</p><h2>Strong foundations.<br/>Lasting relationships.</h2><p>PSK Brothers Builders & Constructions is committed to quality workmanship, transparent pricing and timely delivery.</p>{['Skilled and experienced team','Quality materials and standards','Clear estimates and regular updates'].map(x=><div className="check" key={x}><CheckCircle2/> {x}</div>)}</div><div className="aboutImg"><img src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80"/><b>Built with<br/>responsibility.</b></div></section>
 <section id="services" className="light"><div className="wrap"><p className="eyebrow">WHAT WE DO</p><h2>Complete construction solutions</h2><div className="grid services">{(d.services || []).map((x,i)=>x && <article key={x.id}><ServiceIcon title={x.title} idKey={x.id}/><i>0{i+1}</i><h3>{x.title}</h3><p>{x.description}</p><button onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{background:'none',border:'none',padding:0,color:'#17201d',fontSize:'.75rem',fontWeight:700,display:'flex',gap:'8px',alignItems:'center',cursor:'pointer'}}>ENQUIRE <ArrowRight size={15}/></button></article>)}</div></div></section>
-<section id="projects" className="wrap"><p className="eyebrow">SELECTED PROJECTS</p><h2>Work we're proud of</h2><div className="grid projects">{(d.projects || []).map(x=>x && <article key={x.id}><ProjectSlideshow images={x.imageUrls&&x.imageUrls.length?x.imageUrls:(x.imageUrl?[x.imageUrl]:[])}/><span className={'statusPill'+(x.status==='Completed'?' done':'')}>{x.status==='Completed'?<CheckCircle2 size={13}/>:<Hammer size={13}/>} {x.status}</span><div><small>{x.location}</small><h3>{x.title}</h3></div></article>)}</div></section>
+<section id="projects" className="wrap"><p className="eyebrow">SELECTED PROJECTS</p><h2>Work we're proud of</h2><div className="grid projects">{(d.projects || []).map(x=>x && <article key={x.id} style={{ cursor: 'pointer' }} onClick={() => {
+  const imgs = x.imageUrls && x.imageUrls.length ? x.imageUrls : (x.imageUrl ? [x.imageUrl] : []);
+  setLightbox({ images: imgs, idx: 0, title: x.title, location: x.location });
+}}><ProjectSlideshow images={x.imageUrls&&x.imageUrls.length?x.imageUrls:(x.imageUrl?[x.imageUrl]:[])}/><span className={'statusPill'+(x.status==='Completed'?' done':'')}>{x.status==='Completed'?<CheckCircle2 size={13}/>:<Hammer size={13}/>} {x.status}</span><div><small>{x.location}</small><h3>{x.title}</h3></div></article>)}</div></section>
 <section id="why" className="wrap"><p className="eyebrow">WHY PSK BROTHERS</p><h2>Built on trust, backed by process</h2><div className="grid why">{[['Time','On-time delivery — no cost overruns from delayed schedules.'],['Transparency','Clear estimates, no hidden charges. Every cost explained upfront.'],['Quality Materials','We use only trusted, standard-grade materials — no shortcuts.'],['Regular Updates','You get progress updates at every stage, not just at handover.'],['In-house Team','Our own skilled masons and supervisors — no unreliable subcontracting.'],['Post-Construction Support','Issues after handover? We stay reachable, not gone with the payment.'],['Fair Pricing','Right quality for the right price — quotes tailored to your budget.'],['Local Expertise','Deep knowledge of Coimbatore soil, weather and approval processes.']].map(([t,d2])=><div key={t} className="whyCard"><h3>{t}</h3><p>{d2}</p></div>)}</div></section>
 <section id="pillars" className="light"><div className="wrap"><p className="eyebrow">HOW WE WORK</p><h2>4 things we don't compromise on</h2><div className="pillarTabs">{Object.keys(pillars).map(k=><button key={k} className={'pillarTab'+(pillar===k?' active':'')} onClick={()=>setPillar(k)}>{pillars[k].label}</button>)}</div><div className="pillarPanel"><h3>{pillars[pillar].title}</h3><p>{pillars[pillar].body}</p><ul>{pillars[pillar].points.map(pt=><li key={pt}><CheckCircle2 size={16}/> {pt}</li>)}</ul></div></div></section>
 <section id="calculator" className="wrap"><p className="eyebrow">ESTIMATE YOUR COST</p><h2>Compare construction cost & see your savings</h2><p className="calcSub">Move the slider to see how PSK Brothers' transparent, fixed-rate pricing compares to typical market rates.</p><div className="calcBox2"><div className="calcCards"><div className="calcCard best"><span className="calcBadge">BEST PRICE</span><div className="calcCardRow"><div><b className="calcCardLabel">PSK Brothers</b><span className="calcCardRate">₹{rate.toLocaleString('en-IN')} / sqft</span></div><div className="calcCardAmt">₹{Math.round(rate*sqft).toLocaleString('en-IN')}</div></div></div><div className="calcCard others"><span className="calcBadge grey">{percentDiff >= 0 ? `+${percentDiff}%` : `${percentDiff}%`}</span><div className="calcCardRow"><div><b className="calcCardLabel">Other Builders</b><span className="calcCardRate">₹{otherRate.toLocaleString('en-IN')} / sqft</span></div><div className="calcCardAmt">₹{Math.round(otherRate*sqft).toLocaleString('en-IN')}</div></div></div><div className="calcCard save"><div className="calcCardRow"><div><b className="calcCardLabel save">You Save</b><span className="calcCardRate save">~{savePercent}% less</span></div><div className="calcCardAmt save">₹{Math.round(otherRate*sqft-rate*sqft).toLocaleString('en-IN')}</div></div></div><button className="primary calcCta" onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{cursor:'pointer'}}>Get Exact Quote <ArrowRight size={16}/></button></div><div className="calcRight"><BuildingArt sqft={sqft}/><input type="range" min="500" max="100000" step="500" value={sqft} onChange={e=>setSqft(Number(e.target.value))}/><div className="calcRange"><span>500</span><span>100K</span></div>{editingSqft?<form className="calcSqft editing" onSubmit={e=>{e.preventDefault();commitSqft(e.target.elements.sqftVal.value)}}><input name="sqftVal" type="number" min="500" max="100000" defaultValue={sqft} autoFocus onBlur={e=>commitSqft(e.target.value)}/><small>SQFT</small></form>:<button type="button" className="calcSqft" onClick={()=>setEditingSqft(true)}>{sqft.toLocaleString('en-IN')} <small>SQFT</small> <Pencil size={14}/></button>}</div></div></section>
@@ -772,6 +775,44 @@ return <div className="site">
   <p className="footerCopy">© 2026 PSK Brothers Builders & Constructions.</p>
   <a className="portalLink" href="/login">Login →</a>
 </footer>
+
+{lightbox && (
+  <div className="lightboxOverlay" onClick={() => setLightbox(null)}>
+    <button className="lightboxClose" onClick={() => setLightbox(null)}><X size={24} /></button>
+    
+    {lightbox.images.length > 1 && (
+      <button 
+        className="lightboxArrow left" 
+        onClick={(e) => { 
+          e.stopPropagation(); 
+          setLightbox(prev => ({ ...prev, idx: (prev.idx - 1 + prev.images.length) % prev.images.length })); 
+        }}
+      >
+        <ChevronLeft size={28} />
+      </button>
+    )}
+
+    <div className="lightboxContent" onClick={(e) => e.stopPropagation()}>
+      <img src={lightbox.images[lightbox.idx]} alt="" />
+      <div className="lightboxCaption">
+        <h3>{lightbox.title}</h3>
+        <p>{lightbox.location} • Photo {lightbox.idx + 1} of {lightbox.images.length}</p>
+      </div>
+    </div>
+
+    {lightbox.images.length > 1 && (
+      <button 
+        className="lightboxArrow right" 
+        onClick={(e) => { 
+          e.stopPropagation(); 
+          setLightbox(prev => ({ ...prev, idx: (prev.idx + 1) % prev.images.length })); 
+        }}
+      >
+        <ChevronRight size={28} />
+      </button>
+    )}
+  </div>
+)}
 </div>};
 function IntroScreen({onEnter, leaving}){
   function handleEnter(){
