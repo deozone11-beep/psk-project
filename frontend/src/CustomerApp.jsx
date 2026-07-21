@@ -859,6 +859,29 @@ function Portal({ creds, onLogout }) {
                               <p style={{ margin: 0, color: '#334155', fontSize: '0.9rem', lineHeight: '1.5' }}>{u.description}</p>
                             )}
 
+                            {(u.engineerName || u.workerNames) && (
+                              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
+                                {u.engineerName && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0369a1', fontWeight: '700' }}>
+                                    <span>👷 Site Engineer In-Charge:</span>
+                                    <span style={{ color: '#0f172a', fontWeight: '600' }}>{u.engineerName}</span>
+                                  </div>
+                                )}
+                                {u.workerNames && (
+                                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', color: '#475569', fontWeight: '700' }}>
+                                    <span>👥 On-Site Labor Team:</span>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                      {u.workerNames.split(',').map((w, idx) => (
+                                        <span key={idx} style={{ background: '#ffffff', border: '1px solid #cbd5e1', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem', color: '#1e293b', fontWeight: '600' }}>
+                                          {w.trim()}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             {imgs.length > 0 && (
                               <div style={{ marginTop: '4px' }}>
                                 <UpdateSlideshow images={imgs} title={u.title} />

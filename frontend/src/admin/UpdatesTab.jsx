@@ -5,7 +5,7 @@ import { api, API } from './api';
 export default function UpdatesTab({ creds }) {
   const [customers, setCustomers] = useState([]);
   const [list, setList] = useState([]);
-  const [form, setForm] = useState({ customerId: '', title: '', description: '', workDate: new Date().toLocaleDateString('en-CA') });
+  const [form, setForm] = useState({ customerId: '', title: '', description: '', workDate: new Date().toLocaleDateString('en-CA'), engineerName: '', workerNames: '' });
   const [files, setFiles] = useState([]);
   const [msg, setMsg] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -27,6 +27,9 @@ export default function UpdatesTab({ creds }) {
       fd.append('title', form.title);
       fd.append('description', form.description);
       fd.append('workDate', form.workDate);
+      if (form.engineerName) fd.append('engineerName', form.engineerName);
+      if (form.workerNames) fd.append('workerNames', form.workerNames);
+
       if (files && files.length > 0) {
         files.forEach((f) => fd.append('photos', f));
       }
@@ -41,7 +44,7 @@ export default function UpdatesTab({ creds }) {
         throw new Error(body?.message || 'Update failed');
       }
 
-      setForm({ ...form, title: '', description: '' });
+      setForm({ ...form, title: '', description: '', engineerName: '', workerNames: '' });
       setFiles([]);
       setMsg('Update posted ✓ — visible to that customer only.');
       load();
@@ -56,8 +59,8 @@ export default function UpdatesTab({ creds }) {
   return (
     <section className="adminCard">
       <h3>Site Progress Updates</h3>
-      <p className="adminHint">Post a progress update with one or more photos for a customer. Only that customer sees it in their portal.</p>
-      <form onSubmit={post} className="inlineForm wrap2">
+      <p className="adminHint">Post a progress update with one or more photos, assigned engineer, and labor worker team details for a customer.</p>
+      <form onSubmit={post} className="inlineForm wrap2" style={{ gap: '10px' }}>
         <select value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} required>
           <option value="">Select customer</option>
           {customers.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
@@ -65,6 +68,8 @@ export default function UpdatesTab({ creds }) {
         <input type="date" value={form.workDate} onChange={(e) => setForm({ ...form, workDate: e.target.value })} required />
         <input placeholder="Title (e.g. Roof slab casting)" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
         <input placeholder="Notes (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <input placeholder="Site Engineer (e.g. Dinesh Kumar)" value={form.engineerName} onChange={(e) => setForm({ ...form, engineerName: e.target.value })} />
+        <input placeholder="Workers Deployed (e.g. Murugan, Selvam)" value={form.workerNames} onChange={(e) => setForm({ ...form, workerNames: e.target.value })} />
         <label className="fileInput">
           <Upload size={15} /> {files.length > 0 ? `${files.length} photo(s) chosen` : 'Choose photos'}
           <input type="file" accept="image/*" onChange={(e) => setFiles(Array.from(e.target.files))} multiple hidden />
@@ -88,6 +93,8 @@ export default function UpdatesTab({ creds }) {
                 <b>{u.title}</b>
                 <span className="tableSub">{custName(u.customer.id)} · {u.workDate}</span>
                 {u.description && <p>{u.description}</p>}
+                {u.engineerName && <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#0284c7', fontWeight: '600' }}>👷 {u.engineerName}</p>}
+                {u.workerNames && <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#64748b' }}>👥 {u.workerNames}</p>}
               </div>
               <button className="deleteBtn" onClick={() => del(u.id)} style={{ zIndex: 5 }}><Trash2 size={15} /></button>
             </div>

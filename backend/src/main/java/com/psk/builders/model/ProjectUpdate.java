@@ -21,6 +21,9 @@ public class ProjectUpdate {
     @Column(length = 16777215)
     String photoUrl; // holds base64 data URIs separated by |||, nullable
     LocalDate workDate;
+    String engineerName;
+    @Column(length = 1000)
+    String workerNames;
     LocalDateTime createdAt;
 
     @PrePersist

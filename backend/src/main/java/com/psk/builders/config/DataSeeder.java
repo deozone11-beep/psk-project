@@ -99,10 +99,10 @@ public class DataSeeder {
 
                 updates.save(new ProjectUpdate(null, demo, "Foundation completed",
                         "Foundation work finished and approved by our site engineer. Moving to structure work next.",
-                        null, LocalDate.now().minusDays(10), null));
+                        null, LocalDate.now().minusDays(10), "Er. Dinesh Kumar (Site Engineer)", "Murugan (Mason), Selvam (Helper), Karthi (Bar Bender)", null));
                 updates.save(new ProjectUpdate(null, demo, "Structure work in progress",
                         "Ground floor columns and slab work underway. On schedule.",
-                        null, LocalDate.now().minusDays(3), null));
+                        null, LocalDate.now().minusDays(3), "Er. Dinesh Kumar (Site Engineer)", "Murugan (Mason), Selvam (Helper), Vijay (Electrician)", null));
             }
         };
     }

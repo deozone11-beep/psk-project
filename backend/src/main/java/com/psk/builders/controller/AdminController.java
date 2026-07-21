@@ -543,6 +543,8 @@ public class AdminController {
     ResponseEntity<?> createUpdate(@RequestParam Long customerId, @RequestParam String title,
                                     @RequestParam(required = false) String description,
                                     @RequestParam(required = false) String workDate,
+                                    @RequestParam(required = false) String engineerName,
+                                    @RequestParam(required = false) String workerNames,
                                     @RequestParam(value = "photos", required = false) MultipartFile[] photos) throws IOException {
         if (title == null || title.isBlank())
             return ResponseEntity.badRequest().body(Map.of("message", "Title is required"));
@@ -569,7 +571,7 @@ public class AdminController {
         } catch (Exception ex) {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid date"));
         }
-        ProjectUpdate u = new ProjectUpdate(null, customer, title, description, joinedUrls, date, null);
+        ProjectUpdate u = new ProjectUpdate(null, customer, title, description, joinedUrls, date, engineerName, workerNames, null);
         return ResponseEntity.ok(updates.save(u));
     }
 
