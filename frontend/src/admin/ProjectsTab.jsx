@@ -157,24 +157,27 @@ function ProjectCard({ project: p, creds, onChanged, onDelete }) {
             <span className="tableSub">{p.location} · {p.status} · {images.length} photo{images.length !== 1 ? 's' : ''}</span>
             <button 
               type="button" 
-              className="deleteBtn"
               onClick={() => setIsEditing(true)} 
               style={{ 
                 alignSelf: 'flex-start', 
-                borderColor: '#cbd5e1',
-                color: '#4b5563', 
-                fontSize: '0.76rem', 
+                background: '#f8fafc',
+                border: '1.5px solid #cbd5e1',
+                color: '#475569', 
+                fontSize: '0.78rem', 
                 fontWeight: '700', 
-                padding: '4px 10px', 
-                borderRadius: '6px',
+                padding: '6px 12px', 
+                borderRadius: '8px',
                 cursor: 'pointer',
-                marginTop: '4px',
+                marginTop: '10px',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '4px'
+                gap: '6px',
+                transition: 'all 0.2s'
               }}
+              onMouseOver={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
             >
-              <Pencil size={11} /> Edit Details
+              <Pencil size={12} /> Edit Details
             </button>
           </>
         )}
