@@ -171,7 +171,7 @@ function ProjectSlideshow({images}){
     if(!images||images.length<=1)return;
     const t=setInterval(()=>setIdx(i=>(i+1)%images.length),6500);
     return ()=>clearInterval(t);
-  },[images]);
+  }, [images ? images.join(',') : '']);
   if(!images||images.length===0)return null;
   return (
     <div className="projectSlideshow">
