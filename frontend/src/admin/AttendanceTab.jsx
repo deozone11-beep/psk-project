@@ -37,6 +37,8 @@ export default function AttendanceTab({ creds }) {
     dailyRate: '',
     extraDuty: '',
     advancePaid: '',
+    foodExpense: '',
+    travelExpense: '',
     siteName: ''
   });
   const [msg, setMsg] = useState('');
@@ -105,6 +107,8 @@ export default function AttendanceTab({ creds }) {
           dailyRate: Number(form.dailyRate || 0),
           extraDuty: Number(form.extraDuty || 0),
           advancePaid: Number(form.advancePaid || 0),
+          foodExpense: Number(form.foodExpense || 0),
+          travelExpense: Number(form.travelExpense || 0),
           siteName: form.siteName
         }) 
       });
@@ -120,6 +124,8 @@ export default function AttendanceTab({ creds }) {
         dailyRate: '',
         extraDuty: '',
         advancePaid: '',
+        foodExpense: '',
+        travelExpense: '',
         siteName: ''
       }));
       setTimeout(() => setMsg(''), 3000);
@@ -230,15 +236,17 @@ export default function AttendanceTab({ creds }) {
 
       const totalEarned = earnedFromWages + earnedFromExtraDuty;
 
-      // Calculate payments (advances from attendance + general payments)
+      // Calculate payments (advances from attendance + general payments + food/travel cash)
       const advancesPaid = attLogs.reduce((sum, a) => sum + (a.advancePaid || 0), 0);
+      const foodPaid = attLogs.reduce((sum, a) => sum + (a.foodExpense || 0), 0);
+      const travelPaid = attLogs.reduce((sum, a) => sum + (a.travelExpense || 0), 0);
       
       const genPayments = payments.filter(p => {
         const d = new Date(p.date);
         return p.employee && p.employee.id === emp.id && d >= start && d <= end;
       }).reduce((sum, p) => sum + (p.amount || 0), 0);
 
-      const totalPaid = advancesPaid + genPayments;
+      const totalPaid = advancesPaid + genPayments + foodPaid + travelPaid;
       const balance = totalEarned - totalPaid;
 
       overallEarned += totalEarned;
@@ -253,6 +261,8 @@ export default function AttendanceTab({ creds }) {
         extraDuty: earnedFromExtraDuty,
         totalEarned,
         advances: advancesPaid,
+        food: foodPaid,
+        travel: travelPaid,
         generalPayments: genPayments,
         totalPaid,
         balance
@@ -569,6 +579,26 @@ export default function AttendanceTab({ creds }) {
                       style={{ width: '100%', padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }}
                     />
                   </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Food Cash (₹)</label>
+                    <input 
+                      type="number" 
+                      placeholder="e.g. 100" 
+                      value={form.foodExpense} 
+                      onChange={(e) => setForm({ ...form, foodExpense: e.target.value })} 
+                      style={{ width: '100%', padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Travel Cash (₹)</label>
+                    <input 
+                      type="number" 
+                      placeholder="e.g. 50" 
+                      value={form.travelExpense} 
+                      onChange={(e) => setForm({ ...form, travelExpense: e.target.value })} 
+                      style={{ width: '100%', padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -626,6 +656,8 @@ export default function AttendanceTab({ creds }) {
                         {a.present && <span>Rate: <b>₹{(a.dailyRate ?? 0).toLocaleString('en-IN')}</b></span>}
                         {a.present && a.extraDuty > 0 && <span style={{ color: '#059669', fontWeight: 'bold' }}>OT: +₹{a.extraDuty.toLocaleString('en-IN')}</span>}
                         {a.advancePaid > 0 && <span style={{ color: '#dc2626', fontWeight: 'bold' }}>Cash Advance: -₹{a.advancePaid.toLocaleString('en-IN')}</span>}
+                        {a.foodExpense > 0 && <span style={{ color: '#dc2626', fontWeight: 'bold' }}>Food: -₹{a.foodExpense.toLocaleString('en-IN')}</span>}
+                        {a.travelExpense > 0 && <span style={{ color: '#dc2626', fontWeight: 'bold' }}>Travel: -₹{a.travelExpense.toLocaleString('en-IN')}</span>}
                         {a.checkInTime && (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#1e293b' }}>
                             <Clock size={12} /> Logged: <b>{a.checkInTime}</b>
@@ -933,7 +965,9 @@ export default function AttendanceTab({ creds }) {
                     <th style={{ padding: '12px 8px', textAlign: 'center' }}>Days Present</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right' }}>Earned Wages</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right' }}>Extra Duty</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Advances Given</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Advances</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Food Cash</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Travel Cash</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right' }}>Gen Payments</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b' }}>Total Earned</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b' }}>Total Paid</th>
@@ -949,6 +983,8 @@ export default function AttendanceTab({ creds }) {
                       <td style={{ padding: '12px 8px', textAlign: 'right', color: '#475569' }}>₹{row.earnedWages.toLocaleString('en-IN')}</td>
                       <td style={{ padding: '12px 8px', textAlign: 'right', color: '#059669', fontWeight: '500' }}>+₹{row.extraDuty.toLocaleString('en-IN')}</td>
                       <td style={{ padding: '12px 8px', textAlign: 'right', color: '#dc2626' }}>₹{row.advances.toLocaleString('en-IN')}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'right', color: '#dc2626' }}>₹{row.food.toLocaleString('en-IN')}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'right', color: '#dc2626' }}>₹{row.travel.toLocaleString('en-IN')}</td>
                       <td style={{ padding: '12px 8px', textAlign: 'right', color: '#dc2626' }}>₹{row.generalPayments.toLocaleString('en-IN')}</td>
                       <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#0f172a' }}>₹{row.totalEarned.toLocaleString('en-IN')}</td>
                       <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#0f172a' }}>₹{row.totalPaid.toLocaleString('en-IN')}</td>
@@ -964,7 +1000,7 @@ export default function AttendanceTab({ creds }) {
                   ))}
                   {reportData.length === 0 && (
                     <tr>
-                      <td colSpan="10" style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
+                      <td colSpan="12" style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
                         No records logged for current filters.
                       </td>
                     </tr>
@@ -988,6 +1024,8 @@ export default function AttendanceTab({ creds }) {
                     <th style={{ padding: '12px 8px', textAlign: 'right' }}>Base Wage</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right' }}>Extra Duty</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right' }}>Advance Paid</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Food Cash</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Travel Cash</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b' }}>Daily Balance</th>
                     <th style={{ padding: '12px 8px' }}>Notes / Location</th>
                   </tr>
@@ -995,7 +1033,7 @@ export default function AttendanceTab({ creds }) {
                 <tbody>
                   {reportDailyLogs.map(a => {
                     const earned = a.present ? (a.dailyRate || 0) + (a.extraDuty || 0) : 0;
-                    const paid = a.advancePaid || 0;
+                    const paid = (a.advancePaid || 0) + (a.foodExpense || 0) + (a.travelExpense || 0);
                     const bal = earned - paid;
                     
                     return (
@@ -1024,6 +1062,12 @@ export default function AttendanceTab({ creds }) {
                         </td>
                         <td style={{ padding: '12px 8px', textAlign: 'right', color: '#dc2626' }}>
                           {a.advancePaid > 0 ? `-₹${a.advancePaid.toLocaleString('en-IN')}` : '₹0'}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'right', color: '#dc2626' }}>
+                          {a.foodExpense > 0 ? `-₹${a.foodExpense.toLocaleString('en-IN')}` : '₹0'}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'right', color: '#dc2626' }}>
+                          {a.travelExpense > 0 ? `-₹${a.travelExpense.toLocaleString('en-IN')}` : '₹0'}
                         </td>
                         <td style={{ 
                           padding: '12px 8px', 
@@ -1056,7 +1100,7 @@ export default function AttendanceTab({ creds }) {
                   })}
                   {reportDailyLogs.length === 0 && (
                     <tr>
-                      <td colSpan={reportRange.employeeId === 'ALL' ? 8 : 7} style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
+                      <td colSpan={reportRange.employeeId === 'ALL' ? 10 : 9} style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
                         No daily logs found for current filters.
                       </td>
                     </tr>

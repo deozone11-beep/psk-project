@@ -412,6 +412,8 @@ public class AdminController {
         a.setDailyRate(emp.getDailyWage() != null ? emp.getDailyWage() : 0.0);
         a.setExtraDuty(0.0);
         a.setAdvancePaid(0.0);
+        a.setFoodExpense(0.0);
+        a.setTravelExpense(0.0);
         a.setCheckInTime(time);
         a.setCheckInLocation(loc);
         return ResponseEntity.ok(attendance.save(a));
@@ -426,6 +428,8 @@ public class AdminController {
         Double dailyRate,
         Double extraDuty,
         Double advancePaid,
+        Double foodExpense,
+        Double travelExpense,
         String siteName
     ) {}
 
@@ -445,6 +449,8 @@ public class AdminController {
         a.setDailyRate(r.dailyRate() != null ? r.dailyRate() : (emp.getDailyWage() != null ? emp.getDailyWage() : 0.0));
         a.setExtraDuty(r.extraDuty() != null ? r.extraDuty() : 0.0);
         a.setAdvancePaid(r.advancePaid() != null ? r.advancePaid() : 0.0);
+        a.setFoodExpense(r.foodExpense() != null ? r.foodExpense() : 0.0);
+        a.setTravelExpense(r.travelExpense() != null ? r.travelExpense() : 0.0);
         a.setSiteName(r.siteName());
         
         return ResponseEntity.ok(attendance.save(a));
