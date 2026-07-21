@@ -545,9 +545,22 @@ return <div className="site">
     <h2>Tell us about your project.</h2>
     <p style={{ marginBottom: '24px' }}>Planning a home, office or renovation? Our team will call you.</p>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Phone size={18} style={{ color: '#e2262b' }}/> <span>+91 90031 77934 <br/> +91 99414 26479</span></p>
-      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Mail size={18} style={{ color: '#e2262b' }}/> <span>pskbrothers1991@gmail.com</span></p>
-      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><MapPin size={18} style={{ color: '#e2262b' }}/> <span>Chooolaimedu, Chennai, Tamil Nadu - 600094</span></p>
+      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <Phone size={18} style={{ color: '#e2262b' }}/> 
+        <span>
+          <a href="tel:+919003177934" style={{ color: 'inherit', textDecoration: 'none', fontWeight: '500' }}>+91 90031 77934</a>
+          <br/> 
+          <a href="tel:+919941426479" style={{ color: 'inherit', textDecoration: 'none', fontWeight: '500' }}>+91 99414 26479</a>
+        </span>
+      </p>
+      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <Mail size={18} style={{ color: '#e2262b' }}/> 
+        <a href="mailto:pskbrothers1991@gmail.com" style={{ color: 'inherit', textDecoration: 'none', fontWeight: '500' }}>pskbrothers1991@gmail.com</a>
+      </p>
+      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <MapPin size={18} style={{ color: '#e2262b' }}/> 
+        <a href="https://maps.google.com/?q=Choolaimedu,+Chennai,+Tamil+Nadu+-+600094" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none', fontWeight: '500' }}>Choolaimedu, Chennai, Tamil Nadu - 600094</a>
+      </p>
     </div>
   </div>
   <div style={{ background: '#f8f8f7', padding: '40px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', border: '1px solid #ececea' }}>
