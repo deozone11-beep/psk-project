@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Pencil, Shield, User, Lock, X, Key, Check } from 'lucide-react';
+import { Plus, Trash2, Pencil, Shield, User, Lock, X, Key, Check, Eye, EyeOff } from 'lucide-react';
 import { api } from './api';
 
 const COMMON_ROLES = [
@@ -32,6 +32,7 @@ export default function EmployeesTab({ creds }) {
     active: true
   });
   const [msg, setMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => { load(); }, []);
 
@@ -57,6 +58,7 @@ export default function EmployeesTab({ creds }) {
       active: true
     });
     setMsg('');
+    setShowPassword(false);
     setShowModal(true);
   }
 
@@ -75,6 +77,7 @@ export default function EmployeesTab({ creds }) {
       active: emp.active !== false
     });
     setMsg('');
+    setShowPassword(false);
     setShowModal(true);
   }
 
@@ -326,14 +329,33 @@ export default function EmployeesTab({ creds }) {
                       <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>
                         {editingEmp ? 'Password (leave blank to keep current)' : 'Password *'}
                       </label>
-                      <input
-                        type="password"
-                        value={form.password}
-                        onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        required={!editingEmp}
-                        placeholder={editingEmp ? "••••••••" : "Choose password"}
-                        style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem' }}
-                      />
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={form.password}
+                          onChange={(e) => setForm({ ...form, password: e.target.value })}
+                          required={!editingEmp}
+                          placeholder={editingEmp ? "••••••••" : "Choose password"}
+                          style={{ width: '100%', padding: '11px 14px', paddingRight: '40px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          style={{
+                            position: 'absolute',
+                            right: '12px',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#64748b',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: 0
+                          }}
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
