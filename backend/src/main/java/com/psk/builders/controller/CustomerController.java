@@ -20,12 +20,15 @@ public class CustomerController {
     final SettingsRepository settings;
     final ProjectFileRepository files;
 
+    final EnquiryRepository enquiries;
+
     CustomerController(AppUserRepository users, ProjectUpdateRepository updates, SettingsRepository settings,
-                       ProjectFileRepository files) {
+                       ProjectFileRepository files, EnquiryRepository enquiries) {
         this.users = users;
         this.updates = updates;
         this.settings = settings;
         this.files = files;
+        this.enquiries = enquiries;
     }
 
     private AppUser currentUser(Authentication auth) {
@@ -99,5 +102,16 @@ public class CustomerController {
 
         files.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/past-enquiry")
+    ResponseEntity<?> getPastEnquiry(org.springframework.security.core.Authentication auth) {
+        AppUser u = currentUser(auth);
+        if (u == null) return ResponseEntity.status(404).body(Map.of("message", "Account not found"));
+        List<Enquiry> list = enquiries.findByConvertedCustomerId(u.getId());
+        if (list.isEmpty()) {
+            return ResponseEntity.ok(Map.of("hasPastEnquiry", false));
+        }
+        return ResponseEntity.ok(Map.of("hasPastEnquiry", true, "enquiries", list));
     }
 }

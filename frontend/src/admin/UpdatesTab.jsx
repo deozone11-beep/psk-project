@@ -5,7 +5,7 @@ import { api } from './api';
 export default function UpdatesTab({ creds }) {
   const [customers, setCustomers] = useState([]);
   const [list, setList] = useState([]);
-  const [form, setForm] = useState({ customerId: '', title: '', description: '', workDate: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState({ customerId: '', title: '', description: '', workDate: new Date().toLocaleDateString('en-CA') });
   const [files, setFiles] = useState([]);
   const [msg, setMsg] = useState('');
   const [uploading, setUploading] = useState(false);

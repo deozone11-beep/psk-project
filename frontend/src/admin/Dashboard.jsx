@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { LogOut, Menu, X, Mail, Save, Image, Users, Calendar, Wallet, Camera } from 'lucide-react';
+import { LogOut, Menu, X, Mail, Save, Image, Users, Calendar, Wallet, Camera, LayoutDashboard } from 'lucide-react';
+import OverviewTab from './OverviewTab.jsx';
 import EnquiriesTab from './EnquiriesTab.jsx';
 import RateTab from './RateTab.jsx';
 import ProjectsTab from './ProjectsTab.jsx';
@@ -10,6 +11,7 @@ import CustomersTab from './CustomersTab.jsx';
 import UpdatesTab from './UpdatesTab.jsx';
 
 const TABS = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'enquiries', label: 'Enquiries', icon: Mail },
   { id: 'rate', label: 'Rate', icon: Save },
   { id: 'projects', label: 'Portfolio', icon: Image },
@@ -23,12 +25,12 @@ const TABS = [
 export default function Dashboard({ creds, onLogout }) {
   const availableTabs = TABS.filter((t) => {
     if (creds.role === 'ENGINEER') {
-      return ['customers', 'updates', 'attendance', 'payments'].includes(t.id);
+      return ['overview', 'enquiries', 'customers', 'updates', 'attendance', 'payments'].includes(t.id);
     }
     return true;
   });
 
-  const [tab, setTab] = useState(() => creds.role === 'ENGINEER' ? 'customers' : 'enquiries');
+  const [tab, setTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const activeTabMeta = TABS.find((t) => t.id === tab);
 
@@ -71,6 +73,7 @@ export default function Dashboard({ creds, onLogout }) {
           </div>
         </header>
         <div className="adminContent">
+          {tab === 'overview' && <OverviewTab creds={creds} />}
           {tab === 'enquiries' && <EnquiriesTab creds={creds} />}
           {tab === 'rate' && <RateTab creds={creds} />}
           {tab === 'projects' && <ProjectsTab creds={creds} />}

@@ -5,7 +5,7 @@ import { api } from './api';
 export default function PaymentsTab({ creds }) {
   const [employees, setEmployees] = useState([]);
   const [list, setList] = useState([]);
-  const [form, setForm] = useState({ employeeId: '', date: new Date().toISOString().slice(0, 10), amount: '', notes: '' });
+  const [form, setForm] = useState({ employeeId: '', date: new Date().toLocaleDateString('en-CA'), amount: '', notes: '' });
   const [msg, setMsg] = useState('');
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function PaymentsTab({ creds }) {
       <form onSubmit={pay} className="inlineForm">
         <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} required>
           <option value="">Select employee</option>
-          {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+          {employees.filter(e => e.active !== false).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
         </select>
         <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
         <input type="number" placeholder="Amount ₹" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />

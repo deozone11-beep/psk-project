@@ -2,7 +2,9 @@ package com.psk.builders.controller;
 
 import com.psk.builders.config.JwtUtil;
 import com.psk.builders.model.AppUser;
+import com.psk.builders.model.Enquiry;
 import com.psk.builders.repository.AppUserRepository;
+import com.psk.builders.repository.EnquiryRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -10,6 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 // Single login endpoint for all three roles (owner, admin/staff, customer) — the account's
@@ -24,12 +27,14 @@ public class AuthController {
     final JwtUtil jwtUtil;
     final AppUserRepository users;
     final PasswordEncoder encoder;
+    final EnquiryRepository enquiries;
 
-    public AuthController(AuthenticationManager authManager, JwtUtil jwtUtil, AppUserRepository users, PasswordEncoder encoder) {
+    public AuthController(AuthenticationManager authManager, JwtUtil jwtUtil, AppUserRepository users, PasswordEncoder encoder, EnquiryRepository enquiries) {
         this.authManager = authManager;
         this.jwtUtil = jwtUtil;
         this.users = users;
         this.encoder = encoder;
+        this.enquiries = enquiries;
     }
 
     record LoginRequest(String username, String password) {}
@@ -64,5 +69,36 @@ public class AuthController {
         u.setPasswordHash(encoder.encode(newPassword));
         users.save(u);
         return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+    }
+
+    @PostMapping("/temp-login")
+    ResponseEntity<?> tempLogin(@RequestBody Map<String, String> body) {
+        String identifier = body.get("identifier");
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Mobile number or email is required"));
+        }
+
+        List<Enquiry> list = enquiries.findByPhoneOrEmail(identifier.trim(), identifier.trim());
+        if (list.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "No active enquiry found with this phone number or email"));
+        }
+
+        Enquiry match = list.stream()
+                .filter(e -> e.getConvertedCustomerId() == null)
+                .findFirst()
+                .orElse(list.get(0));
+
+        if (match.getConvertedCustomerId() != null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "This enquiry has been converted to a main customer account. Please log in using your main account."));
+        }
+
+        String token = jwtUtil.generateToken(match.getTrackId(), "TEMP_ENQUIRY", match.getName());
+        return ResponseEntity.ok(Map.of(
+            "token", token,
+            "role", "TEMP_ENQUIRY",
+            "username", match.getTrackId(),
+            "displayName", match.getName(),
+            "enquiryId", match.getId()
+        ));
     }
 }

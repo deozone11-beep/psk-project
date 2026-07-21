@@ -5,4 +5,5 @@ import java.util.List;
 
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findAllByOrderByName();
+    java.util.Optional<Employee> findByUsername(String username);
 }

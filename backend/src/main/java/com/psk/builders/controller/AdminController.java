@@ -53,6 +53,79 @@ public class AdminController {
     @GetMapping("/enquiries")
     List<Enquiry> listEnquiries() { return enquiries.findAllByOrderByCreatedAtDesc(); }
 
+    @GetMapping("/enquiries/assigned")
+    List<Enquiry> listAssignedEnquiries(java.security.Principal principal) {
+        if (principal == null) return List.of();
+        return enquiries.findByAssignedEngineerUsernameOrderByCreatedAtDesc(principal.getName());
+    }
+
+    @PutMapping("/enquiries/{id}")
+    ResponseEntity<?> updateEnquiry(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return enquiries.findById(id).map(q -> {
+            if (body.containsKey("status")) q.setStatus(body.get("status"));
+            if (body.containsKey("assignedEngineerUsername")) {
+                String val = body.get("assignedEngineerUsername");
+                q.setAssignedEngineerUsername("NONE".equalsIgnoreCase(val) || val.isBlank() ? null : val);
+            }
+            if (body.containsKey("engineerRemarks")) q.setEngineerRemarks(body.get("engineerRemarks"));
+            return ResponseEntity.ok(enquiries.save(q));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/enquiries/{id}/reply")
+    ResponseEntity<?> replyToEnquiry(@PathVariable Long id, java.security.Principal principal, @RequestBody Map<String, String> body) {
+        if (principal == null) return ResponseEntity.status(401).build();
+        String msg = body.get("message");
+        if (msg == null || msg.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Message content is required"));
+        }
+        return enquiries.findById(id).map(q -> {
+            List<Map<String, String>> chat = new ArrayList<>();
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            if (q.getConversationHistory() != null && !q.getConversationHistory().trim().isEmpty()) {
+                try {
+                    chat = mapper.readValue(q.getConversationHistory(), new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, String>>>() {});
+                } catch (Exception e) {}
+            }
+            String curTime = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
+            Map<String, String> entry = new HashMap<>();
+            entry.put("sender", "STAFF");
+            entry.put("senderName", principal.getName());
+            entry.put("text", msg.trim());
+            entry.put("time", curTime);
+            chat.add(entry);
+            try {
+                q.setConversationHistory(mapper.writeValueAsString(chat));
+            } catch (Exception e) {
+                return ResponseEntity.status(500).body(Map.of("message", "Error saving reply"));
+            }
+            return ResponseEntity.ok(enquiries.save(q));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/enquiries/{id}/convert")
+    ResponseEntity<?> convertEnquiryToCustomer(@PathVariable Long id, @RequestBody CustomerRequest r) {
+        Enquiry q = enquiries.findById(id).orElse(null);
+        if (q == null) return ResponseEntity.notFound().build();
+
+        if (r.username() == null || r.username().isBlank())
+            return ResponseEntity.badRequest().body(Map.of("message", "Username is required"));
+        if (r.password() == null || r.password().isBlank())
+            return ResponseEntity.badRequest().body(Map.of("message", "Password is required"));
+        if (users.findByUsername(r.username()).isPresent())
+            return ResponseEntity.badRequest().body(Map.of("message", "Username already taken"));
+
+        AppUser u = new AppUser(null, r.username(), encoder.encode(r.password()), AppUser.Role.CUSTOMER,
+                r.displayName(), r.phone(), r.projectName(), r.estimatedSqft(), r.email());
+        AppUser savedUser = users.save(u);
+
+        q.setStatus("CONVERTED");
+        q.setConvertedCustomerId(savedUser.getId());
+        enquiries.save(q);
+
+        return ResponseEntity.ok(savedUser);
+    }
+
     @DeleteMapping("/enquiries/{id}")
     ResponseEntity<?> deleteEnquiry(@PathVariable Long id) {
         if (!enquiries.existsById(id)) return ResponseEntity.notFound().build();
@@ -170,15 +243,92 @@ public class AdminController {
     List<Employee> listEmployees() { return employees.findAllByOrderByName(); }
 
     @PostMapping("/employees")
-    Employee createEmployee(@Valid @RequestBody Employee e) {
+    ResponseEntity<?> createEmployee(@Valid @RequestBody Employee e) {
         e.setId(null);
         if (e.getActive() == null) e.setActive(true);
-        return employees.save(e);
+
+        if (e.getUsername() != null && !e.getUsername().trim().isEmpty()) {
+            String uname = e.getUsername().trim();
+            if (users.findByUsername(uname).isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Username already taken"));
+            }
+            if (e.getPassword() == null || e.getPassword().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Password is required for logins"));
+            }
+            AppUser.Role uRole;
+            try {
+                uRole = AppUser.Role.valueOf(e.getLoginRole());
+            } catch (Exception ex) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Invalid login role"));
+            }
+            AppUser user = new AppUser(null, uname, encoder.encode(e.getPassword().trim()), uRole,
+                    e.getName(), e.getPhone(), null, null, null);
+            users.save(user);
+            e.setUsername(uname);
+        } else {
+            e.setUsername(null);
+            e.setLoginRole("NONE");
+        }
+        return ResponseEntity.ok(employees.save(e));
     }
 
     @PutMapping("/employees/{id}")
     ResponseEntity<?> updateEmployee(@PathVariable Long id, @Valid @RequestBody Employee body) {
         return employees.findById(id).map(e -> {
+            String oldUsername = e.getUsername();
+            String newUsername = body.getUsername() != null ? body.getUsername().trim() : "";
+
+            if (!newUsername.isEmpty()) {
+                Optional<AppUser> existing = users.findByUsername(newUsername);
+                if (existing.isPresent() && (oldUsername == null || !existing.get().getUsername().equalsIgnoreCase(oldUsername))) {
+                    return ResponseEntity.badRequest().body(Map.of("message", "Username already taken"));
+                }
+
+                AppUser.Role uRole;
+                try {
+                    uRole = AppUser.Role.valueOf(body.getLoginRole());
+                } catch (Exception ex) {
+                    return ResponseEntity.badRequest().body(Map.of("message", "Invalid login role"));
+                }
+
+                if (oldUsername == null) {
+                    if (body.getPassword() == null || body.getPassword().trim().isEmpty()) {
+                        return ResponseEntity.badRequest().body(Map.of("message", "Password is required to create login"));
+                    }
+                    AppUser newUser = new AppUser(null, newUsername, encoder.encode(body.getPassword().trim()), uRole,
+                            body.getName(), body.getPhone(), null, null, null);
+                    users.save(newUser);
+                } else {
+                    Optional<AppUser> optUser = users.findByUsername(oldUsername);
+                    if (optUser.isPresent()) {
+                        AppUser user = optUser.get();
+                        user.setUsername(newUsername);
+                        user.setDisplayName(body.getName());
+                        user.setPhone(body.getPhone());
+                        user.setRole(uRole);
+                        if (body.getPassword() != null && !body.getPassword().trim().isEmpty()) {
+                            user.setPasswordHash(encoder.encode(body.getPassword().trim()));
+                        }
+                        users.save(user);
+                    } else {
+                        if (body.getPassword() == null || body.getPassword().trim().isEmpty()) {
+                            return ResponseEntity.badRequest().body(Map.of("message", "Password is required to restore login"));
+                        }
+                        AppUser newUser = new AppUser(null, newUsername, encoder.encode(body.getPassword().trim()), uRole,
+                                body.getName(), body.getPhone(), null, null, null);
+                        users.save(newUser);
+                    }
+                }
+                e.setUsername(newUsername);
+                e.setLoginRole(body.getLoginRole());
+            } else {
+                if (oldUsername != null) {
+                    users.findByUsername(oldUsername).ifPresent(users::delete);
+                }
+                e.setUsername(null);
+                e.setLoginRole("NONE");
+            }
+
             e.setName(body.getName());
             e.setRole(body.getRole());
             e.setPhone(body.getPhone());
@@ -190,9 +340,13 @@ public class AdminController {
 
     @DeleteMapping("/employees/{id}")
     ResponseEntity<?> deleteEmployee(@PathVariable Long id) {
-        if (!employees.existsById(id)) return ResponseEntity.notFound().build();
-        employees.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return employees.findById(id).map(e -> {
+            if (e.getUsername() != null) {
+                users.findByUsername(e.getUsername()).ifPresent(users::delete);
+            }
+            employees.delete(e);
+            return ResponseEntity.noContent().build();
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     // ---------- Attendance ----------
@@ -203,6 +357,55 @@ public class AdminController {
                 : attendance.findAllByOrderByDateDesc();
     }
 
+    @GetMapping("/attendance/my-status")
+    ResponseEntity<?> getMyAttendanceStatus(java.security.Principal principal) {
+        if (principal == null) return ResponseEntity.status(401).build();
+        return employees.findByUsername(principal.getName()).map(emp -> {
+            Optional<Attendance> todayAtt = attendance.findByEmployee_IdAndDate(emp.getId(), LocalDate.now());
+            if (todayAtt.isPresent()) {
+                return ResponseEntity.ok(Map.of(
+                    "hasProfile", true,
+                    "employee", emp,
+                    "checkedIn", true,
+                    "attendance", todayAtt.get()
+                ));
+            } else {
+                return ResponseEntity.ok(Map.of(
+                    "hasProfile", true,
+                    "employee", emp,
+                    "checkedIn", false
+                ));
+            }
+        }).orElse(ResponseEntity.ok(Map.of("hasProfile", false)));
+    }
+
+    @PostMapping("/attendance/checkin")
+    ResponseEntity<?> selfCheckIn(java.security.Principal principal, @RequestBody Map<String, String> body) {
+        if (principal == null) return ResponseEntity.status(401).build();
+        Employee emp = employees.findByUsername(principal.getName()).orElse(null);
+        if (emp == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "No employee profile associated with this account. Contact admin."));
+        }
+
+        Optional<Attendance> todayAtt = attendance.findByEmployee_IdAndDate(emp.getId(), LocalDate.now());
+        if (todayAtt.isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "You have already checked in for today"));
+        }
+
+        String time = body.get("time");
+        if (time == null || time.trim().isEmpty()) {
+            time = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
+        }
+
+        String loc = body.get("location");
+        if (body.containsKey("latitude") && body.containsKey("longitude")) {
+            loc = "https://www.google.com/maps?q=" + body.get("latitude") + "," + body.get("longitude");
+        }
+
+        Attendance a = new Attendance(null, emp, LocalDate.now(), true, 8.0, "Self Check-in", time, loc);
+        return ResponseEntity.ok(attendance.save(a));
+    }
+
     record AttendanceRequest(@NotNull Long employeeId, @NotNull LocalDate date, @NotNull Boolean present,
                               @PositiveOrZero Double hoursWorked, String notes) {}
 
@@ -210,7 +413,7 @@ public class AdminController {
     ResponseEntity<?> markAttendance(@Valid @RequestBody AttendanceRequest r) {
         Employee emp = employees.findById(r.employeeId()).orElse(null);
         if (emp == null) return ResponseEntity.badRequest().body(Map.of("message", "Employee not found"));
-        Attendance a = new Attendance(null, emp, r.date(), r.present(), r.hoursWorked(), r.notes());
+        Attendance a = new Attendance(null, emp, r.date(), r.present(), r.hoursWorked(), r.notes(), null, null);
         return ResponseEntity.ok(attendance.save(a));
     }
 

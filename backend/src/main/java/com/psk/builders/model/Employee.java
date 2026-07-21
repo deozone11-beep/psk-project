@@ -19,4 +19,10 @@ public class Employee {
     @PositiveOrZero(message = "Daily wage can't be negative")
     Double dailyWage;
     Boolean active = true;
+
+    String username;
+    String loginRole; // "NONE", "ADMIN", "ENGINEER"
+
+    @Transient
+    String password;
 }

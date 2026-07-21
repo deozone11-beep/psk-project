@@ -1,50 +1,313 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil, Shield, User, Lock, X, Key, Check } from 'lucide-react';
 import { api } from './api';
 
 export default function EmployeesTab({ creds }) {
   const [list, setList] = useState([]);
-  const [form, setForm] = useState({ name: '', role: '', phone: '', dailyWage: '' });
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingEmp, setEditingEmp] = useState(null); // null means adding
+  const [form, setForm] = useState({
+    name: '',
+    role: '',
+    phone: '',
+    dailyWage: '',
+    username: '',
+    password: '',
+    loginRole: 'NONE',
+    active: true
+  });
   const [msg, setMsg] = useState('');
 
   useEffect(() => { load(); }, []);
-  function load() { api('/admin/employees', creds).then(setList).catch(console.error); }
 
-  async function add(e) {
-    e.preventDefault();
-    try {
-      await api('/admin/employees', creds, { method: 'POST', body: JSON.stringify({ ...form, dailyWage: Number(form.dailyWage), active: true }) });
-      setForm({ name: '', role: '', phone: '', dailyWage: '' });
-      setMsg('Employee added ✓');
-      load();
-    } catch (err) { setMsg(err.message); }
+  function load() {
+    setLoading(true);
+    api('/admin/employees', creds)
+      .then(setList)
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }
+
+  function openAdd() {
+    setEditingEmp(null);
+    setForm({
+      name: '',
+      role: '',
+      phone: '',
+      dailyWage: '',
+      username: '',
+      password: '',
+      loginRole: 'NONE',
+      active: true
+    });
+    setMsg('');
+    setShowModal(true);
+  }
+
+  function openEdit(emp) {
+    setEditingEmp(emp);
+    setForm({
+      name: emp.name || '',
+      role: emp.role || '',
+      phone: emp.phone || '',
+      dailyWage: emp.dailyWage || '',
+      username: emp.username || '',
+      password: '',
+      loginRole: emp.loginRole || 'NONE',
+      active: emp.active !== false
+    });
+    setMsg('');
+    setShowModal(true);
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setMsg('');
+    try {
+      const payload = {
+        ...form,
+        dailyWage: Number(form.dailyWage)
+      };
+      
+      // If no login is selected, clear username and password
+      if (form.loginRole === 'NONE') {
+        payload.username = null;
+        payload.password = null;
+      }
+
+      if (editingEmp) {
+        // Edit Employee
+        const res = await api(`/admin/employees/${editingEmp.id}`, creds, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+        if (res.message) throw new Error(res.message);
+        setMsg('Employee updated successfully ✓');
+      } else {
+        // Add Employee
+        const res = await api('/admin/employees', creds, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        if (res.message) throw new Error(res.message);
+        setMsg('Employee added successfully ✓');
+      }
+      
+      setTimeout(() => {
+        setShowModal(false);
+        load();
+      }, 1000);
+    } catch (err) {
+      setMsg(err.message || 'Action failed');
+    }
+  }
+
   async function del(id) {
-    if (!confirm('Remove this employee?')) return;
-    try { await api(`/admin/employees/${id}`, creds, { method: 'DELETE' }); load(); } catch (e) { console.error(e); }
+    if (!confirm('Remove this employee? This will also delete their login account if one exists.')) return;
+    try {
+      await api(`/admin/employees/${id}`, creds, { method: 'DELETE' });
+      load();
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return (
-    <section className="adminCard">
-      <h3>Employees &amp; Labour ({list.length})</h3>
-      <form onSubmit={add} className="inlineForm">
-        <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        <input placeholder="Role (Mason, Electrician...)" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} />
-        <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-        <input type="number" placeholder="Daily wage ₹" value={form.dailyWage} onChange={(e) => setForm({ ...form, dailyWage: e.target.value })} required />
-        <button className="primary"><Plus size={15} /> Add</button>
-      </form>
-      {msg && <p className="adminHint">{msg}</p>}
-      <div className="tableList">
-        {list.map((e) => (
-          <div className="tableRow" key={e.id}>
-            <div><b>{e.name}</b><span className="tableSub">{e.role || '—'} · {e.phone || 'no phone'}</span></div>
-            <div className="tableAmt">₹{e.dailyWage}/day</div>
-            <button className="deleteBtn" onClick={() => del(e.id)}><Trash2 size={15} /></button>
-          </div>
-        ))}
-        {list.length === 0 && <p className="adminHint">No employees added yet.</p>}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a', fontWeight: '800' }}>Employees &amp; Labour Management</h2>
+          <p className="adminHint" style={{ margin: '4px 0 0' }}>Add, update, and manage access control for employees and site engineers.</p>
+        </div>
+        <button className="primary" onClick={openAdd} style={{ borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <Plus size={16} /> Add Employee
+        </button>
       </div>
-    </section>
+
+      <section className="adminCard" style={{ padding: '24px' }}>
+        <h3>All Staff &amp; Workers ({list.length})</h3>
+        {loading ? (
+          <p className="adminHint">Loading list...</p>
+        ) : list.length === 0 ? (
+          <p className="adminHint">No employees found. Add one to get started.</p>
+        ) : (
+          <div className="tableList">
+            {list.map((e) => (
+              <div className="tableRow" key={e.id} style={{ borderLeftColor: e.loginRole !== 'NONE' ? '#e2262b' : '#475569' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <b style={{ fontSize: '0.98rem' }}>{e.name}</b>
+                    {e.loginRole === 'ADMIN' && (
+                      <span style={{ background: '#fef2f2', color: '#dc2626', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '20px', border: '1px solid rgba(220, 38, 38, 0.15)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Shield size={10} /> ADMIN
+                      </span>
+                    )}
+                    {e.loginRole === 'ENGINEER' && (
+                      <span style={{ background: '#ecfdf5', color: '#059669', fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '20px', border: '1px solid rgba(5, 150, 105, 0.15)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <User size={10} /> ENGINEER
+                      </span>
+                    )}
+                  </div>
+                  <div className="tableSub" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '6px' }}>
+                    <span>Role: <b>{e.role || 'Laborer'}</b></span>
+                    {e.phone && <span>Phone: <b>{e.phone}</b></span>}
+                    {e.username && <span>Username: <b style={{ color: '#0f172a' }}>{e.username}</b></span>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <div className="tableAmt" style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: '800' }}>₹{e.dailyWage}/day</div>
+                    <span style={{ fontSize: '0.72rem', color: e.active ? '#059669' : '#64748b', fontWeight: '700' }}>
+                      ● {e.active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="deleteBtn" onClick={() => openEdit(e)} style={{ borderColor: '#cbd5e1', color: '#475569' }}>
+                      <Pencil size={14} />
+                    </button>
+                    <button className="deleteBtn" onClick={() => del(e.id)}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {showModal && (
+        <div className="modalOverlay" onClick={() => setShowModal(false)}>
+          <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px', borderRadius: '20px', padding: '32px' }}>
+            <button className="modalClose" onClick={() => setShowModal(false)}><X size={20}/></button>
+            
+            <div className="modalHeader" style={{ marginBottom: '24px' }}>
+              <p className="eyebrow" style={{ justifyContent: 'flex-start' }}>STAFF ACCOUNT</p>
+              <h2>{editingEmp ? 'Edit Employee Details' : 'Add New Employee'}</h2>
+              <p className="modalDesc">Configure employee profile and custom dashboard login credentials.</p>
+            </div>
+
+            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Full Name *</label>
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    required
+                    placeholder="E.g. Ramesh Kumar"
+                    style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Role/Designation</label>
+                  <input
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                    placeholder="E.g. Mason, Engineer"
+                    style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Phone Number</label>
+                  <input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="E.g. 9876543210"
+                    style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Daily Wage (₹) *</label>
+                  <input
+                    type="number"
+                    value={form.dailyWage}
+                    onChange={(e) => setForm({ ...form, dailyWage: e.target.value })}
+                    required
+                    placeholder="E.g. 800"
+                    style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                <input
+                  type="checkbox"
+                  id="emp-active-chk"
+                  checked={form.active}
+                  onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                <label htmlFor="emp-active-chk" style={{ fontSize: '0.85rem', fontWeight: '600', color: '#334155', cursor: 'pointer' }}>
+                  Mark employee as active (available for attendance)
+                </label>
+              </div>
+
+              <div style={{ borderTop: '1.5px solid #e2e8f0', marginTop: '12px', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Dashboard Login Permission</label>
+                  <select
+                    value={form.loginRole}
+                    onChange={(e) => setForm({ ...form, loginRole: e.target.value })}
+                    style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem', background: '#fff' }}
+                  >
+                    <option value="NONE">No Login Access (General Labor)</option>
+                    <option value="ENGINEER">Site Engineer (Can track attendance, upload progress photos)</option>
+                    <option value="ADMIN">Admin / Staff (Full controls — rates, staff, payments)</option>
+                  </select>
+                </div>
+
+                {form.loginRole !== 'NONE' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', animation: 'fadeIn 0.25s ease' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Username *</label>
+                      <input
+                        value={form.username}
+                        onChange={(e) => setForm({ ...form, username: e.target.value })}
+                        required
+                        placeholder="Login username"
+                        style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>
+                        {editingEmp ? 'Password (leave blank to keep current)' : 'Password *'}
+                      </label>
+                      <input
+                        type="password"
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        required={!editingEmp}
+                        placeholder={editingEmp ? "••••••••" : "Choose password"}
+                        style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {msg && (
+                <p style={{ margin: '8px 0 0', fontSize: '0.82rem', fontWeight: '700', color: msg.includes('successfully') ? '#059669' : '#dc2626' }}>
+                  {msg}
+                </p>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
+                <button type="button" className="stepBack" onClick={() => setShowModal(false)} style={{ borderRadius: '10px', padding: '12px 20px', fontSize: '0.85rem' }}>
+                  Cancel
+                </button>
+                <button className="primary" style={{ borderRadius: '10px', padding: '12px 24px', fontSize: '0.85rem' }}>
+                  {editingEmp ? 'Save Changes' : 'Create Employee'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

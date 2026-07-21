@@ -18,4 +18,7 @@ public class Attendance {
     Boolean present;
     Double hoursWorked;
     String notes;
+
+    String checkInTime;
+    String checkInLocation;
 }
