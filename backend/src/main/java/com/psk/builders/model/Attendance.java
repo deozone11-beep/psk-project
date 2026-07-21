@@ -19,6 +19,10 @@ public class Attendance {
     Double hoursWorked;
     String notes;
 
+    Double dailyRate;
+    Double extraDuty;
+    Double advancePaid;
+
     String checkInTime;
     String checkInLocation;
 }

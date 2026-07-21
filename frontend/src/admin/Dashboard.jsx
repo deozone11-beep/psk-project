@@ -73,7 +73,7 @@ export default function Dashboard({ creds, onLogout }) {
           </div>
         </header>
         <div className="adminContent">
-          {tab === 'overview' && <OverviewTab creds={creds} />}
+          {tab === 'overview' && <OverviewTab creds={creds} setTab={selectTab} />}
           {tab === 'enquiries' && <EnquiriesTab creds={creds} />}
           {tab === 'rate' && <RateTab creds={creds} />}
           {tab === 'projects' && <ProjectsTab creds={creds} />}

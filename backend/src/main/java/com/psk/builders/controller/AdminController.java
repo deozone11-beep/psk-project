@@ -402,18 +402,48 @@ public class AdminController {
             loc = "https://www.google.com/maps?q=" + body.get("latitude") + "," + body.get("longitude");
         }
 
-        Attendance a = new Attendance(null, emp, LocalDate.now(), true, 8.0, "Self Check-in", time, loc);
+        Attendance a = new Attendance();
+        a.setEmployee(emp);
+        a.setDate(LocalDate.now());
+        a.setPresent(true);
+        a.setHoursWorked(8.0);
+        a.setNotes("Self Check-in");
+        a.setDailyRate(emp.getDailyWage() != null ? emp.getDailyWage() : 0.0);
+        a.setExtraDuty(0.0);
+        a.setAdvancePaid(0.0);
+        a.setCheckInTime(time);
+        a.setCheckInLocation(loc);
         return ResponseEntity.ok(attendance.save(a));
     }
 
-    record AttendanceRequest(@NotNull Long employeeId, @NotNull LocalDate date, @NotNull Boolean present,
-                              @PositiveOrZero Double hoursWorked, String notes) {}
+    record AttendanceRequest(
+        @NotNull Long employeeId, 
+        @NotNull LocalDate date, 
+        @NotNull Boolean present,
+        @PositiveOrZero Double hoursWorked, 
+        String notes,
+        Double dailyRate,
+        Double extraDuty,
+        Double advancePaid
+    ) {}
 
     @PostMapping("/attendance")
     ResponseEntity<?> markAttendance(@Valid @RequestBody AttendanceRequest r) {
         Employee emp = employees.findById(r.employeeId()).orElse(null);
         if (emp == null) return ResponseEntity.badRequest().body(Map.of("message", "Employee not found"));
-        Attendance a = new Attendance(null, emp, r.date(), r.present(), r.hoursWorked(), r.notes(), null, null);
+        
+        Optional<Attendance> existing = attendance.findByEmployee_IdAndDate(r.employeeId(), r.date());
+        Attendance a = existing.orElse(new Attendance());
+        a.setEmployee(emp);
+        a.setDate(r.date());
+        a.setPresent(r.present());
+        a.setHoursWorked(r.hoursWorked() != null ? r.hoursWorked() : 8.0);
+        a.setNotes(r.notes());
+        
+        a.setDailyRate(r.dailyRate() != null ? r.dailyRate() : (emp.getDailyWage() != null ? emp.getDailyWage() : 0.0));
+        a.setExtraDuty(r.extraDuty() != null ? r.extraDuty() : 0.0);
+        a.setAdvancePaid(r.advancePaid() != null ? r.advancePaid() : 0.0);
+        
         return ResponseEntity.ok(attendance.save(a));
     }
 

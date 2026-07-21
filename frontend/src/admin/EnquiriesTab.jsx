@@ -251,6 +251,56 @@ export default function EnquiriesTab({ creds }) {
                       <span>Service: <b style={{ color: '#0f172a' }}>{en.service}</b></span>
                       <span>Date: <b>{new Date(en.createdAt).toLocaleDateString('en-IN')}</b></span>
                     </div>
+                    {/* Visual Status Timeline Stepper */}
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '12px', gap: '4px', maxWidth: '380px' }}>
+                      {['NEW', 'ASSIGNED', 'CONTACTED', 'CONVERTED'].map((stepName, stepIdx, arr) => {
+                        const statusOrder = { 'NEW': 0, 'ASSIGNED': 1, 'CONTACTED': 2, 'CONVERTED': 3, 'CLOSED': -1 };
+                        const currentIdx = statusOrder[en.status || 'NEW'];
+                        const isCompleted = currentIdx >= stepIdx;
+                        const isActive = currentIdx === stepIdx;
+                        const stepLabels = {
+                          'NEW': 'New',
+                          'ASSIGNED': 'Assigned',
+                          'CONTACTED': 'Contacted',
+                          'CONVERTED': 'Converted'
+                        };
+
+                        return (
+                          <React.Fragment key={stepName}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <div style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: en.status === 'CLOSED' ? '#cbd5e1' : (isCompleted ? '#e2262b' : '#e2e8f0'),
+                                border: isActive ? '2px solid #fca5a5' : 'none',
+                                boxSizing: 'content-box'
+                              }} />
+                              <span style={{ 
+                                fontSize: '0.68rem', 
+                                fontWeight: isActive ? '800' : '600',
+                                color: en.status === 'CLOSED' ? '#94a3b8' : (isActive ? '#e2262b' : (isCompleted ? '#475569' : '#94a3b8'))
+                              }}>
+                                {stepLabels[stepName]}
+                              </span>
+                            </div>
+                            {stepIdx < arr.length - 1 && (
+                              <div style={{
+                                flex: 1,
+                                height: '2px',
+                                background: en.status === 'CLOSED' ? '#e2e8f0' : (currentIdx > stepIdx ? '#e2262b' : '#e2e8f0'),
+                                minWidth: '15px'
+                              }} />
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                      {en.status === 'CLOSED' && (
+                        <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#64748b', marginLeft: '6px' }}>
+                          (Closed)
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {en.location && (
@@ -297,6 +347,69 @@ export default function EnquiriesTab({ creds }) {
             </div>
 
             <form onSubmit={updateCRM} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Dynamic Status Timeline Stepper */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                background: '#f8fafc', 
+                padding: '12px 16px', 
+                borderRadius: '12px', 
+                marginBottom: '4px',
+                border: '1px solid #e2e8f0'
+              }}>
+                {['NEW', 'ASSIGNED', 'CONTACTED', 'CONVERTED'].map((stepName, stepIdx, arr) => {
+                  const statusOrder = { 'NEW': 0, 'ASSIGNED': 1, 'CONTACTED': 2, 'CONVERTED': 3, 'CLOSED': -1 };
+                  const currentIdx = statusOrder[status || 'NEW'];
+                  const isCompleted = currentIdx >= stepIdx;
+                  const isActive = currentIdx === stepIdx;
+                  const stepLabels = {
+                    'NEW': 'New',
+                    'ASSIGNED': 'Assigned',
+                    'CONTACTED': 'Contacted',
+                    'CONVERTED': 'Converted'
+                  };
+
+                  return (
+                    <React.Fragment key={stepName}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                        <div style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: status === 'CLOSED' ? '#cbd5e1' : (isCompleted ? '#e2262b' : '#e2e8f0'),
+                          border: isActive ? '3px solid #fca5a5' : 'none',
+                          boxSizing: 'content-box',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }} />
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          fontWeight: isActive ? '800' : '600',
+                          color: status === 'CLOSED' ? '#94a3b8' : (isActive ? '#e2262b' : (isCompleted ? '#475569' : '#94a3b8'))
+                        }}>
+                          {stepLabels[stepName]}
+                        </span>
+                      </div>
+                      {stepIdx < arr.length - 1 && (
+                        <div style={{
+                          height: '2px',
+                          background: status === 'CLOSED' ? '#cbd5e1' : (currentIdx > stepIdx ? '#e2262b' : '#e2e8f0'),
+                          flex: 1,
+                          transform: 'translateY(-10px)'
+                        }} />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+                {status === 'CLOSED' && (
+                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#64748b', transform: 'translateY(-10px)' }}>
+                    (Closed)
+                  </span>
+                )}
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Pipeline Status</label>
