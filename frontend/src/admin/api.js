@@ -1,4 +1,4 @@
-export const API = import.meta.env.VITE_API_URL || '/api';
+export const API = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? '/api' : 'https://psk-builders.onrender.com/api');
 
 export function authHeader(auth) {
   return { Authorization: 'Bearer ' + auth.token };
