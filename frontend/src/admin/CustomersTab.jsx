@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, FolderOpen, FileText, Download, X, Eye, EyeOff } from 'lucide-react';
-import { api } from './api';
+import { api, API } from './api';
 
 export default function CustomersTab({ creds }) {
   const [list, setList] = useState([]);
@@ -90,7 +90,7 @@ export default function CustomersTab({ creds }) {
       fd.append('category', fileForm.category);
       fd.append('file', fileForm.file);
 
-      const r = await fetch('/api/admin/files', {
+      const r = await fetch(`${API}/admin/files`, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + creds.token },
         body: fd

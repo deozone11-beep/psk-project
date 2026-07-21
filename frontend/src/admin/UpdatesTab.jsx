@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Upload, Plus, Trash2 } from 'lucide-react';
-import { api } from './api';
+import { api, API } from './api';
 
 export default function UpdatesTab({ creds }) {
   const [customers, setCustomers] = useState([]);
@@ -31,7 +31,7 @@ export default function UpdatesTab({ creds }) {
         files.forEach((f) => fd.append('photos', f));
       }
       
-      const r = await fetch('/api/admin/updates', {
+      const r = await fetch(`${API}/admin/updates`, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + creds.token },
         body: fd
