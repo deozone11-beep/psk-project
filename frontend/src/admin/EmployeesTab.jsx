@@ -137,6 +137,10 @@ export default function EmployeesTab({ creds }) {
       // Owner CANNOT see/edit Admin profiles or accounts
       return e.loginRole !== 'ADMIN';
     }
+    if (creds.role === 'ENGINEER') {
+      // Engineers can manage field workers & site labor team under them
+      return e.loginRole !== 'ADMIN';
+    }
     return true;
   });
 
@@ -305,8 +309,10 @@ export default function EmployeesTab({ creds }) {
                     onChange={(e) => setForm({ ...form, loginRole: e.target.value })}
                     style={{ padding: '11px 14px', border: '1.5px solid #cbd5e1', borderRadius: '10px', fontSize: '0.88rem', background: '#fff' }}
                   >
-                    <option value="NONE">No Login Access (General Labor)</option>
-                    <option value="ENGINEER">Site Engineer (Can track attendance, upload progress photos)</option>
+                    <option value="NONE">No Login Access (Field Labor / Subordinate Worker)</option>
+                    {creds.role === 'ADMIN' && (
+                      <option value="ENGINEER">Site Engineer (Can track attendance, upload progress photos)</option>
+                    )}
                     {creds.username === 'admin' && (
                       <option value="ADMIN">Admin / Staff (Full controls — rates, staff, payments)</option>
                     )}

@@ -25,7 +25,7 @@ const TABS = [
 export default function Dashboard({ creds, onLogout }) {
   const availableTabs = TABS.filter((t) => {
     if (creds.role === 'ENGINEER') {
-      return ['overview', 'enquiries', 'customers', 'updates', 'attendance', 'payments'].includes(t.id);
+      return ['overview', 'enquiries', 'customers', 'updates', 'attendance', 'payments', 'employees'].includes(t.id);
     }
     return true;
   });
