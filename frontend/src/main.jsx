@@ -315,7 +315,7 @@ const BOT_RESPONSES = {
               
     contact: `எங்களை நீங்கள் பின்வரும் வழிகளில் தொடர்பு கொள்ளலாம்:\n` +
              `- **தொலைபேசி**: +91 90031 77934 அல்லது +91 99414 26479\n` +
-             `- **மின்னஞ்சல்**: pskbrothersbuilders@gmail.com\n` +
+             `- **மின்னஞ்சல்**: pskbrothers1991@gmail.com\n` +
              `- **அலுவலக முகவரி**: சூளைமேடு, சென்னை, தமிழ்நாடு - 600094\n\n` +
              `அல்லது இந்த சாட்டிலேயே "என்கொயரி செய்ய" பட்டனை க்ளிக் செய்து உங்கள் விவரங்களை அனுப்பலாம்!`,
              
@@ -362,7 +362,7 @@ const BOT_RESPONSES = {
               
     contact: `You can reach PSK Brothers Builders & Constructions through the following channels:\n` +
              `- **Phone**: +91 90031 77934 or +91 99414 26479\n` +
-             `- **Email**: pskbrothersbuilders@gmail.com\n` +
+             `- **Email**: pskbrothers1991@gmail.com\n` +
              `- **Office**: Choolaimedu, Chennai, Tamil Nadu - 600094\n\n` +
              `Alternatively, click the Send Enquiry chip to submit your details here in the chat.`,
              
@@ -546,7 +546,7 @@ return <div className="site">
     <p style={{ marginBottom: '24px' }}>Planning a home, office or renovation? Our team will call you.</p>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Phone size={18} style={{ color: '#e2262b' }}/> <span>+91 90031 77934 <br/> +91 99414 26479</span></p>
-      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Mail size={18} style={{ color: '#e2262b' }}/> <span>pskbrothersbuilders@gmail.com</span></p>
+      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Mail size={18} style={{ color: '#e2262b' }}/> <span>pskbrothers1991@gmail.com</span></p>
       <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><MapPin size={18} style={{ color: '#e2262b' }}/> <span>Chooolaimedu, Chennai, Tamil Nadu - 600094</span></p>
     </div>
   </div>

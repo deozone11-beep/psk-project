@@ -103,7 +103,7 @@ public class ChatController {
         } else if (message.contains("contact") || message.contains("phone") || message.contains("call") || message.contains("email") || message.contains("address") || message.contains("location") || message.contains("office")) {
             response = "You can reach PSK Brothers Builders & Constructions through the following channels:\n" +
                     "- **Phone**: +91 90031 77934 or +91 99414 26479\n" +
-                    "- **Email**: pskbrothersbuilders@gmail.com\n" +
+                    "- **Email**: pskbrothers1991@gmail.com\n" +
                     "- **Office**: Choolaimedu, Chennai, Tamil Nadu - 600094\n" +
                     "Alternatively, click **GET A QUOTE** or use the **Send Enquiry** button at the bottom of the page, and our team will call you back!";
         } else if (message.contains("project") || message.contains("portfolio") || message.contains("completed") || message.contains("ongoing") || message.contains("experience") || message.contains("show work")) {
