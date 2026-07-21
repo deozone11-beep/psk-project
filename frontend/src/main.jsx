@@ -574,28 +574,26 @@ return <div className="site">
           <span className={step >= 2 ? 'on' : ''} />
         </div>
         
-        {step === 1 ? (
-          <div className="stepFields">
-            <input name="name" placeholder="Your name" required />
-            <input name="phone" placeholder="Phone number" required />
-            <input name="email" type="email" placeholder="Email address (optional)" />
-            <button type="button" className="primary stepNext" onClick={goNext}>
-              NEXT <ArrowRight size={16} />
-            </button>
+        <div className="stepFields" style={{ display: step === 1 ? 'flex' : 'none', flexDirection: 'column', gap: '12px' }}>
+          <input name="name" placeholder="Your name" required />
+          <input name="phone" placeholder="Phone number" required />
+          <input name="email" type="email" placeholder="Email address (optional)" />
+          <button type="button" className="primary stepNext" onClick={goNext}>
+            NEXT <ArrowRight size={16} />
+          </button>
+        </div>
+
+        <div className="stepFields" style={{ display: step === 2 ? 'flex' : 'none', flexDirection: 'column', gap: '12px' }}>
+          <select name="service" required>
+            <option value="">Select service</option>
+            {(d.services || []).map(x => x && <option key={x.id} value={x.title}>{x.title}</option>)}
+          </select>
+          <textarea name="message" placeholder="Tell us about your project" required />
+          <div className="stepBtnRow">
+            <button type="button" className="stepBack" onClick={() => setStep(1)}>BACK</button>
+            <button className="primary">SEND ENQUIRY <ArrowRight size={16} /></button>
           </div>
-        ) : (
-          <div className="stepFields">
-            <select name="service" required>
-              <option value="">Select service</option>
-              {(d.services || []).map(x => x && <option key={x.id} value={x.title}>{x.title}</option>)}
-            </select>
-            <textarea name="message" placeholder="Tell us about your project" required />
-            <div className="stepBtnRow">
-              <button type="button" className="stepBack" onClick={() => setStep(1)}>BACK</button>
-              <button className="primary">SEND ENQUIRY <ArrowRight size={16} /></button>
-            </div>
-          </div>
-        )}
+        </div>
         {msg && <p className="modalMsg" style={{ color: msg.includes('Thank') ? '#2ea86f' : '#e2262b' }}>{msg}</p>}
       </form>
     </div>

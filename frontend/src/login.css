@@ -71,26 +71,26 @@
 }
 
 .loginTabs {
-  display: flex;
-  background: rgba(0, 0, 0, 0.06);
-  border-radius: 14px;
-  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 6px;
   margin-bottom: 28px;
-  gap: 2px;
+  gap: 6px;
   border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
 .loginTab {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 8px;
+  gap: 6px;
+  padding: 10px 8px;
   border: none;
   background: transparent;
   border-radius: 10px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #4b5563;
   cursor: pointer;
