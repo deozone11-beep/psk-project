@@ -19,8 +19,9 @@ public class CustomerController {
     final ProjectUpdateRepository updates;
     final SettingsRepository settings;
     final ProjectFileRepository files;
-
     final EnquiryRepository enquiries;
+    @org.springframework.beans.factory.annotation.Autowired
+    InvoiceRepository invoices;
 
     CustomerController(AppUserRepository users, ProjectUpdateRepository updates, SettingsRepository settings,
                        ProjectFileRepository files, EnquiryRepository enquiries) {
@@ -113,5 +114,12 @@ public class CustomerController {
             return ResponseEntity.ok(Map.of("hasPastEnquiry", false));
         }
         return ResponseEntity.ok(Map.of("hasPastEnquiry", true, "enquiries", list));
+    }
+
+    @GetMapping("/invoices")
+    ResponseEntity<?> getMyInvoices(Authentication auth) {
+        AppUser u = currentUser(auth);
+        if (u == null) return ResponseEntity.status(404).body(Map.of("message", "Account not found"));
+        return ResponseEntity.ok(invoices.findByCustomer_IdOrderByInvoiceDateDesc(u.getId()));
     }
 }

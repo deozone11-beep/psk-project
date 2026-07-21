@@ -22,6 +22,9 @@ public class AdminController {
     @org.springframework.beans.factory.annotation.Autowired
     com.psk.builders.service.CloudinaryService cloudinaryService;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    InvoiceRepository invoiceRepository;
+
     final EnquiryRepository enquiries;
     final SettingsRepository settings;
     final EmployeeRepository employees;
@@ -613,6 +616,75 @@ public class AdminController {
     ResponseEntity<?> deleteFile(@PathVariable Long id) {
         if (!files.existsById(id)) return ResponseEntity.notFound().build();
         files.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------- Invoices / Bills ----------
+    @GetMapping("/invoices")
+    List<Invoice> getInvoices() {
+        return invoiceRepository.findAllByOrderByInvoiceDateDesc();
+    }
+
+    @PostMapping("/invoices")
+    ResponseEntity<?> saveInvoice(@RequestBody Map<String, Object> body, org.springframework.security.core.Authentication auth) {
+        try {
+            Long id = body.get("id") != null ? Long.valueOf(body.get("id").toString()) : null;
+            Invoice inv = (id != null) ? invoiceRepository.findById(id).orElse(new Invoice()) : new Invoice();
+
+            if (body.get("invoiceNumber") != null && !body.get("invoiceNumber").toString().isBlank()) {
+                inv.setInvoiceNumber(body.get("invoiceNumber").toString());
+            } else if (inv.getInvoiceNumber() == null) {
+                inv.setInvoiceNumber("PSK-INV-" + (System.currentTimeMillis() % 1000000));
+            }
+
+            if (body.get("invoiceDate") != null && !body.get("invoiceDate").toString().isBlank()) {
+                inv.setInvoiceDate(LocalDate.parse(body.get("invoiceDate").toString()));
+            } else if (inv.getInvoiceDate() == null) {
+                inv.setInvoiceDate(LocalDate.now());
+            }
+
+            if (body.get("dueDate") != null && !body.get("dueDate").toString().isBlank()) {
+                inv.setDueDate(LocalDate.parse(body.get("dueDate").toString()));
+            }
+
+            if (body.get("customerId") != null && !body.get("customerId").toString().isBlank()) {
+                Long customerId = Long.valueOf(body.get("customerId").toString());
+                AppUser customer = users.findById(customerId).orElse(null);
+                inv.setCustomer(customer);
+            }
+
+            inv.setBillType(body.get("billType") != null ? body.get("billType").toString() : "ESTIMATE");
+            inv.setStageName(body.get("stageName") != null ? body.get("stageName").toString() : "");
+            inv.setBuiltUpArea(body.get("builtUpArea") != null ? Double.valueOf(body.get("builtUpArea").toString()) : 0.0);
+            inv.setRatePerSqft(body.get("ratePerSqft") != null ? Double.valueOf(body.get("ratePerSqft").toString()) : 0.0);
+            inv.setLineItemsJson(body.get("lineItemsJson") != null ? body.get("lineItemsJson").toString() : "[]");
+
+            inv.setSubTotal(body.get("subTotal") != null ? Double.valueOf(body.get("subTotal").toString()) : 0.0);
+            inv.setGstPercentage(body.get("gstPercentage") != null ? Double.valueOf(body.get("gstPercentage").toString()) : 0.0);
+            inv.setTaxAmount(body.get("taxAmount") != null ? Double.valueOf(body.get("taxAmount").toString()) : 0.0);
+            inv.setDiscountAmount(body.get("discountAmount") != null ? Double.valueOf(body.get("discountAmount").toString()) : 0.0);
+            inv.setTotalAmount(body.get("totalAmount") != null ? Double.valueOf(body.get("totalAmount").toString()) : 0.0);
+            inv.setAmountPaidSoFar(body.get("amountPaidSoFar") != null ? Double.valueOf(body.get("amountPaidSoFar").toString()) : 0.0);
+            inv.setBalanceDue(body.get("balanceDue") != null ? Double.valueOf(body.get("balanceDue").toString()) : 0.0);
+
+            inv.setAmountInWords(body.get("amountInWords") != null ? body.get("amountInWords").toString() : "");
+            inv.setStatus(body.get("status") != null ? body.get("status").toString() : "DRAFT");
+            inv.setNotes(body.get("notes") != null ? body.get("notes").toString() : "");
+
+            AppUser current = users.findByUsername(auth.getName()).orElse(null);
+            inv.setCreatedByRole(current != null ? current.getRole().name() : "ADMIN");
+
+            Invoice saved = invoiceRepository.save(inv);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Failed to save invoice: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/invoices/{id}")
+    ResponseEntity<?> deleteInvoice(@PathVariable Long id) {
+        if (!invoiceRepository.existsById(id)) return ResponseEntity.notFound().build();
+        invoiceRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

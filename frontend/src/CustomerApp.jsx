@@ -6,6 +6,7 @@ const API = import.meta.env.VITE_API_URL || '/api';
 
 const TABS = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+  { id: 'invoices', label: 'Invoices & Receipts', icon: FileText },
   { id: 'tracking', label: 'Site Tracking', icon: Camera },
   { id: 'documents', label: 'Documents', icon: FileText }
 ];
@@ -458,6 +459,8 @@ function Portal({ creds, onLogout }) {
   const [calMonth, setCalMonth] = useState(todayObj.getMonth());
   const [selectedCalDateStr, setSelectedCalDateStr] = useState(todayObj.toISOString().split('T')[0]);
   const [files, setFiles] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [previewInvoice, setPreviewInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
 
   function prevMonth() {
@@ -494,9 +497,10 @@ function Portal({ creds, onLogout }) {
       fetch(`${API}/customer/me`, { headers: authHeader(creds) }),
       fetch(`${API}/customer/updates`, { headers: authHeader(creds) }),
       fetch(`${API}/customer/files`, { headers: authHeader(creds) }),
+      fetch(`${API}/customer/invoices`, { headers: authHeader(creds) }).catch(() => null),
       fetch(`${API}/customer/past-enquiry`, { headers: authHeader(creds) }).catch(() => null)
     ])
-      .then(async ([meRes, updatesRes, filesRes, pastRes]) => {
+      .then(async ([meRes, updatesRes, filesRes, invRes, pastRes]) => {
         if (meRes.status === 401 || meRes.status === 403 || updatesRes.status === 401 || updatesRes.status === 403) {
           sessionStorage.removeItem('psk_auth');
           window.location.href = '/login';
@@ -515,6 +519,9 @@ function Portal({ creds, onLogout }) {
           }
         }
         setFiles(await filesRes.json());
+        if (invRes && invRes.ok) {
+          setInvoices(await invRes.json());
+        }
         
         if (pastRes && pastRes.ok) {
           const pastData = await pastRes.json();
@@ -898,6 +905,42 @@ function Portal({ creds, onLogout }) {
             </div>
           )}
 
+          {tab === 'invoices' && (
+            <section className="adminCard">
+              <h3>My Invoices & Payment Receipts</h3>
+              <p className="adminHint" style={{ marginBottom: '20px' }}>Official stage bills, estimates, and payment vouchers issued by PSK Brothers Builders.</p>
+              {invoices.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                  <FileText size={48} style={{ opacity: 0.4, marginBottom: '1rem' }} />
+                  <h4>No Invoices Available Yet</h4>
+                  <p>When our engineering team generates a bill or receipt for your project, it will appear here for viewing and PDF download.</p>
+                </div>
+              ) : (
+                <div className="tableList">
+                  {invoices.map((inv) => (
+                    <div className="tableRow" key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderRadius: '10px', background: '#f8fafc', marginBottom: '10px', border: '1px solid #e2e8f0' }}>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '1.05rem', color: '#0f172a' }}>{inv.invoiceNumber}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#475569', marginTop: '2px' }}>{inv.stageName || inv.billType} · Date: {inv.invoiceDate}</div>
+                      </div>
+                      <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <div>
+                          <div style={{ fontWeight: '800', fontSize: '1.1rem', color: '#0f172a' }}>₹{inv.totalAmount?.toLocaleString('en-IN')}</div>
+                          <div style={{ fontSize: '0.8rem', color: inv.balanceDue > 0 ? '#dc2626' : '#16a34a', fontWeight: '700' }}>
+                            {inv.balanceDue > 0 ? `Bal: ₹${inv.balanceDue?.toLocaleString('en-IN')}` : 'Fully Paid ✅'}
+                          </div>
+                        </div>
+                        <button className="primary" onClick={() => setPreviewInvoice(inv)} style={{ padding: '8px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}>
+                          <FileText size={15} /> View & Print Bill
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
           {tab === 'documents' && (
             <section className="adminCard">
               <h3>Document Vault</h3>
@@ -960,6 +1003,247 @@ function Portal({ creds, onLogout }) {
           <a href="/">← Back to public site</a>
         </footer>
       </div>
+
+      {previewInvoice && (
+        <div className="modalOverlay">
+          <div className="modalCard modalLetterheadView">
+            <div className="modalHeader noPrint">
+              <h2>PSK Brothers Official Bill Preview</h2>
+              <div className="previewActions">
+                <button className="btnPrimary" onClick={() => window.print()}><Download size={16} /> Print / Save PDF</button>
+                <button className="closeBtn" onClick={() => setPreviewInvoice(null)}>×</button>
+              </div>
+            </div>
+
+            <div className="letterheadContainer printableArea">
+              <div className="lhTopAccent"></div>
+              <div className="lhHeader">
+                <div className="lhHeaderLeft">
+                  <div className="lhLogoBox">
+                    <img src="/logo.png" alt="PSK Brothers Builders & Constructions" className="lhLogo" />
+                  </div>
+                  <div className="lhPartners">
+                    <div>S. Prakash</div>
+                    <div>S. Senthil Murugan</div>
+                  </div>
+                </div>
+
+                <div className="lhHeaderRight">
+                  <div className="lhContactRow"><strong>Mob:</strong> 9941426479</div>
+                  <div className="lhContactRow">9003177934</div>
+                  <div className="lhDateRow"><strong>Date:</strong> {previewInvoice.invoiceDate}</div>
+                </div>
+              </div>
+
+              <div className="lhHeaderLine"></div>
+
+              <div className="lhInvoiceBanner">
+                <div className="lhBillTitle">
+                  {previewInvoice.billType === 'ESTIMATE' ? 'HOUSE CONSTRUCTION COST ESTIMATION SHEET' : 'CONSTRUCTION STAGE BILL / INVOICE'}
+                </div>
+                <div className="lhInvNumber">No: {previewInvoice.invoiceNumber}</div>
+              </div>
+
+              <div className="lhDetailsGrid">
+                <div className="lhDetailsBox">
+                  <div className="lhDetailHeader">CLIENT & PROJECT DETAILS</div>
+                  <div className="lhDetailRow"><strong>Customer Name:</strong> {me?.displayName || previewInvoice.customer?.displayName || 'Valued Client'}</div>
+                  <div className="lhDetailRow"><strong>Phone:</strong> {me?.phone || previewInvoice.customer?.phone || 'N/A'}</div>
+                  <div className="lhDetailRow"><strong>Project Name:</strong> {me?.projectName || previewInvoice.customer?.projectName || 'Construction Site'}</div>
+                </div>
+                <div className="lhDetailsBox">
+                  <div className="lhDetailHeader">SPECIFICATION OVERVIEW</div>
+                  <div className="lhDetailRow"><strong>Doc Type:</strong> {previewInvoice.billType === 'ESTIMATE' ? 'Full Construction Estimate' : previewInvoice.billType}</div>
+                  <div className="lhDetailRow"><strong>Built-up Area:</strong> {previewInvoice.builtUpArea ? `${previewInvoice.builtUpArea} Sq.ft` : 'N/A'}</div>
+                  <div className="lhDetailRow"><strong>Valid Till:</strong> {previewInvoice.dueDate || '30 Days'}</div>
+                </div>
+              </div>
+
+              {(() => {
+                let parsed = {};
+                try { parsed = JSON.parse(previewInvoice.lineItemsJson || '{}'); } catch (e) { }
+                const isEstimate = previewInvoice.billType === 'ESTIMATE';
+
+                return (
+                  <>
+                    {isEstimate && parsed.floors && parsed.floors.length > 0 && (
+                      <div style={{ marginBottom: '20px' }}>
+                        <div style={{ fontWeight: '800', fontSize: '0.88rem', color: '#0f172a', marginBottom: '8px' }}>
+                          1. BUILT-UP AREA & FLOOR-WISE COST BREAKDOWN
+                        </div>
+                        <table className="lhTable">
+                          <thead>
+                            <tr>
+                              <th>S.No</th>
+                              <th>Floor / Area Particulars</th>
+                              <th>Area (Sq.ft)</th>
+                              <th>Rate (₹/sqft)</th>
+                              <th>Amount (₹)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {parsed.floors.map((fl, idx) => (
+                              <tr key={idx}>
+                                <td>{idx + 1}</td>
+                                <td><strong>{fl.floorName}</strong></td>
+                                <td>{fl.sqft} sqft</td>
+                                <td>₹{Number(fl.rate || 0).toLocaleString('en-IN')}</td>
+                                <td><strong>₹{Number(fl.amount || 0).toLocaleString('en-IN')}</strong></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {parsed.lineItems && parsed.lineItems.length > 0 && (
+                      <div style={{ marginBottom: '20px' }}>
+                        <div style={{ fontWeight: '800', fontSize: '0.88rem', color: '#0f172a', marginBottom: '8px' }}>
+                          {isEstimate ? '2. ADDITIONAL PARTICULAR CHARGES / ADD-ONS' : 'BILL PARTICULARS'}
+                        </div>
+                        <table className="lhTable">
+                          <thead>
+                            <tr>
+                              <th>S.No</th>
+                              <th>Particulars / Description</th>
+                              <th>Qty</th>
+                              <th>Unit</th>
+                              <th>Rate (₹)</th>
+                              <th>Amount (₹)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {parsed.lineItems.map((it, idx) => (
+                              <tr key={idx}>
+                                <td>{idx + 1}</td>
+                                <td><strong>{it.description}</strong></td>
+                                <td>{it.qty}</td>
+                                <td>{it.unit || '-'}</td>
+                                <td>₹{Number(it.rate || 0).toLocaleString('en-IN')}</td>
+                                <td><strong>₹{Number(it.amount || 0).toLocaleString('en-IN')}</strong></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {isEstimate && (
+                      <div style={{ marginBottom: '20px' }}>
+                        <div style={{ fontWeight: '800', fontSize: '0.88rem', color: '#e2262b', marginBottom: '8px' }}>
+                          3. STAGE-WISE PAYMENT MILESTONE SCHEDULE
+                        </div>
+                        <table className="lhTable">
+                          <thead>
+                            <tr>
+                              <th>Stage #</th>
+                              <th>Construction Stage Milestone</th>
+                              <th>Percentage (%)</th>
+                              <th>Stage Amount (₹)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[
+                              { stage: '1. Advance / Booking & Architectural Plan', pct: 10 },
+                              { stage: '2. Foundation & Plinth Beam Completion', pct: 15 },
+                              { stage: '3. Ground Floor Roof Slab Completion', pct: 20 },
+                              { stage: '4. First Floor Roof Slab Completion', pct: 20 },
+                              { stage: '5. Brickwork & Plastering Completion', pct: 15 },
+                              { stage: '6. Flooring, Tiles, Plumbing & Electrical', pct: 15 },
+                              { stage: '7. Painting, Finishing & Key Handover', pct: 5 }
+                            ].map((st, idx) => {
+                              const stageAmt = Math.round((previewInvoice.totalAmount || 0) * (st.pct / 100));
+                              return (
+                                <tr key={idx}>
+                                  <td><strong>Stage {idx + 1}</strong></td>
+                                  <td>{st.stage}</td>
+                                  <td><strong>{st.pct}%</strong></td>
+                                  <td><strong>₹{stageAmt.toLocaleString('en-IN')}</strong></td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {isEstimate && parsed.specs && (
+                      <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                        <div style={{ fontWeight: '800', fontSize: '0.88rem', color: '#0f172a', marginBottom: '8px' }}>
+                          4. STANDARD INCLUDED MATERIAL SPECIFICATIONS
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.82rem' }}>
+                          <div><strong>Steel & Cement:</strong> {parsed.specs.structure}</div>
+                          <div><strong>Flooring & Tiles:</strong> {parsed.specs.flooring}</div>
+                          <div><strong>Doors & Windows:</strong> {parsed.specs.doors}</div>
+                          <div><strong>Electrical Wiring:</strong> {parsed.specs.electrical}</div>
+                          <div><strong>Plumbing & Sanitary:</strong> {parsed.specs.plumbing}</div>
+                          <div><strong>Paint Finish:</strong> {parsed.specs.painting}</div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
+              <div className="lhSummarySection">
+                <div className="lhWordsBox">
+                  <div className="lhWordsLabel">AMOUNT IN WORDS:</div>
+                  <div className="lhWordsText">{previewInvoice.amountInWords || 'Rupees Only'}</div>
+                  {previewInvoice.notes && (
+                    <div className="lhNotesBox">
+                      <strong>Notes & Terms:</strong> {previewInvoice.notes}
+                    </div>
+                  )}
+                </div>
+
+                <div className="lhTotalsTable">
+                  <div className="lhTotRow">
+                    <span>Sub Total:</span>
+                    <strong>₹{Number(previewInvoice.subTotal || 0).toLocaleString('en-IN')}</strong>
+                  </div>
+                  {previewInvoice.gstPercentage > 0 && (
+                    <div className="lhTotRow">
+                      <span>GST ({previewInvoice.gstPercentage}%):</span>
+                      <span>+ ₹{Number(previewInvoice.taxAmount || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  <div className="lhTotRow lhGrandTotal">
+                    <span>Total Estimated Cost:</span>
+                    <strong>₹{Number(previewInvoice.totalAmount || 0).toLocaleString('en-IN')}</strong>
+                  </div>
+                  <div className="lhTotRow">
+                    <span>Paid / Advance:</span>
+                    <span className="textGreen">₹{Number(previewInvoice.amountPaidSoFar || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="lhTotRow lhBalanceRow">
+                    <span>Balance Due:</span>
+                    <strong className="textRed">₹{Number(previewInvoice.balanceDue || 0).toLocaleString('en-IN')}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lhSignSection">
+                <div className="lhSignBox">
+                  <div className="lhSignSpace"></div>
+                  <div>Customer Signature</div>
+                </div>
+                <div className="lhSignBox">
+                  <div className="lhSignSpace">
+                    <span className="stampSealText">PSK BROTHERS BUILDERS</span>
+                  </div>
+                  <div><strong>For PSK BROTHERS BUILDERS</strong><br />(Authorized Signatory)</div>
+                </div>
+              </div>
+
+              <div className="lhFooterLine"></div>
+              <div className="lhFooterAddress">
+                Old No.123, New No. 1 Bajanai Koil Main Road Choolaimedu Chennai - 600094.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
