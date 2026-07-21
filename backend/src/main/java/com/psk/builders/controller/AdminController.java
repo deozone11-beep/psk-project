@@ -424,7 +424,8 @@ public class AdminController {
         String notes,
         Double dailyRate,
         Double extraDuty,
-        Double advancePaid
+        Double advancePaid,
+        String siteName
     ) {}
 
     @PostMapping("/attendance")
@@ -443,6 +444,7 @@ public class AdminController {
         a.setDailyRate(r.dailyRate() != null ? r.dailyRate() : (emp.getDailyWage() != null ? emp.getDailyWage() : 0.0));
         a.setExtraDuty(r.extraDuty() != null ? r.extraDuty() : 0.0);
         a.setAdvancePaid(r.advancePaid() != null ? r.advancePaid() : 0.0);
+        a.setSiteName(r.siteName());
         
         return ResponseEntity.ok(attendance.save(a));
     }

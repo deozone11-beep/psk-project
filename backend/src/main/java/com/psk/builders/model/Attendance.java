@@ -22,6 +22,7 @@ public class Attendance {
     Double dailyRate;
     Double extraDuty;
     Double advancePaid;
+    String siteName;
 
     String checkInTime;
     String checkInLocation;

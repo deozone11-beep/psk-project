@@ -23,6 +23,7 @@ import { api } from './api';
 
 export default function AttendanceTab({ creds }) {
   const [employees, setEmployees] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [list, setList] = useState([]);
   const [payments, setPayments] = useState([]);
   const [subTab, setSubTab] = useState('daily'); // 'daily' | 'calendar' | 'report'
@@ -35,7 +36,8 @@ export default function AttendanceTab({ creds }) {
     notes: '',
     dailyRate: '',
     extraDuty: '',
-    advancePaid: ''
+    advancePaid: '',
+    siteName: ''
   });
   const [msg, setMsg] = useState('');
   
@@ -64,6 +66,7 @@ export default function AttendanceTab({ creds }) {
 
   useEffect(() => {
     api('/admin/employees', creds).then(setEmployees).catch(console.error);
+    api('/admin/customers', creds).then(setCustomers).catch(console.error);
     load();
     checkMyStatus();
   }, []);
@@ -101,7 +104,8 @@ export default function AttendanceTab({ creds }) {
           hoursWorked: Number(form.hoursWorked),
           dailyRate: Number(form.dailyRate || 0),
           extraDuty: Number(form.extraDuty || 0),
-          advancePaid: Number(form.advancePaid || 0)
+          advancePaid: Number(form.advancePaid || 0),
+          siteName: form.siteName
         }) 
       });
       setMsg('Attendance marked successfully ✓');
@@ -115,7 +119,8 @@ export default function AttendanceTab({ creds }) {
         notes: '',
         dailyRate: '',
         extraDuty: '',
-        advancePaid: ''
+        advancePaid: '',
+        siteName: ''
       }));
       setTimeout(() => setMsg(''), 3000);
     } catch (err) { setMsg(err.message); }
@@ -515,6 +520,21 @@ export default function AttendanceTab({ creds }) {
                   <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Hours Worked</label>
                   <input type="number" step="0.5" placeholder="Hours (e.g. 8)" value={form.hoursWorked} onChange={(e) => setForm({ ...form, hoursWorked: e.target.value })} style={{ width: '100%', padding: '10px' }} />
                 </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Job Site / Location</label>
+                  <select 
+                    value={form.siteName} 
+                    onChange={(e) => setForm({ ...form, siteName: e.target.value })}
+                    style={{ width: '100%', padding: '10px', background: '#fff' }}
+                  >
+                    <option value="">Select Job Site</option>
+                    {customers.map(c => (
+                      <option key={c.id} value={c.projectName || c.displayName}>
+                        {c.projectName} ({c.displayName})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {form.present && (
@@ -611,6 +631,7 @@ export default function AttendanceTab({ creds }) {
                             <Clock size={12} /> Logged: <b>{a.checkInTime}</b>
                           </span>
                         )}
+                        {a.siteName && <span style={{ color: '#0f172a', fontWeight: 'bold' }}>🏢 Site: {a.siteName}</span>}
                         {a.notes && !isSelfCheckIn && <span>Notes: <i>{a.notes}</i></span>}
                       </div>
                     </div>
@@ -845,10 +866,10 @@ export default function AttendanceTab({ creds }) {
           {/* Report Summary Blocks */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
             <div className="estCard" style={{ borderLeft: '4px solid #10b981', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span>Overall Period Earnings</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Overall Period Earnings</span>
                 <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>₹{reportSummary.earned.toLocaleString('en-IN')}</b>
-                <span style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>Base wage + extra duty sums</span>
+                <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'none' }}>Base wage + extra duty sums</span>
               </div>
               <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <TrendingUp size={20} />
@@ -856,10 +877,10 @@ export default function AttendanceTab({ creds }) {
             </div>
 
             <div className="estCard" style={{ borderLeft: '4px solid #e2262b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span>Overall Paid / Advances</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Overall Paid / Advances</span>
                 <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>₹{reportSummary.paid.toLocaleString('en-IN')}</b>
-                <span style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>Daily advances + general wages</span>
+                <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'none' }}>Daily advances + general wages</span>
               </div>
               <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#fef2f2', color: '#e2262b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <TrendingDown size={20} />
@@ -867,12 +888,12 @@ export default function AttendanceTab({ creds }) {
             </div>
 
             <div className="estCard" style={{ borderLeft: '4px solid #f59e0b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span>Outstanding Balance</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Outstanding Balance</span>
                 <b style={{ fontSize: '1.25rem', fontWeight: '800', color: reportSummary.balance >= 0 ? '#d97706' : '#b91c1c' }}>
                   ₹{reportSummary.balance.toLocaleString('en-IN')}
                 </b>
-                <span style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>
+                <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'none' }}>
                   {reportSummary.balance >= 0 ? 'Pending to be paid' : 'Paid in excess'}
                 </span>
               </div>
@@ -1012,8 +1033,23 @@ export default function AttendanceTab({ creds }) {
                         }}>
                           ₹{bal.toLocaleString('en-IN')}
                         </td>
-                        <td style={{ padding: '12px 8px', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                          {a.notes || '-'}
+                        <td style={{ padding: '12px 8px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            {a.siteName && <span style={{ fontWeight: '600', color: '#1e293b' }}>🏢 {a.siteName}</span>}
+                            {a.checkInLocation ? (
+                              <a 
+                                href={a.checkInLocation} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                style={{ color: '#e2262b', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', fontWeight: '700' }}
+                              >
+                                <MapPin size={11} /> GPS Location
+                              </a>
+                            ) : (
+                              a.notes && <span style={{ color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic' }}>{a.notes}</span>
+                            )}
+                            {!a.siteName && !a.checkInLocation && !a.notes && <span>-</span>}
+                          </div>
                         </td>
                       </tr>
                     );
