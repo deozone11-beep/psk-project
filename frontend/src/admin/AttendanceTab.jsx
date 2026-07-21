@@ -570,16 +570,6 @@ export default function AttendanceTab({ creds }) {
                     />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Daily Advance / Cash (₹)</label>
-                    <input 
-                      type="number" 
-                      placeholder="e.g. 500" 
-                      value={form.advancePaid} 
-                      onChange={(e) => setForm({ ...form, advancePaid: e.target.value })} 
-                      style={{ width: '100%', padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Food Cash (₹)</label>
                     <input 
                       type="number" 
@@ -596,6 +586,16 @@ export default function AttendanceTab({ creds }) {
                       placeholder="e.g. 50" 
                       value={form.travelExpense} 
                       onChange={(e) => setForm({ ...form, travelExpense: e.target.value })} 
+                      style={{ width: '100%', padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Daily Advance / Cash (₹)</label>
+                    <input 
+                      type="number" 
+                      placeholder="e.g. 500" 
+                      value={form.advancePaid} 
+                      onChange={(e) => setForm({ ...form, advancePaid: e.target.value })} 
                       style={{ width: '100%', padding: '9px', border: '1.5px solid #cbd5e1', borderRadius: '6px' }}
                     />
                   </div>
