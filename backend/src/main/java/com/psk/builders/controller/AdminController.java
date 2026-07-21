@@ -19,6 +19,9 @@ import java.util.*;
 @RequestMapping("/api/admin")
 public class AdminController {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    com.psk.builders.service.CloudinaryService cloudinaryService;
+
     final EnquiryRepository enquiries;
     final SettingsRepository settings;
     final EmployeeRepository employees;
@@ -216,9 +219,7 @@ public class AdminController {
         if (photo == null || photo.isEmpty()) return null;
         String contentType = photo.getContentType();
         if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) return null;
-        if (photo.getSize() > MAX_PHOTO_BYTES) return null;
-        String base64 = Base64.getEncoder().encodeToString(photo.getBytes());
-        return "data:" + contentType.toLowerCase() + ";base64," + base64;
+        return cloudinaryService.uploadImage(photo);
     }
 
     // ---------- Rate / Settings ----------
