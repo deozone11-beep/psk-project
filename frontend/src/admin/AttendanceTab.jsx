@@ -60,6 +60,7 @@ export default function AttendanceTab({ creds }) {
   });
   const [reportData, setReportData] = useState([]);
   const [reportSummary, setReportSummary] = useState({ earned: 0, paid: 0, balance: 0 });
+  const [reportDailyLogs, setReportDailyLogs] = useState([]);
 
   useEffect(() => {
     api('/admin/employees', creds).then(setEmployees).catch(console.error);
@@ -259,6 +260,13 @@ export default function AttendanceTab({ creds }) {
       paid: overallPaid,
       balance: overallEarned - overallPaid
     });
+
+    const dailyLogs = list.filter(a => {
+      const d = new Date(a.date);
+      const matchesEmp = reportRange.employeeId === 'ALL' || a.employee.id === Number(reportRange.employeeId);
+      return matchesEmp && d >= start && d <= end;
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    setReportDailyLogs(dailyLogs);
   }
 
   // Trigger report generation when range changes
@@ -289,6 +297,47 @@ export default function AttendanceTab({ creds }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <style>{`
+        @media print {
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .adminSidebar, 
+          .adminTopbar, 
+          .adminFooter, 
+          .adminSidebarBackdrop,
+          .adminCard button,
+          .adminCard form,
+          div[style*="border-bottom"],
+          select,
+          input {
+            display: none !important;
+          }
+          .adminMain {
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .adminCard {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            background: transparent !important;
+            margin: 0 0 30px 0 !important;
+          }
+          table {
+            border-spacing: 0;
+            width: 100% !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+          th, td {
+            border-bottom: 1px solid #e2e8f0 !important;
+            padding: 8px !important;
+          }
+        }
+      `}</style>
       
       {/* Sub-tab Navigation */}
       <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', gap: '24px', paddingBottom: '2px' }}>
@@ -896,6 +945,83 @@ export default function AttendanceTab({ creds }) {
                     <tr>
                       <td colSpan="10" style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
                         No records logged for current filters.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Day-Wise Detailed Ledger Table */}
+          <section className="adminCard" style={{ padding: '24px', borderRadius: '16px', marginTop: '20px' }}>
+            <h3 style={{ margin: 0, marginBottom: '16px' }}>Detailed Day-Wise Ledger</h3>
+            
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.86rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b', fontWeight: 'bold' }}>
+                    <th style={{ padding: '12px 8px' }}>Date</th>
+                    {reportRange.employeeId === 'ALL' && <th style={{ padding: '12px 8px' }}>Employee</th>}
+                    <th style={{ padding: '12px 8px' }}>Status</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Base Wage</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Extra Duty</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Advance Paid</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b' }}>Daily Balance</th>
+                    <th style={{ padding: '12px 8px' }}>Notes / Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportDailyLogs.map(a => {
+                    const earned = a.present ? (a.dailyRate || 0) + (a.extraDuty || 0) : 0;
+                    const paid = a.advancePaid || 0;
+                    const bal = earned - paid;
+                    
+                    return (
+                      <tr key={a.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 8px', fontWeight: '600' }}>{a.date}</td>
+                        {reportRange.employeeId === 'ALL' && (
+                          <td style={{ padding: '12px 8px', fontWeight: 'bold', color: '#0f172a' }}>{empName(a.employee.id)}</td>
+                        )}
+                        <td style={{ padding: '12px 8px' }}>
+                          <span style={{
+                            background: a.present ? '#ecfdf5' : '#fef2f2',
+                            color: a.present ? '#059669' : '#dc2626',
+                            fontSize: '0.66rem',
+                            fontWeight: '800',
+                            padding: '2px 8px',
+                            borderRadius: '10px'
+                          }}>
+                            {a.present ? 'PRESENT' : 'ABSENT'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'right' }}>
+                          ₹{a.present ? (a.dailyRate || 0).toLocaleString('en-IN') : '0'}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'right', color: '#059669', fontWeight: '500' }}>
+                          {a.present && a.extraDuty > 0 ? `+₹${a.extraDuty.toLocaleString('en-IN')}` : '₹0'}
+                        </td>
+                        <td style={{ padding: '12px 8px', textAlign: 'right', color: '#dc2626' }}>
+                          {a.advancePaid > 0 ? `-₹${a.advancePaid.toLocaleString('en-IN')}` : '₹0'}
+                        </td>
+                        <td style={{ 
+                          padding: '12px 8px', 
+                          textAlign: 'right', 
+                          fontWeight: '800',
+                          color: bal >= 0 ? '#1e293b' : '#b91c1c'
+                        }}>
+                          ₹{bal.toLocaleString('en-IN')}
+                        </td>
+                        <td style={{ padding: '12px 8px', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                          {a.notes || '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {reportDailyLogs.length === 0 && (
+                    <tr>
+                      <td colSpan={reportRange.employeeId === 'ALL' ? 8 : 7} style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
+                        No daily logs found for current filters.
                       </td>
                     </tr>
                   )}
