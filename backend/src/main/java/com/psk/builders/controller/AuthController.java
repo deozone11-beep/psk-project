@@ -12,6 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -96,12 +97,23 @@ public class AuthController {
                     "This enquiry has been converted to a main customer account. Please log in using your main account."));
         }
 
-        String token = jwtUtil.generateToken(match.getTrackId(), "TEMP_ENQUIRY", match.getName());
-        return ResponseEntity.ok(Map.of(
-                "token", token,
-                "role", "TEMP_ENQUIRY",
-                "username", match.getTrackId(),
-                "displayName", match.getName(),
-                "enquiryId", match.getId()));
+        // Self-heal: If an old lead is found without a trackId, generate and save it
+        if (match.getTrackId() == null || match.getTrackId().trim().isEmpty()) {
+            match.setTrackId("PSK-ENQ-" + (1000 + match.getId()));
+            match = enquiries.save(match);
+        }
+
+        String displayName = match.getName() != null ? match.getName() : "Customer";
+        String trackId = match.getTrackId();
+        String token = jwtUtil.generateToken(trackId, "TEMP_ENQUIRY", displayName);
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("token", token);
+        resp.put("role", "TEMP_ENQUIRY");
+        resp.put("username", trackId);
+        resp.put("displayName", displayName);
+        resp.put("enquiryId", match.getId());
+
+        return ResponseEntity.ok(resp);
     }
 }
