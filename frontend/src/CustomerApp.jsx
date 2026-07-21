@@ -18,7 +18,7 @@ function UpdateSlideshow({ images }) {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     if (!images || images.length <= 1) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % images.length), 3500);
+    const t = setInterval(() => setIdx((i) => (i + 1) % images.length), 6500);
     return () => clearInterval(t);
   }, [images]);
   if (!images || images.length === 0) return null;
