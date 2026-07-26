@@ -1,0 +1,1 @@
+package com.psk.builders.model;import jakarta.persistence.*;import lombok.*;@Entity @Table(name="services") @Data @NoArgsConstructor @AllArgsConstructor public class ServiceItem{@Id @GeneratedValue(strategy=GenerationType.IDENTITY) Long id;String title;@Column(length=1000) String description;}

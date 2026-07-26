@@ -1,0 +1,15 @@
+# backend
+backend/target/
+backend/uploads/
+*.class
+
+# frontend
+frontend/node_modules/
+frontend/dist/
+
+# env / IDE
+.env
+.idea/
+.vscode/
+*.iml
+.DS_Store
