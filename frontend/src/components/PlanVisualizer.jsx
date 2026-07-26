@@ -845,8 +845,10 @@ export default function PlanVisualizer({
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div
             style={{
-              width: '60px',
-              height: '60px',
+              width: '64px',
+              height: '64px',
+              minWidth: '64px',
+              minHeight: '64px',
               borderRadius: '50%',
               background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
               color: '#ffffff',
@@ -854,14 +856,20 @@ export default function PlanVisualizer({
               flexDirection: 'column',
               justify: 'center',
               alignItems: 'center',
-              fontWeight: '900',
+              textAlign: 'center',
               boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
               flexShrink: 0,
-              border: '2px solid #ffffff',
+              border: '2.5px solid #ffffff',
+              boxSizing: 'border-box',
+              padding: '0',
             }}
           >
-            <span style={{ fontSize: '1.15rem', fontWeight: '900', lineHeight: '1.1', letterSpacing: '-0.5px' }}>{vastuScore}%</span>
-            <span style={{ fontSize: '8.5px', fontWeight: '800', letterSpacing: '0.8px', textTransform: 'uppercase', opacity: 0.95 }}>VASTU</span>
+            <div style={{ fontSize: '1.05rem', fontWeight: '900', lineHeight: '1', margin: 0, padding: 0 }}>
+              {vastuScore}%
+            </div>
+            <div style={{ fontSize: '8px', fontWeight: '800', letterSpacing: '0.8px', textTransform: 'uppercase', lineHeight: '1', marginTop: '2px', opacity: 0.95 }}>
+              VASTU
+            </div>
           </div>
           <div>
             <h4 style={{ margin: 0, color: '#14532d', fontSize: '0.98rem', fontWeight: '800' }}>
