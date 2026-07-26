@@ -802,10 +802,10 @@ export default function PlanVisualizer({
               Calculated Metrics ({selectedPkg.name})
             </div>
             <div style={{ fontSize: '1.6rem', fontWeight: '800', margin: '2px 0' }}>
-              {totalSqft.toLocaleString()} <span style={{ fontSize: '0.9rem', fontWeight: '400' }}>Sq.Ft</span>
+              {totalSqft.toLocaleString('en-IN')} <span style={{ fontSize: '0.9rem', fontWeight: '400' }}>Sq.Ft</span>
             </div>
             <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-              Estimated Total Cost: <strong style={{ color: '#4ade80' }}>₹{estimatedCost.toLocaleString()}</strong> (@ ₹{selectedPkg.rate}/sqft)
+              Estimated Total Cost: <strong style={{ color: '#4ade80' }}>₹{estimatedCost.toLocaleString('en-IN')}</strong> (@ ₹{selectedPkg.rate}/sqft)
             </div>
           </div>
 
@@ -891,7 +891,7 @@ export default function PlanVisualizer({
         }}
       >
         <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#0f172a', fontWeight: '800' }}>
-          🏗️ Estimated Material Quantity Breakdown ({totalSqft.toLocaleString()} sq.ft)
+          🏗️ Estimated Material Quantity Breakdown ({totalSqft.toLocaleString('en-IN')} sq.ft)
         </h3>
         <div
           style={{
@@ -902,7 +902,7 @@ export default function PlanVisualizer({
         >
           <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
             <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>🧱 Cement Bags</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{cementBags.toLocaleString()} Bags</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{cementBags.toLocaleString('en-IN')} Bags</div>
             <div style={{ fontSize: '9px', color: '#0284c7' }}>OPC 53 Grade</div>
           </div>
 
@@ -914,7 +914,7 @@ export default function PlanVisualizer({
 
           <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
             <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>📐 Flooring Tiles</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{tilesSqft.toLocaleString()} Sq.Ft</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{tilesSqft.toLocaleString('en-IN')} Sq.Ft</div>
             <div style={{ fontSize: '9px', color: '#0284c7' }}>Vitrified Tiles</div>
           </div>
 
@@ -1468,7 +1468,7 @@ export default function PlanVisualizer({
                   <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Project Code:</td>
                   <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1' }}>PSK-DWG-2026-042</td>
                   <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Plot Dimensions:</td>
-                  <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1' }}>{length} ft × {width} ft ({totalSqft.toLocaleString()} sq.ft)</td>
+                  <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1' }}>{length} ft × {width} ft ({totalSqft.toLocaleString('en-IN')} sq.ft)</td>
                 </tr>
                 <tr>
                   <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Facing & Vastu:</td>
@@ -1480,7 +1480,7 @@ export default function PlanVisualizer({
                   <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Selected Package:</td>
                   <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1' }}>{selectedPkg.name} (@ ₹{selectedPkg.rate}/sqft)</td>
                   <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Estimated Total:</td>
-                  <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: '#16a34a' }}>₹{estimatedCost.toLocaleString()}</td>
+                  <td style={{ padding: '6px 8px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: '#16a34a' }}>₹{estimatedCost.toLocaleString('en-IN')}</td>
                 </tr>
               </tbody>
             </table>
