@@ -843,34 +843,15 @@ export default function PlanVisualizer({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              minWidth: '64px',
-              minHeight: '64px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-              color: '#ffffff',
-              display: 'flex',
-              flexDirection: 'column',
-              justify: 'center',
-              alignItems: 'center',
-              textAlign: 'center',
-              boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
-              flexShrink: 0,
-              border: '2.5px solid #ffffff',
-              boxSizing: 'border-box',
-              padding: '0',
-            }}
-          >
-            <div style={{ fontSize: '1.05rem', fontWeight: '900', lineHeight: '1', margin: 0, padding: 0 }}>
+          <svg width="66" height="66" viewBox="0 0 66 66" style={{ flexShrink: 0, filter: 'drop-shadow(0 4px 12px rgba(22, 163, 74, 0.4))' }}>
+            <circle cx="33" cy="33" r="30" fill="#16a34a" stroke="#ffffff" strokeWidth="3" />
+            <text x="33" y="27" textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="18" fontWeight="900" fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
               {vastuScore}%
-            </div>
-            <div style={{ fontSize: '8px', fontWeight: '800', letterSpacing: '0.8px', textTransform: 'uppercase', lineHeight: '1', marginTop: '2px', opacity: 0.95 }}>
+            </text>
+            <text x="33" y="44" textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="9" fontWeight="800" fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" letterSpacing="1">
               VASTU
-            </div>
-          </div>
+            </text>
+          </svg>
           <div>
             <h4 style={{ margin: 0, color: '#14532d', fontSize: '0.98rem', fontWeight: '800' }}>
               Vastu Compliance Scorecard ({facing} Facing)
