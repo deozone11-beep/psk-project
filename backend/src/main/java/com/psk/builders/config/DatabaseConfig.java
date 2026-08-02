@@ -19,6 +19,9 @@ public class DatabaseConfig {
         }
         try {
             if (databaseUrl.startsWith("jdbc:postgresql://")) {
+                if (!databaseUrl.contains("prepareThreshold")) {
+                    databaseUrl += (databaseUrl.contains("?") ? "&" : "?") + "prepareThreshold=0";
+                }
                 String username = System.getenv("SPRING_DATASOURCE_USERNAME");
                 if (username == null || username.isBlank()) username = System.getenv("DB_USERNAME");
                 if (username == null || username.isBlank()) username = "postgres.jlebdbvbakvxaivjnhgj";
@@ -63,6 +66,9 @@ public class DatabaseConfig {
                 }
                 String portPart = dbUri.getPort() == -1 ? "" : ":" + dbUri.getPort();
                 String queryPart = dbUri.getRawQuery() != null ? "?" + dbUri.getRawQuery() : "";
+                if (!queryPart.contains("prepareThreshold")) {
+                    queryPart += (queryPart.isEmpty() ? "?prepareThreshold=0" : "&prepareThreshold=0");
+                }
                 String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + portPart + dbUri.getPath() + queryPart;
                 
                 return DataSourceBuilder.create()
