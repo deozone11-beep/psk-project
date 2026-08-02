@@ -14,8 +14,40 @@ public class DatabaseConfig {
     @Bean
     public DataSource dataSource() {
         String databaseUrl = System.getenv("DATABASE_URL");
+        if (databaseUrl == null || databaseUrl.isBlank()) {
+            databaseUrl = System.getProperty("DATABASE_URL");
+        }
         try {
-            if (databaseUrl.startsWith("postgres://") || databaseUrl.startsWith("postgresql://")) {
+            if (databaseUrl.startsWith("jdbc:postgresql://")) {
+                String username = System.getenv("SPRING_DATASOURCE_USERNAME");
+                if (username == null || username.isBlank()) username = System.getenv("DB_USERNAME");
+                if (username == null || username.isBlank()) username = "postgres.jlebdbvbakvxaivjnhgj";
+
+                String password = System.getenv("SPRING_DATASOURCE_PASSWORD");
+                if (password == null || password.isBlank()) password = System.getenv("DB_PASSWORD");
+                if (password == null || password.isBlank()) password = "Meeerakumar@9898";
+
+                return DataSourceBuilder.create()
+                        .driverClassName("org.postgresql.Driver")
+                        .url(databaseUrl)
+                        .username(username)
+                        .password(password)
+                        .build();
+            } else if (databaseUrl.startsWith("jdbc:mysql://")) {
+                String username = System.getenv("SPRING_DATASOURCE_USERNAME");
+                if (username == null || username.isBlank()) username = System.getenv("DB_USERNAME");
+                if (username == null || username.isBlank()) username = "root";
+
+                String password = System.getenv("SPRING_DATASOURCE_PASSWORD");
+                if (password == null || password.isBlank()) password = System.getenv("DB_PASSWORD");
+
+                return DataSourceBuilder.create()
+                        .driverClassName("com.mysql.cj.jdbc.Driver")
+                        .url(databaseUrl)
+                        .username(username)
+                        .password(password)
+                        .build();
+            } else if (databaseUrl.startsWith("postgres://") || databaseUrl.startsWith("postgresql://")) {
                 URI dbUri = new URI(databaseUrl);
                 String userInfo = dbUri.getUserInfo();
                 String username = "";
