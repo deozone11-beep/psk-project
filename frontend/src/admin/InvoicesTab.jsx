@@ -1042,18 +1042,18 @@ export default function InvoicesTab({ creds }) {
               {/* 3-Column Layout: Left (Client Sign), Center (Company Stamp Seal), Right (Authorized Signatory) */}
               <div className="lhSignSection" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'flex-end', marginTop: '30px', borderTop: '1px dashed #cbd5e1', paddingTop: '15px' }}>
                 {/* Left Column: Client Signature */}
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ height: '55px', borderBottom: '1px dashed #94a3b8', width: '80%', marginBottom: '6px' }}></div>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ height: '65px', borderBottom: '1px dashed #94a3b8', width: '90%', marginBottom: '6px' }}></div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '600' }}>Client Signature</div>
                 </div>
 
-                {/* Center Column: Company Stamp Seal (Located right in the red circle area!) */}
+                {/* Center Column: Company Stamp Seal */}
                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ minHeight: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <img
                       src={customSeal || DEFAULT_CIRCULAR_SEAL_SVG}
                       alt="PSK Official Seal"
-                      style={{ height: '75px', objectFit: 'contain' }}
+                      style={{ height: '80px', objectFit: 'contain' }}
                     />
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
@@ -1062,15 +1062,15 @@ export default function InvoicesTab({ creds }) {
                 </div>
 
                 {/* Right Column: Authorized Signatory */}
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  <div style={{ minHeight: '55px', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', marginBottom: '6px' }}>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ minHeight: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px', width: '100%' }}>
                     <img
                       src={customSignature || DEFAULT_DIGITAL_SIGNATURE_SVG}
                       alt="Authorized Signature"
-                      style={{ height: '48px', maxWidth: '160px', objectFit: 'contain' }}
+                      style={{ height: '75px', maxHeight: '85px', maxWidth: '220px', objectFit: 'contain' }}
                     />
                   </div>
-                  <div style={{ borderTop: '1px dashed #94a3b8', width: '85%', paddingTop: '4px' }}>
+                  <div style={{ borderTop: '1px dashed #94a3b8', width: '90%', paddingTop: '4px', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#0f172a' }}>
                       For PSK BROTHERS BUILDERS
                     </div>
@@ -1114,11 +1114,11 @@ export default function InvoicesTab({ creds }) {
                   style={{ fontSize: '0.82rem', marginBottom: '10px' }}
                 />
                 <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Current Preview:</div>
-                <div style={{ background: '#fff', padding: '8px', borderRadius: '8px', border: '1px dashed #cbd5e1', marginTop: '4px', textAlign: 'center' }}>
+                <div style={{ background: '#fff', padding: '12px', borderRadius: '8px', border: '1px dashed #cbd5e1', marginTop: '4px', textAlign: 'center' }}>
                   <img
                     src={customSignature || DEFAULT_DIGITAL_SIGNATURE_SVG}
                     alt="Signature Preview"
-                    style={{ height: '44px', objectFit: 'contain' }}
+                    style={{ height: '65px', maxHeight: '75px', objectFit: 'contain' }}
                   />
                 </div>
               </div>
@@ -1320,17 +1320,19 @@ export default function InvoicesTab({ creds }) {
 
               {/* 3-Column Footer Signature */}
               <div className="lhSignSection" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'flex-end', marginTop: '20px', borderTop: '1px dashed #cbd5e1', paddingTop: '15px' }}>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ height: '50px', borderBottom: '1px dashed #94a3b8', width: '80%', marginBottom: '6px' }}></div>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ height: '65px', borderBottom: '1px dashed #94a3b8', width: '90%', marginBottom: '6px' }}></div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '600' }}>Borrower / Client Signature</div>
                 </div>
                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <img src={customSeal || DEFAULT_CIRCULAR_SEAL_SVG} alt="Official Seal" style={{ height: '70px', objectFit: 'contain' }} />
+                  <img src={customSeal || DEFAULT_CIRCULAR_SEAL_SVG} alt="Official Seal" style={{ height: '80px', objectFit: 'contain' }} />
                   <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '700', marginTop: '4px' }}>OFFICIAL VALUER STAMP SEAL</div>
                 </div>
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  <img src={customSignature || DEFAULT_DIGITAL_SIGNATURE_SVG} alt="Authorized Signature" style={{ height: '44px', objectFit: 'contain' }} />
-                  <div style={{ borderTop: '1px dashed #94a3b8', width: '85%', paddingTop: '4px' }}>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ minHeight: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px', width: '100%' }}>
+                    <img src={customSignature || DEFAULT_DIGITAL_SIGNATURE_SVG} alt="Authorized Signature" style={{ height: '75px', maxHeight: '85px', maxWidth: '220px', objectFit: 'contain' }} />
+                  </div>
+                  <div style={{ borderTop: '1px dashed #94a3b8', width: '90%', paddingTop: '4px', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#0f172a' }}>For PSK BROTHERS BUILDERS</div>
                     <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Licensed Structural Engineer &amp; Valuer</div>
                   </div>
@@ -1438,17 +1440,19 @@ export default function InvoicesTab({ creds }) {
 
               {/* 3-COLUMN SIGNATURE BLOCK */}
               <div className="lhSignSection" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'flex-end', marginTop: '30px', borderTop: '1px dashed #cbd5e1', paddingTop: '15px' }}>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ height: '50px', borderBottom: '1px dashed #94a3b8', width: '80%', marginBottom: '6px' }}></div>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ height: '65px', borderBottom: '1px dashed #94a3b8', width: '90%', marginBottom: '6px' }}></div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '600' }}>Client / Property Owner Signature</div>
                 </div>
                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <img src={customSeal || DEFAULT_CIRCULAR_SEAL_SVG} alt="Official Seal" style={{ height: '75px', objectFit: 'contain' }} />
+                  <img src={customSeal || DEFAULT_CIRCULAR_SEAL_SVG} alt="Official Seal" style={{ height: '80px', objectFit: 'contain' }} />
                   <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '700', marginTop: '4px' }}>OFFICIAL STAMP SEAL</div>
                 </div>
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  <img src={customSignature || DEFAULT_DIGITAL_SIGNATURE_SVG} alt="Authorized Signature" style={{ height: '48px', objectFit: 'contain' }} />
-                  <div style={{ borderTop: '1px dashed #94a3b8', width: '85%', paddingTop: '4px' }}>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ minHeight: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px', width: '100%' }}>
+                    <img src={customSignature || DEFAULT_DIGITAL_SIGNATURE_SVG} alt="Authorized Signature" style={{ height: '75px', maxHeight: '85px', maxWidth: '220px', objectFit: 'contain' }} />
+                  </div>
+                  <div style={{ borderTop: '1px dashed #94a3b8', width: '90%', paddingTop: '4px', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#0f172a' }}>For PSK BROTHERS BUILDERS</div>
                     <div style={{ fontSize: '0.74rem', color: '#64748b' }}>(Authorized Signatory)</div>
                   </div>

@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{Menu,X,Phone,MapPin,Mail,ArrowRight,CheckCircle2,Pencil,Hammer,MessageSquare,Send,ChevronLeft,ChevronRight}from'lucide-react';import'./style.css';import AdminApp from'./AdminApp.jsx';import CustomerApp from'./CustomerApp.jsx';import LoginPage from'./LoginPage.jsx';import PlanVisualizer from'./components/PlanVisualizer.jsx';
+import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{Menu,X,Phone,MapPin,Mail,ArrowRight,CheckCircle2,Pencil,Hammer,MessageSquare,Send,ChevronLeft,ChevronRight,Printer,FileText,User,Building2,Sparkles}from'lucide-react';import'./style.css';import AdminApp from'./AdminApp.jsx';import CustomerApp from'./CustomerApp.jsx';import LoginPage from'./LoginPage.jsx';
 const API=import.meta.env.VITE_API_URL||'/api',fallback={services:['Residential Construction','Commercial Buildings','Renovation & Remodeling','Planning & Approval','Interior Works','Turnkey Projects'].map((title,id)=>({id,title,description:'Quality workmanship, transparent pricing and dependable project delivery.'})),projects:[{id:1,title:'Modern Family Residence',location:'Coimbatore',status:'Completed',imageUrl:'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'},{id:2,title:'Premium Villa',location:'Erode',status:'Completed',imageUrl:'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80'},{id:3,title:'Urban Business Centre',location:'Tiruppur',status:'Ongoing',imageUrl:'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'}],testimonials:[{id:1,customerName:'Ramesh Kumar',location:'Coimbatore',message:'PSK Brothers built our home on time and exactly as planned.',rating:5},{id:2,customerName:'Priya Selvam',location:'Erode',message:'Professional team, honest pricing, excellent finish quality.',rating:5},{id:3,customerName:'Arun Prakash',location:'Tiruppur',message:'They handled our office renovation smoothly with minimal disruption.',rating:4}]};
 // Fire-and-forget fetch to warm up Render server immediately on load
 fetch(`${API}/settings`).catch(()=>{});
@@ -423,7 +423,7 @@ function GlobalLoader({message}){
   );
 }
 
-function App(){const[d,setD]=useState(fallback),[lightbox,setLightbox]=useState(null),[appLoading,setAppLoading]=useState(false),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[otherRate,setOtherRate]=useState(1980),[sqft,setSqft]=useState(500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null),[scrolled,setScrolled]=useState(false),[showEnquiryModal,setShowEnquiryModalRaw]=useState(false),[chatOpen,setChatOpen]=useState(false),[chatInput,setChatInput]=useState(''),[lang,setLang]=useState('en'),[chatMessages,setChatMessages]=useState([{sender:'bot',text:'Hello! I am the PSK Brothers Assistant. Ask me anything about our construction rates, projects, processes, or services!',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}]),[chatTyping,setChatTyping]=useState(false),[enquiryStep,setEnquiryStep]=useState(0),[enquiryData,setEnquiryData]=useState({name:'',phone:'',service:'',message:''});const chatBodyRef=useRef(null);const[suggestions,setSuggestions]=useState([]);const suggestTimeout=useRef(null);
+function App(){const[d,setD]=useState(fallback),[lightbox,setLightbox]=useState(null),[appLoading,setAppLoading]=useState(false),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[otherRate,setOtherRate]=useState(1980),[sqft,setSqft]=useState(500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null),[scrolled,setScrolled]=useState(false),[showEnquiryModal,setShowEnquiryModalRaw]=useState(false),[chatOpen,setChatOpen]=useState(false),[chatInput,setChatInput]=useState(''),[lang,setLang]=useState('en'),[calcTab,setCalcTab]=useState('cost'),[chatMessages,setChatMessages]=useState([{sender:'bot',text:'👋 **Welcome to PSK Brothers Builders & Constructions!**\n\nOur mission is to assist you in discovering your dream home or commercial space across Tamil Nadu. How can we help you today?',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}]),[chatTyping,setChatTyping]=useState(false),[enquiryStep,setEnquiryStep]=useState(0),[enquiryData,setEnquiryData]=useState({name:'',phone:'',service:'',message:''});const chatBodyRef=useRef(null);const[suggestions,setSuggestions]=useState([]);const suggestTimeout=useRef(null);
 const [coords, setCoords] = useState({ latitude: '', longitude: '' });
 function requestCoords() {
   if (navigator.geolocation) {
@@ -524,8 +524,21 @@ async function submit(e){
 const percentDiff = rate > 0 ? Math.round(((otherRate - rate) / rate) * 100) : 0;
 const savePercent = otherRate > 0 ? Math.round(((otherRate - rate) / otherRate) * 100) : 0;
 return <div className="site">
-  {appLoading && <GlobalLoader message={lang==='ta'?'விவரங்கள் ஏற்றப்படுகின்றன...':'Loading details...'}/>}
-  <header className={scrolled?'scrolled':''}><a className="logo" href="#home"><img src="/logo.png" alt="PSK Brothers Builders & Constructions"/></a><nav className={open?'open':''}>{['Home','About','Services','Why','Pillars','Calculator','Process','Projects','Testimonials','Contact'].map(x=><a key={x} onClick={()=>setOpen(false)} href={'#'+x.toLowerCase()}>{x}</a>)}<a className="loginNav" href="/login">Login</a><button className="primary navCta" onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{cursor:'pointer',borderRadius:'20px'}}>GET A QUOTE</button></nav><button className={'menu'+(!scrolled&&!open?' onHero':'')} onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</button></header><main>
+  {appLoading && <GlobalLoader message="Loading details..."/>}
+  <header className={scrolled?'scrolled':''}>
+    <a className="logo" href="#home"><img src="/logo.png" alt="PSK Brothers Builders & Constructions"/></a>
+    <nav className={open?'open':''}>
+      {['Home','About','Services','Why','Pillars','Calculator','Process','Projects','Testimonials','Contact'].map(x=>(
+        <a key={x} onClick={()=>setOpen(false)} href={'#'+x.toLowerCase()}>
+          {x}
+        </a>
+      ))}
+      <a className="loginNav" href="/login">Login</a>
+      <button className="primary navCta" onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{cursor:'pointer',borderRadius:'20px'}}>GET A QUOTE</button>
+    </nav>
+    <button className={'menu'+(!scrolled&&!open?' onHero':'')} onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</button>
+  </header>
+  <main>
 <section id="home" className="hero"><div className="shade"/><div className="heroText"><p className="eyebrow">BUILDING TRUST. CREATING LANDMARKS.</p><h1>We build spaces<br/>that inspire <em>life.</em></h1><p>Quality construction, honest communication and dependable delivery for homes and businesses across Tamil Nadu.</p><a className="primary" href="#projects">VIEW OUR WORK <ArrowRight size={18}/></a><a className="call" href="tel:+919003177934"><Phone size={18}/> +91 90031 77934 <br/>+91 99414 26479</a></div><div className="stats"><span><b>24+</b>YEARS EXPERIENCE</span><span><b>75+</b>PROJECTS COMPLETED</span><span><b>100%</b>QUALITY COMMITMENT</span></div></section>
 <section id="about" className="about wrap"><div><p className="eyebrow">WHO WE ARE</p><h2>Strong foundations.<br/>Lasting relationships.</h2><p>PSK Brothers Builders & Constructions is committed to quality workmanship, transparent pricing and timely delivery.</p>{['Skilled and experienced team','Quality materials and standards','Clear estimates and regular updates'].map(x=><div className="check" key={x}><CheckCircle2/> {x}</div>)}</div><div className="aboutImg"><img src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80"/><b>Built with<br/>responsibility.</b></div></section>
 <section id="services" className="light"><div className="wrap"><p className="eyebrow">WHAT WE DO</p><h2>Complete construction solutions</h2><div className="grid services">{(d.services || []).map((x,i)=>x && <article key={x.id}><ServiceIcon title={x.title} idKey={x.id}/><i>0{i+1}</i><h3>{x.title}</h3><p>{x.description}</p><button onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{background:'none',border:'none',padding:0,color:'#17201d',fontSize:'.75rem',fontWeight:700,display:'flex',gap:'8px',alignItems:'center',cursor:'pointer'}}>ENQUIRE <ArrowRight size={15}/></button></article>)}</div></div></section>
@@ -535,8 +548,56 @@ return <div className="site">
 }}><ProjectSlideshow images={x.imageUrls&&x.imageUrls.length?x.imageUrls:(x.imageUrl?[x.imageUrl]:[])}/><span className={'statusPill'+(x.status==='Completed'?' done':'')}>{x.status==='Completed'?<CheckCircle2 size={13}/>:<Hammer size={13}/>} {x.status}</span><div><small>{x.location}</small><h3>{x.title}</h3></div></article>)}</div></section>
 <section id="why" className="wrap"><p className="eyebrow">WHY PSK BROTHERS</p><h2>Built on trust, backed by process</h2><div className="grid why">{[['Time','On-time delivery — no cost overruns from delayed schedules.'],['Transparency','Clear estimates, no hidden charges. Every cost explained upfront.'],['Quality Materials','We use only trusted, standard-grade materials — no shortcuts.'],['Regular Updates','You get progress updates at every stage, not just at handover.'],['In-house Team','Our own skilled masons and supervisors — no unreliable subcontracting.'],['Post-Construction Support','Issues after handover? We stay reachable, not gone with the payment.'],['Fair Pricing','Right quality for the right price — quotes tailored to your budget.'],['Local Expertise','Deep knowledge of Coimbatore soil, weather and approval processes.']].map(([t,d2])=><div key={t} className="whyCard"><h3>{t}</h3><p>{d2}</p></div>)}</div></section>
 <section id="pillars" className="light"><div className="wrap"><p className="eyebrow">HOW WE WORK</p><h2>4 things we don't compromise on</h2><div className="pillarTabs">{Object.keys(pillars).map(k=><button key={k} className={'pillarTab'+(pillar===k?' active':'')} onClick={()=>setPillar(k)}>{pillars[k].label}</button>)}</div><div className="pillarPanel"><h3>{pillars[pillar].title}</h3><p>{pillars[pillar].body}</p><ul>{pillars[pillar].points.map(pt=><li key={pt}><CheckCircle2 size={16}/> {pt}</li>)}</ul></div></div></section>
-<section id="calculator" className="wrap"><p className="eyebrow">ESTIMATE YOUR COST</p><h2>Compare construction cost & see your savings</h2><p className="calcSub">Move the slider to see how PSK Brothers' transparent, fixed-rate pricing compares to typical market rates.</p><div className="calcBox2"><div className="calcCards"><div className="calcCard best"><span className="calcBadge">BEST PRICE</span><div className="calcCardRow"><div><b className="calcCardLabel">PSK Brothers</b><span className="calcCardRate">₹{rate.toLocaleString('en-IN')} / sqft</span></div><div className="calcCardAmt">₹{Math.round(rate*sqft).toLocaleString('en-IN')}</div></div></div><div className="calcCard others"><span className="calcBadge grey">{percentDiff >= 0 ? `+${percentDiff}%` : `${percentDiff}%`}</span><div className="calcCardRow"><div><b className="calcCardLabel">Other Builders</b><span className="calcCardRate">₹{otherRate.toLocaleString('en-IN')} / sqft</span></div><div className="calcCardAmt">₹{Math.round(otherRate*sqft).toLocaleString('en-IN')}</div></div></div><div className="calcCard save"><div className="calcCardRow"><div><b className="calcCardLabel save">You Save</b><span className="calcCardRate save">~{savePercent}% less</span></div><div className="calcCardAmt save">₹{Math.round(otherRate*sqft-rate*sqft).toLocaleString('en-IN')}</div></div></div><button className="primary calcCta" onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{cursor:'pointer'}}>Get Exact Quote <ArrowRight size={16}/></button></div><div className="calcRight"><BuildingArt sqft={sqft}/><input type="range" min="500" max="100000" step="500" value={sqft} onChange={e=>setSqft(Number(e.target.value))}/><div className="calcRange"><span>500</span><span>100K</span></div>{editingSqft?<form className="calcSqft editing" onSubmit={e=>{e.preventDefault();commitSqft(e.target.elements.sqftVal.value)}}><input name="sqftVal" type="number" min="500" max="100000" defaultValue={sqft} autoFocus onBlur={e=>commitSqft(e.target.value)}/><small>SQFT</small></form>:<button type="button" className="calcSqft" onClick={()=>setEditingSqft(true)}>{sqft.toLocaleString('en-IN')} <small>SQFT</small> <Pencil size={14}/></button>}</div></div></section>
-<section id="plans" className="light" style={{ padding: '60px 0' }}><PlanVisualizer user={null} onRequireLogin={() => window.location.href = '/login'} /></section>
+
+{/* COST CALCULATOR */}
+<section id="calculator" className="wrap">
+  <p className="eyebrow">ESTIMATE YOUR CONSTRUCTION COST</p>
+  <h2>Compare construction cost &amp; see instant savings</h2>
+
+  <div className="calcBox2">
+    <div className="calcCards">
+      <div className="calcCard best">
+        <span className="calcBadge">BEST PRICE</span>
+        <div className="calcCardRow">
+          <div><b className="calcCardLabel">PSK Brothers</b><span className="calcCardRate">₹{rate.toLocaleString('en-IN')} / sqft</span></div>
+          <div className="calcCardAmt">₹{Math.round(rate*sqft).toLocaleString('en-IN')}</div>
+        </div>
+      </div>
+      <div className="calcCard others">
+        <span className="calcBadge grey">{percentDiff >= 0 ? `+${percentDiff}%` : `${percentDiff}%`}</span>
+        <div className="calcCardRow">
+          <div><b className="calcCardLabel">Other Builders</b><span className="calcCardRate">₹{otherRate.toLocaleString('en-IN')} / sqft</span></div>
+          <div className="calcCardAmt">₹{Math.round(otherRate*sqft).toLocaleString('en-IN')}</div>
+        </div>
+      </div>
+      <div className="calcCard save">
+        <div className="calcCardRow">
+          <div><b className="calcCardLabel save">You Save</b><span className="calcCardRate save">~{savePercent}% less</span></div>
+          <div className="calcCardAmt save">₹{Math.round(otherRate*sqft-rate*sqft).toLocaleString('en-IN')}</div>
+        </div>
+      </div>
+      <button className="primary calcCta" onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{cursor:'pointer'}}>
+        Get Exact Quote <ArrowRight size={16}/>
+      </button>
+    </div>
+
+    <div className="calcRight">
+      <BuildingArt sqft={sqft}/>
+      <input type="range" min="500" max="100000" step="500" value={sqft} onChange={e=>setSqft(Number(e.target.value))}/>
+      <div className="calcRange"><span>500</span><span>100K</span></div>
+      {editingSqft?(
+        <form className="calcSqft editing" onSubmit={e=>{e.preventDefault();commitSqft(e.target.elements.sqftVal.value)}}>
+          <input name="sqftVal" type="number" min="500" max="100000" defaultValue={sqft} autoFocus onBlur={e=>commitSqft(e.target.value)}/>
+          <small>SQFT</small>
+        </form>
+      ):(
+        <button type="button" className="calcSqft" onClick={()=>setEditingSqft(true)}>
+          {sqft.toLocaleString('en-IN')} <small>SQFT</small> <Pencil size={14}/>
+        </button>
+      )}
+    </div>
+  </div>
+</section>
 <section id="process" className="light"><div className="wrap"><p className="eyebrow">HOW IT WORKS</p><h2>From first call to handover</h2><div className="grid process">{[['01','Enquiry','Tell us about your project — home, office or renovation.'],['02','Site Visit','Our team visits your site and understands your requirements.'],['03','Estimate & Plan','You get a clear, itemised cost estimate and timeline.'],['04','Execution & Handover','We build with regular updates, and hand over on schedule.']].map(([n,t,d2])=><div key={n} className="processCard"><span>{n}</span><h3>{t}</h3><p>{d2}</p></div>)}</div></div></section>
 <section id="testimonials" className="light"><div className="wrap"><p className="eyebrow">CLIENT WORDS</p><h2>What our clients say</h2><div className="grid testimonials">{(d.testimonials || []).map(x=>x && <article key={x.id}><div className="stars">{'★'.repeat(x.rating)}{'☆'.repeat(5-x.rating)}</div><p>"{x.message}"</p><b>{x.customerName}</b><span>{x.location}</span></article>)}</div></div></section>
 <section className="promise"><div><p className="eyebrow">THE PSK PROMISE</p><h2>Your vision. Safe in our hands.</h2><p>From first conversation to final handover, we bring care, clarity and craftsmanship to every square foot — no shortcuts, no surprises.</p><button className="primary" onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{cursor:'pointer'}}>START YOUR PROJECT <ArrowRight/></button></div><TrustHands/></section>
@@ -576,43 +637,113 @@ return <div className="site">
 
 {showEnquiryModal && (
   <div className="modalOverlay" onClick={() => setShowEnquiryModal(false)}>
-    <div className="modalContent" onClick={(e) => e.stopPropagation()}>
-      <button className="modalClose" onClick={() => setShowEnquiryModal(false)}><X size={20}/></button>
+    <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '780px', width: '94%', borderRadius: '28px', padding: '0', overflow: 'hidden' }}>
+      <button className="modalClose" onClick={() => setShowEnquiryModal(false)} style={{ zIndex: 10 }}><X size={20}/></button>
       
-      <div className="modalHeader">
-        <p className="eyebrow" style={{ justifyContent: 'flex-start' }}>ENQUIRY REQUEST</p>
-        <h2>Let's build together</h2>
-        <p className="modalDesc">Fill in the details below, and our team will get in touch with you shortly.</p>
-      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 0.8fr) 1.2fr' }}>
+        {/* LEFT COLUMN: ACTIVE CONSTRUCTION SITE ILLUSTRATION SCENE */}
+        <div style={{ position: 'relative', overflow: 'hidden', minHeight: '400px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '24px', color: '#fff', borderRight: '1px solid rgba(0,0,0,0.1)' }}>
+          {/* Construction Site Vector Background */}
+          <img 
+            src="/construction_site_illustration.png" 
+            alt="PSK Construction Site Scene" 
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, filter: 'brightness(0.92)' }} 
+          />
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.75) 0%, rgba(15, 23, 42, 0.35) 50%, rgba(15, 23, 42, 0.88) 100%)', zIndex: 1 }} />
 
-      <form onSubmit={submit} ref={formRef} className="multiStep">
-        <div className="stepDots">
-          <span className={step >= 1 ? 'on' : ''} />
-          <span className={step >= 2 ? 'on' : ''} />
-        </div>
-        
-        <div className="stepFields" style={{ display: step === 1 ? 'flex' : 'none', flexDirection: 'column', gap: '12px' }}>
-          <input name="name" placeholder="Your name" required />
-          <input name="phone" placeholder="Phone number" required />
-          <input name="email" type="email" placeholder="Email address (optional)" />
-          <button type="button" className="primary stepNext" onClick={goNext}>
-            NEXT <ArrowRight size={16} />
-          </button>
-        </div>
+          {/* Top Badge */}
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', color: '#fff', padding: '5px 12px', borderRadius: '16px', fontSize: '0.74rem', fontWeight: '800', letterSpacing: '1px', border: '1px solid rgba(255,255,255,0.2)' }}>
+              🏗️ PSK BROTHERS BUILDERS
+            </div>
+          </div>
 
-        <div className="stepFields" style={{ display: step === 2 ? 'flex' : 'none', flexDirection: 'column', gap: '12px' }}>
-          <select name="service" required>
-            <option value="">Select service</option>
-            {(d.services || []).map(x => x && <option key={x.id} value={x.title}>{x.title}</option>)}
-          </select>
-          <textarea name="message" placeholder="Tell us about your project" required />
-          <div className="stepBtnRow">
-            <button type="button" className="stepBack" onClick={() => setStep(1)}>BACK</button>
-            <button className="primary">SEND ENQUIRY <ArrowRight size={16} /></button>
+          {/* Bottom Content Overlay */}
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'left' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', margin: '0 0 4px 0', color: '#ffffff', textShadow: '0 2px 6px rgba(0,0,0,0.9)' }}>
+              Building With Trust 🏡
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: '#f1f5f9', margin: '0 0 12px 0', lineHeight: '1.4', textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
+              Quality craftsmanship &amp; transparent delivery for homes &amp; businesses across Tamil Nadu.
+            </p>
+
+            {/* Trust Highlights */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.76rem', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', padding: '10px 12px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f8fafc' }}>
+                <span style={{ fontSize: '13px' }}>✓</span> <span><strong>25+ Years Experience</strong></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f8fafc' }}>
+                <span style={{ fontSize: '13px' }}>✓</span> <span><strong>Free Site Visit &amp; Plan</strong></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f8fafc' }}>
+                <span style={{ fontSize: '13px' }}>✓</span> <span><strong>100% On-Time Delivery</strong></span>
+              </div>
+            </div>
           </div>
         </div>
-        {msg && <p className="modalMsg" style={{ color: msg.includes('Thank') ? '#2ea86f' : '#e2262b' }}>{msg}</p>}
-      </form>
+
+        {/* RIGHT COLUMN: FORM FIELDS */}
+        <div style={{ padding: '32px' }}>
+          <div style={{ textAlign: 'left', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '1.65rem', fontWeight: '800', margin: '0 0 4px 0', color: '#0f172a' }}>
+              Let's Build Together 🏡
+            </h2>
+            <p className="modalDesc" style={{ fontSize: '0.84rem', lineHeight: '1.4', margin: 0, color: '#64748b' }}>
+              Fill in your details below. Our team will contact you shortly!
+            </p>
+          </div>
+
+          <form onSubmit={submit} ref={formRef} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: '700', marginBottom: '4px', color: '#0f172a' }}>
+                  <User size={14} style={{ color: '#e2262b' }} /> Full Name *
+                </label>
+                <input name="name" placeholder="e.g. Karthik Raja" required style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', fontSize: '0.88rem', outline: 'none' }} />
+              </div>
+
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: '700', marginBottom: '4px', color: '#0f172a' }}>
+                  <Phone size={14} style={{ color: '#e2262b' }} /> Mobile Phone *
+                </label>
+                <input name="phone" placeholder="+91 98765 43210" required style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', fontSize: '0.88rem', outline: 'none' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: '700', marginBottom: '4px', color: '#0f172a' }}>
+                  <Mail size={14} style={{ color: '#e2262b' }} /> Email (Optional)
+                </label>
+                <input name="email" type="email" placeholder="karthik@gmail.com" style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', fontSize: '0.88rem', outline: 'none' }} />
+              </div>
+
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: '700', marginBottom: '4px', color: '#0f172a' }}>
+                  <Building2 size={14} style={{ color: '#e2262b' }} /> Service Type *
+                </label>
+                <select name="service" required style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', fontSize: '0.88rem', outline: 'none', cursor: 'pointer' }}>
+                  <option value="" style={{ color: '#0f172a', background: '#fff' }}>Select service</option>
+                  {(d.services || []).map(x => x && <option key={x.id} value={x.title} style={{ color: '#0f172a', background: '#fff' }}>{x.title}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: '700', marginBottom: '4px', color: '#0f172a' }}>
+                <MessageSquare size={14} style={{ color: '#e2262b' }} /> Project Notes *
+              </label>
+              <textarea name="message" placeholder="Location, estimated sqft, budget..." required rows={3} style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', fontSize: '0.88rem', outline: 'none', resize: 'vertical' }} />
+            </div>
+
+            {msg && <p className="modalMsg" style={{ color: msg.includes('Thank') ? '#2ea86f' : '#e2262b', margin: '2px 0 0 0', fontWeight: 'bold', fontSize: '0.85rem' }}>{msg}</p>}
+
+            <button type="submit" className="primary" style={{ padding: '13px', borderRadius: '14px', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '4px', boxShadow: '0 8px 20px rgba(226, 38, 43, 0.4)' }}>
+              🚀 SEND ENQUIRY REQUEST <ArrowRight size={17} />
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 )}
@@ -654,19 +785,23 @@ return <div className="site">
             ]);
           }}
           style={{
-            background: 'rgba(255, 255, 255, 0.15)',
+            background: 'linear-gradient(135deg, rgba(226, 38, 43, 0.25) 0%, rgba(255,255,255,0.1) 100%)',
             border: '1px solid rgba(255, 255, 255, 0.25)',
-            borderRadius: '12px',
+            borderRadius: '20px',
             color: '#ffffff',
-            padding: '4px 10px',
-            fontSize: '0.72rem',
-            fontWeight: 'bold',
+            padding: '5px 12px',
+            fontSize: '0.74rem',
+            fontWeight: '700',
             cursor: 'pointer',
             fontFamily: 'inherit',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
           }}
         >
-          {lang === 'ta' ? 'English' : 'தமிழ்'}
+          {lang === 'ta' ? '🇬🇧 English' : '🇮🇳 தமிழ்'}
         </button>
         <button className="chatBotClose" onClick={() => setChatOpen(false)}>
           <X size={18} />
@@ -704,7 +839,7 @@ return <div className="site">
       
       {chatTyping && (
         <div className="chatMsg bot">
-          <div className="typingBubble">
+          <div className="typingIndicator">
             <span className="typingDot"></span>
             <span className="typingDot"></span>
             <span className="typingDot"></span>
@@ -716,28 +851,28 @@ return <div className="site">
       <div className="chatBotChips">
         {enquiryStep === 3 ? (
           <>
-            <button className="chatChip" onClick={() => sendChatMessage("Residential Construction")}>Residential</button>
-            <button className="chatChip" onClick={() => sendChatMessage("Commercial Buildings")}>Commercial</button>
-            <button className="chatChip" onClick={() => sendChatMessage("Renovation & Remodeling")}>Renovation</button>
-            <button className="chatChip" onClick={() => sendChatMessage("Interior Works")}>Interior</button>
-            <button className="chatChip" onClick={() => sendChatMessage("Turnkey Projects")}>Turnkey</button>
+            <button className="chatChip" onClick={() => sendChatMessage("Residential Construction")}>🏡 Residential</button>
+            <button className="chatChip" onClick={() => sendChatMessage("Commercial Buildings")}>🏢 Commercial</button>
+            <button className="chatChip" onClick={() => sendChatMessage("Renovation & Remodeling")}>🔨 Renovation</button>
+            <button className="chatChip" onClick={() => sendChatMessage("Interior Works")}>🛋️ Interior</button>
+            <button className="chatChip" onClick={() => sendChatMessage("Turnkey Projects")}>🔑 Turnkey</button>
           </>
-        ) : enquiryStep === 0 ? (
+        ) : (
           <>
             <button className="chatChip" onClick={() => sendChatMessage(lang === 'ta' ? "கட்டுமான விலை எவ்வளவு?" : "What is your construction rate?")}>
-              {lang === 'ta' ? "விலை எவ்வளவு?" : "Rates?"}
+              💰 {lang === 'ta' ? "விலை விவரம்" : "Construction Rates"}
             </button>
             <button className="chatChip" onClick={() => sendChatMessage(lang === 'ta' ? "என்னென்ன சேவைகள் உள்ளன?" : "What services do you offer?")}>
-              {lang === 'ta' ? "சேவைகள்?" : "Services?"}
+              🏗️ {lang === 'ta' ? "சேவைகள்" : "Our Services"}
             </button>
             <button className="chatChip" onClick={() => sendChatMessage(lang === 'ta' ? "அலுவலக முகவரி எங்குள்ளது?" : "Where is your office located?")}>
-              {lang === 'ta' ? "முகவரி?" : "Location?"}
+              📍 {lang === 'ta' ? "அலுவலக இடம்" : "Office Locations"}
             </button>
-            <button className="chatChip" onClick={() => sendChatMessage(lang === 'ta' ? "என்கொயரி செய்ய வேண்டும்" : "Send Enquiry")}>
-              {lang === 'ta' ? "என்கொயரி செய்ய 📝" : "Send Enquiry 📝"}
+            <button className="chatChip" onClick={() => { setStep(1); setMsg(''); setShowEnquiryModal(true); setChatOpen(false); }}>
+              📝 {lang === 'ta' ? "இலவச மதிப்பீடு பெறுக" : "Get Free Quote"}
             </button>
           </>
-        ) : null}
+        )}
       </div>
     </div>
 
@@ -828,73 +963,4 @@ return <div className="site">
   </div>
 )}
 </div>};
-function IntroScreen({onEnter, leaving}){
-  function handleEnter(){
-    if(leaving)return;
-    onEnter();
-  }
-  return (
-    <div className={'introScreen'+(leaving?' leaving':'')} onClick={handleEnter}>
-      <div className="introSweepLine"/>
-      <div className="introGrid"/>
-      <div className="introContent">
-        <span className="introAccentBar"/>
-        <p className="eyebrow introEyebrow">WELCOME TO</p>
-        <h1 className="introTitle">PSK Brothers<em>Builders &amp; Constructions</em></h1>
-        <p className="introTag">Building trust. Creating landmarks.<br/><span className="introSubTag">We build what you imagine.</span></p>
-        <div className="introHint"><span className="introChevron">⌄</span>Tap anywhere to enter</div>
-      </div>
-    </div>
-  );
-}
-
-function SiteWithIntro(){
-  const [entered,setEntered]=useState(()=>{
-    try{return sessionStorage.getItem('psk_entered')==='1'}catch(e){return false}
-  });
-  const [showIntro,setShowIntro]=useState(!entered);
-  const [transitioning,setTransitioning]=useState(false);
-
-  function enter(){
-    setTransitioning(true);
-    setTimeout(()=>{
-      try{sessionStorage.setItem('psk_entered','1')}catch(e){}
-      setEntered(true);
-    },3100);
-    setTimeout(()=>{
-      setShowIntro(false);
-      setTransitioning(false);
-    },3800);
-  }
-  return (
-    <div style={{position:'relative',width:'100%',height:'100%'}}>
-      {showIntro && <IntroScreen onEnter={enter} leaving={transitioning} />}
-      {transitioning && (
-        <div className="pulseWipeContainer">
-          <div className="pulseWipeCenter">
-            <svg className="pulseBuildingSvg" viewBox="0 0 1000 200">
-              <path
-                className="pulseBuildingPath"
-                d="M 0,130 L 320,130 L 335,90 L 350,170 L 365,130 L 380,130 L 395,40 L 410,190 L 425,130 L 445,130 L 460,130 L 460,105 L 485,105 L 485,130 L 495,130 L 495,80 L 525,80 L 525,130 L 535,130 L 535,55 Q 547,40 550,40 L 552,15 L 554,40 Q 557,40 570,55 L 570,130 Q 530,165 480,165 Q 440,165 430,145 Q 425,135 445,135 L 1000,135"
-                fill="none"
-                stroke="url(#pulseGrad)"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <defs>
-                <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#e2262b" />
-                  <stop offset="50%" stopColor="#f0c866" />
-                  <stop offset="100%" stopColor="#e2262b" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-        </div>
-      )}
-      <div style={{visibility:entered?'visible':'hidden'}}><App/></div>
-    </div>
-  );
-}
-createRoot(document.getElementById('root')).render(window.location.pathname.startsWith('/admin')?<AdminApp/>:window.location.pathname.startsWith('/portal')?<CustomerApp/>:window.location.pathname.startsWith('/login')?<LoginPage/>:<SiteWithIntro/>);
+createRoot(document.getElementById('root')).render(window.location.pathname.startsWith('/admin')?<AdminApp/>:window.location.pathname.startsWith('/portal')?<CustomerApp/>:window.location.pathname.startsWith('/login')?<LoginPage/>:<App/>);

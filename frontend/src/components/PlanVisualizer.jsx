@@ -678,32 +678,31 @@ export default function PlanVisualizer({
         >
           100% Geometry-Linked Architectural Suite
         </span>
-        <h2 style={{ fontSize: '1.9rem', fontWeight: '800', color: '#0f172a', margin: '8px 0 4px 0' }}>
-          Interactive AutoCAD 2D & Revit 3D Architectural Suite
+        <h2 style={{ fontSize: '1.9rem', fontWeight: '800', color: 'var(--text-main, #f8fafc)', margin: '8px 0 4px 0' }}>
+          Interactive AutoCAD 2D &amp; Revit 3D Architectural Suite
         </h2>
-        <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>
-          Real-time Parametric 2D Blueprint, 3D Isometric Cutaway Model & 3D Architectural Front Elevation Renders!
+        <p style={{ color: 'var(--text-sub, #cbd5e1)', fontSize: '0.9rem', margin: 0 }}>
+          Real-time Parametric 2D Blueprint, 3D Isometric Cutaway Model &amp; 3D Architectural Front Elevation Renders!
         </p>
       </div>
 
       {/* Control Panel Grid */}
       <div
+        className="materialCard"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap: '16px',
-          background: '#ffffff',
           borderRadius: '16px',
           padding: '20px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-          border: '1px solid #e2e8f0',
           marginBottom: '20px',
           boxSizing: 'border-box',
         }}
       >
         {/* Dimension Inputs */}
         <div>
-          <label style={{ fontWeight: '600', fontSize: '13px', color: '#334155' }}>
+          <label style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-main, #0f172a)' }}>
             Plot Length (ft): <strong style={{ color: '#0284c7' }}>{length} FT</strong>
           </label>
           <input
@@ -715,7 +714,7 @@ export default function PlanVisualizer({
             style={{ width: '100%', accentColor: '#0284c7', margin: '6px 0 12px 0' }}
           />
 
-          <label style={{ fontWeight: '600', fontSize: '13px', color: '#334155' }}>
+          <label style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-main, #0f172a)' }}>
             Plot Width (ft): <strong style={{ color: '#0284c7' }}>{width} FT</strong>
           </label>
           <input
@@ -730,7 +729,7 @@ export default function PlanVisualizer({
 
         {/* Direction, Floors & Package */}
         <div>
-          <label style={{ fontWeight: '700', fontSize: '13px', color: '#0f172a', display: 'block', marginBottom: '4px' }}>
+          <label style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-main, #0f172a)', display: 'block', marginBottom: '4px' }}>
             Plot Facing Direction
           </label>
           <select
@@ -744,8 +743,8 @@ export default function PlanVisualizer({
               marginBottom: '12px',
               fontWeight: '700',
               fontSize: '13.5px',
-              color: '#0f172a',
-              background: '#ffffff',
+              color: 'var(--text-main, #0f172a)',
+              background: 'var(--card-bg, #ffffff)',
               cursor: 'pointer',
               outline: 'none',
               boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
@@ -757,7 +756,7 @@ export default function PlanVisualizer({
             <option value="West" style={{ color: '#0f172a', background: '#ffffff', fontWeight: '600' }}>West Facing</option>
           </select>
 
-          <label style={{ fontWeight: '700', fontSize: '13px', color: '#0f172a', display: 'block', marginBottom: '4px' }}>
+          <label style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-main, #0f172a)', display: 'block', marginBottom: '4px' }}>
             Construction Package
           </label>
           <select
@@ -770,8 +769,8 @@ export default function PlanVisualizer({
               border: '1.5px solid #0284c7',
               fontWeight: '700',
               fontSize: '13.5px',
-              color: '#0f172a',
-              background: '#ffffff',
+              color: 'var(--text-main, #0f172a)',
+              background: 'var(--card-bg, #ffffff)',
               cursor: 'pointer',
               outline: 'none',
               boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
@@ -779,7 +778,7 @@ export default function PlanVisualizer({
           >
             {PACKAGES.map((pkg) => (
               <option key={pkg.id} value={pkg.id} style={{ color: '#0f172a', background: '#ffffff', fontWeight: '600' }}>
-                {pkg.name} — ₹{pkg.rate}/sqft ({pkg.badge})
+                {pkg.name} — ₹{pkg.rate}/sqft {pkg.id === 'executive' ? '(Most Popular)' : ''}
               </option>
             ))}
           </select>
@@ -874,23 +873,20 @@ export default function PlanVisualizer({
             🔥 SE Kitchen (Agni Konam)
           </span>
           <span style={{ background: '#dcfce7', color: '#15803d', padding: '3px 8px', borderRadius: '16px', fontSize: '10px', fontWeight: '700' }}>
-            💨 NW Washrooms & Staircase
+            💨 NW Washrooms &amp; Staircase
           </span>
         </div>
       </div>
 
       {/* MATERIAL ESTIMATOR QUANTITIES */}
       <div
+        className="materialCard"
         style={{
-          background: '#ffffff',
-          borderRadius: '14px',
-          padding: '16px 20px',
-          border: '1px solid #e2e8f0',
+          padding: '16px',
           marginBottom: '20px',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
         }}
       >
-        <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#0f172a', fontWeight: '800' }}>
+        <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: 'var(--text-main, #0f172a)', fontWeight: '800' }}>
           🏗️ Estimated Material Quantity Breakdown ({totalSqft.toLocaleString('en-IN')} sq.ft)
         </h3>
         <div
@@ -900,40 +896,40 @@ export default function PlanVisualizer({
             gap: '10px',
           }}
         >
-          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>🧱 Cement Bags</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{cementBags.toLocaleString('en-IN')} Bags</div>
-            <div style={{ fontSize: '9px', color: '#0284c7' }}>OPC 53 Grade</div>
+          <div className="materialCard" style={{ padding: '10px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-sub, #64748b)', fontWeight: '600' }}>🧱 Cement Bags</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main, #0f172a)' }}>{cementBags.toLocaleString('en-IN')} Bags</div>
+            <div style={{ fontSize: '9px', color: '#0284c7', fontWeight: 'bold' }}>OPC 53 Grade</div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>🏗️ TMT Steel Rods</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{steelTons} Tons</div>
-            <div style={{ fontSize: '9px', color: '#0284c7' }}>Fe550D Ribbed</div>
+          <div className="materialCard" style={{ padding: '10px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-sub, #64748b)', fontWeight: '600' }}>🏗️ TMT Steel Rods</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main, #0f172a)' }}>{steelTons} Tons</div>
+            <div style={{ fontSize: '9px', color: '#0284c7', fontWeight: 'bold' }}>Fe550D Ribbed</div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>📐 Flooring Tiles</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{tilesSqft.toLocaleString('en-IN')} Sq.Ft</div>
-            <div style={{ fontSize: '9px', color: '#0284c7' }}>Vitrified Tiles</div>
+          <div className="materialCard" style={{ padding: '10px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-sub, #64748b)', fontWeight: '600' }}>📐 Flooring Tiles</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main, #0f172a)' }}>{tilesSqft.toLocaleString('en-IN')} Sq.Ft</div>
+            <div style={{ fontSize: '9px', color: '#0284c7', fontWeight: 'bold' }}>Vitrified Tiles</div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>🚪 Doors & Frames</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{doorsCount} Sets</div>
-            <div style={{ fontSize: '9px', color: '#0284c7' }}>Teak Main Door</div>
+          <div className="materialCard" style={{ padding: '10px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-sub, #64748b)', fontWeight: '600' }}>🚪 Doors &amp; Frames</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main, #0f172a)' }}>{doorsCount} Sets</div>
+            <div style={{ fontSize: '9px', color: '#0284c7', fontWeight: 'bold' }}>Teak Main Door</div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>⚡ Electrical Points</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{electricalPoints} Points</div>
-            <div style={{ fontSize: '9px', color: '#0284c7' }}>Modular Switches</div>
+          <div className="materialCard" style={{ padding: '10px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-sub, #64748b)', fontWeight: '600' }}>⚡ Electrical Points</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main, #0f172a)' }}>{electricalPoints} Points</div>
+            <div style={{ fontSize: '9px', color: '#0284c7', fontWeight: 'bold' }}>Modular Switches</div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>🎨 Wall Paint & Primer</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a' }}>{paintLiters} Liters</div>
-            <div style={{ fontSize: '9px', color: '#0284c7' }}>Emulsion Paint</div>
+          <div className="materialCard" style={{ padding: '10px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-sub, #64748b)', fontWeight: '600' }}>🎨 Wall Paint &amp; Primer</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main, #0f172a)' }}>{paintLiters} Liters</div>
+            <div style={{ fontSize: '9px', color: '#0284c7', fontWeight: 'bold' }}>Emulsion Paint</div>
           </div>
         </div>
       </div>

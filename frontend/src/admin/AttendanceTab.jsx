@@ -27,6 +27,7 @@ export default function AttendanceTab({ creds }) {
   const [list, setList] = useState([]);
   const [payments, setPayments] = useState([]);
   const [subTab, setSubTab] = useState('daily'); // 'daily' | 'calendar' | 'report'
+  const [payslipRow, setPayslipRow] = useState(null);
   
   const [form, setForm] = useState({ 
     employeeId: '', 
@@ -1012,6 +1013,7 @@ export default function AttendanceTab({ creds }) {
                     <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b' }}>Total Earned</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#1e293b' }}>Total Paid</th>
                     <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', color: '#e2262b' }}>Balance Due</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center' }}>Payslip PDF</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1035,6 +1037,15 @@ export default function AttendanceTab({ creds }) {
                         color: row.balance >= 0 ? '#d97706' : '#b91c1c' 
                       }}>
                         ₹{row.balance.toLocaleString('en-IN')}
+                      </td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                        <button 
+                          className="btnSecondary" 
+                          onClick={() => setPayslipRow(row)}
+                          style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          📄 Payslip
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -1152,6 +1163,119 @@ export default function AttendanceTab({ creds }) {
         </div>
       )}
 
+      {payslipRow && (
+        <div className="modalOverlay" style={{ zIndex: 1000 }}>
+          <div className="modalCard modalLetterheadView" style={{ maxWidth: '650px', background: '#fff', borderRadius: '16px', padding: '24px' }}>
+            <div className="modalHeader noPrint" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a' }}>Official Worker Wage Slip</h3>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button className="btnPrimary" onClick={() => window.print()} style={{ padding: '8px 14px', borderRadius: '8px', cursor: 'pointer' }}>🖨️ Print Payslip</button>
+                <button className="closeBtn" onClick={() => setPayslipRow(null)}>×</button>
+              </div>
+            </div>
+
+            <div className="printableArea" style={{ border: '2px solid #0f172a', padding: '24px', borderRadius: '12px', background: '#fff' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #e2262b', paddingBottom: '12px', marginBottom: '16px' }}>
+                <div>
+                  <h2 style={{ margin: 0, color: '#e2262b', fontSize: '1.3rem', fontFamily: 'sans-serif' }}>PSK BROTHERS BUILDERS & CONSTRUCTIONS</h2>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Choolaimedu, Chennai - 600094 • Phone: +91 90031 77934</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ background: '#0f172a', color: '#fff', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>WORKER PAYSLIP</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>{reportRange.startDate} to {reportRange.endDate}</div>
+                </div>
+              </div>
+
+              {/* Employee Info */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#f8fafc', padding: '14px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem' }}>
+                <div><strong>Worker Name:</strong> {payslipRow.name}</div>
+                <div><strong>Role / Category:</strong> {payslipRow.role}</div>
+                <div><strong>Days Present:</strong> {payslipRow.presentDays} Days</div>
+                <div><strong>Daily Rate:</strong> ₹{(payslipRow.earnedWages / (payslipRow.presentDays || 1)).toFixed(0)} / day</div>
+              </div>
+
+              {/* Wage Calculation Table */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', marginBottom: '16px' }}>
+                <thead>
+                  <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #cbd5e1' }}>
+                    <th style={{ padding: '8px', textAlign: 'left' }}>Description</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>Earned (₹)</th>
+                    <th style={{ padding: '8px', textAlign: 'right' }}>Deductions / Paid (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '8px' }}>Basic Wages ({payslipRow.presentDays} Days)</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>₹{payslipRow.earnedWages.toLocaleString('en-IN')}</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>-</td>
+                  </tr>
+                  {payslipRow.extraDuty > 0 && (
+                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '8px' }}>Extra Duty / Overtime</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>₹{payslipRow.extraDuty.toLocaleString('en-IN')}</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>-</td>
+                    </tr>
+                  )}
+                  {payslipRow.advances > 0 && (
+                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '8px' }}>Advance Received / Deducted</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>-</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#dc2626' }}>₹{payslipRow.advances.toLocaleString('en-IN')}</td>
+                    </tr>
+                  )}
+                  {payslipRow.food > 0 && (
+                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '8px' }}>Food Allowance Deducted</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>-</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#dc2626' }}>₹{payslipRow.food.toLocaleString('en-IN')}</td>
+                    </tr>
+                  )}
+                  {payslipRow.travel > 0 && (
+                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '8px' }}>Travel Expense Deducted</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>-</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#dc2626' }}>₹{payslipRow.travel.toLocaleString('en-IN')}</td>
+                    </tr>
+                  )}
+                  {payslipRow.generalPayments > 0 && (
+                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '8px' }}>Part Payments Released</td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>-</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: '#dc2626' }}>₹{payslipRow.generalPayments.toLocaleString('en-IN')}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              {/* Net Amount Box */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '24px' }}>
+                <div>
+                  <div style={{ fontSize: '0.8rem', color: '#64748b' }}>NET WAGE PAYABLE:</div>
+                  <strong style={{ fontSize: '1.25rem', color: '#0f172a' }}>₹{payslipRow.balance.toLocaleString('en-IN')}</strong>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: payslipRow.balance >= 0 ? '#16a34a' : '#dc2626', fontWeight: 'bold' }}>
+                  {payslipRow.balance >= 0 ? 'STATUS: DUE FOR PAYMENT' : 'STATUS: SETTLED IN ADVANCE'}
+                </div>
+              </div>
+
+              {/* Signatures */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginTop: '20px', paddingTop: '16px', borderTop: '1px dashed #cbd5e1' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ height: '40px', borderBottom: '1px dashed #94a3b8', marginBottom: '4px' }} />
+                  <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Worker Signature / Thumb Impression</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ height: '40px', borderBottom: '1px dashed #94a3b8', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#0f172a', fontSize: '0.82rem' }}>
+                    For PSK BROTHERS BUILDERS
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#64748b' }}>(Authorized Site Supervisor)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

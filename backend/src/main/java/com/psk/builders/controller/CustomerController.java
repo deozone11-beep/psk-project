@@ -122,4 +122,28 @@ public class CustomerController {
         if (u == null) return ResponseEntity.status(404).body(Map.of("message", "Account not found"));
         return ResponseEntity.ok(invoices.findByCustomer_IdOrderByInvoiceDateDesc(u.getId()));
     }
+
+    @PostMapping("/invoices/{id}/pay")
+    ResponseEntity<?> payInvoice(@PathVariable Long id, @RequestBody Map<String, Object> body, Authentication auth) {
+        AppUser u = currentUser(auth);
+        if (u == null) return ResponseEntity.status(404).body(Map.of("message", "Account not found"));
+        Invoice inv = invoices.findById(id).orElse(null);
+        if (inv == null || inv.getCustomer() == null || !inv.getCustomer().getId().equals(u.getId())) {
+            return ResponseEntity.status(404).body(Map.of("message", "Invoice not found"));
+        }
+        double amount = Double.parseDouble(body.getOrDefault("amount", "0").toString());
+        String paymentRef = body.getOrDefault("paymentRef", "RZP-" + System.currentTimeMillis()).toString();
+
+        double paidSoFar = (inv.getAmountPaidSoFar() != null ? inv.getAmountPaidSoFar() : 0.0) + amount;
+        double tot = inv.getTotalAmount() != null ? inv.getTotalAmount() : 0.0;
+        double bal = Math.max(0, tot - paidSoFar);
+
+        inv.setAmountPaidSoFar(paidSoFar);
+        inv.setBalanceDue(bal);
+        inv.setStatus(bal <= 0 ? "PAID" : "PARTIAL");
+        inv.setNotes((inv.getNotes() != null ? inv.getNotes() : "") + " [Paid online: ₹" + (long)amount + " Ref: " + paymentRef + "]");
+        invoices.save(inv);
+
+        return ResponseEntity.ok(Map.of("message", "Payment recorded successfully", "invoice", inv));
+    }
 }

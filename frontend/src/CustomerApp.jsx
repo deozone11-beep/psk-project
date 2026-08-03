@@ -517,9 +517,48 @@ function Portal({ creds, onLogout }) {
   const [files, setFiles] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [previewInvoice, setPreviewInvoice] = useState(null);
+  const [payingInvoice, setPayingInvoice] = useState(null);
+  const [payAmount, setPayAmount] = useState(0);
+  const [payMethod, setPayMethod] = useState('UPI');
+  const [payProcessing, setPayProcessing] = useState(false);
+  const [paySuccessMsg, setPaySuccessMsg] = useState('');
   const [showBankReport, setShowBankReport] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  async function handleProcessRazorpayPayment(e) {
+    e.preventDefault();
+    if (!payingInvoice || payAmount <= 0) return;
+    setPayProcessing(true);
+    setPaySuccessMsg('');
+    try {
+      const paymentRef = 'RZP-' + Math.floor(100000 + Math.random() * 900000);
+      const res = await fetch(`/api/customer/invoices/${payingInvoice.id}/pay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': creds
+        },
+        body: JSON.stringify({ amount: payAmount, paymentRef })
+      });
+      if (res.ok) {
+        setPaySuccessMsg(`Payment of ₹${Number(payAmount).toLocaleString('en-IN')} Successful! Ref: ${paymentRef} 🎉`);
+        const invRes = await fetch(`${API}/customer/invoices`, { headers: { 'Authorization': creds } });
+        if (invRes.ok) setInvoices(await invRes.json());
+        setTimeout(() => {
+          setPayingInvoice(null);
+          setPaySuccessMsg('');
+        }, 2500);
+      } else {
+        alert('Payment recording failed. Please try again.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error while processing payment.');
+    } finally {
+      setPayProcessing(false);
+    }
+  }
 
   function prevMonth() {
     if (calMonth === 0) {
@@ -1100,6 +1139,15 @@ function CustomerSavedPlansSection({ creds, me }) {
                             {inv.balanceDue > 0 ? `Bal: ₹${inv.balanceDue?.toLocaleString('en-IN')}` : 'Fully Paid ✅'}
                           </div>
                         </div>
+                        {inv.balanceDue > 0 && (
+                          <button 
+                            className="primary" 
+                            onClick={() => { setPayingInvoice(inv); setPayAmount(inv.balanceDue); }} 
+                            style={{ padding: '8px 14px', fontSize: '0.85rem', background: '#16a34a', color: '#fff', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                          >
+                            💳 Pay Online
+                          </button>
+                        )}
                         <button className="primary" onClick={() => setPreviewInvoice(inv)} style={{ padding: '8px 14px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px' }}>
                           <FileText size={15} /> View & Print Bill
                         </button>
@@ -1398,18 +1446,18 @@ function CustomerSavedPlansSection({ creds, me }) {
               {/* 3-Column Layout: Left (Client Sign), Center (Company Stamp Seal), Right (Authorized Signatory) */}
               <div className="lhSignSection" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'flex-end', marginTop: '30px', borderTop: '1px dashed #cbd5e1', paddingTop: '15px' }}>
                 {/* Left Column: Client Signature */}
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ height: '55px', borderBottom: '1px dashed #94a3b8', width: '80%', marginBottom: '6px' }}></div>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ height: '65px', borderBottom: '1px dashed #94a3b8', width: '90%', marginBottom: '6px' }}></div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '600' }}>Customer Signature</div>
                 </div>
 
-                {/* Center Column: Company Stamp Seal (Located right in the red circle area!) */}
+                {/* Center Column: Company Stamp Seal */}
                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ minHeight: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <img
                       src={localStorage.getItem('psk_custom_seal') || DEFAULT_CIRCULAR_SEAL_SVG}
                       alt="PSK Official Seal"
-                      style={{ height: '75px', objectFit: 'contain' }}
+                      style={{ height: '80px', objectFit: 'contain' }}
                     />
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
@@ -1418,15 +1466,15 @@ function CustomerSavedPlansSection({ creds, me }) {
                 </div>
 
                 {/* Right Column: Authorized Signatory */}
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  <div style={{ minHeight: '55px', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', marginBottom: '6px' }}>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ minHeight: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px', width: '100%' }}>
                     <img
                       src={localStorage.getItem('psk_custom_signature') || DEFAULT_DIGITAL_SIGNATURE_SVG}
                       alt="Authorized Signature"
-                      style={{ height: '48px', maxWidth: '160px', objectFit: 'contain' }}
+                      style={{ height: '75px', maxHeight: '85px', maxWidth: '220px', objectFit: 'contain' }}
                     />
                   </div>
-                  <div style={{ borderTop: '1px dashed #94a3b8', width: '85%', paddingTop: '4px' }}>
+                  <div style={{ borderTop: '1px dashed #94a3b8', width: '90%', paddingTop: '4px', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#0f172a' }}>
                       For PSK BROTHERS BUILDERS
                     </div>
@@ -1585,17 +1633,19 @@ function CustomerSavedPlansSection({ creds, me }) {
 
               {/* 3-Column Footer Signature */}
               <div className="lhSignSection" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'flex-end', marginTop: '20px', borderTop: '1px dashed #cbd5e1', paddingTop: '15px' }}>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ height: '50px', borderBottom: '1px dashed #94a3b8', width: '80%', marginBottom: '6px' }}></div>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ height: '65px', borderBottom: '1px dashed #94a3b8', width: '90%', marginBottom: '6px' }}></div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '600' }}>Borrower / Client Signature</div>
                 </div>
                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <img src={localStorage.getItem('psk_custom_seal') || DEFAULT_CIRCULAR_SEAL_SVG} alt="Official Seal" style={{ height: '70px', objectFit: 'contain' }} />
+                  <img src={localStorage.getItem('psk_custom_seal') || DEFAULT_CIRCULAR_SEAL_SVG} alt="Official Seal" style={{ height: '80px', objectFit: 'contain' }} />
                   <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '700', marginTop: '4px' }}>OFFICIAL VALUER STAMP SEAL</div>
                 </div>
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  <img src={localStorage.getItem('psk_custom_signature') || DEFAULT_DIGITAL_SIGNATURE_SVG} alt="Authorized Signature" style={{ height: '44px', objectFit: 'contain' }} />
-                  <div style={{ borderTop: '1px dashed #94a3b8', width: '85%', paddingTop: '4px' }}>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ minHeight: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px', width: '100%' }}>
+                    <img src={localStorage.getItem('psk_custom_signature') || DEFAULT_DIGITAL_SIGNATURE_SVG} alt="Authorized Signature" style={{ height: '75px', maxHeight: '85px', maxWidth: '220px', objectFit: 'contain' }} />
+                  </div>
+                  <div style={{ borderTop: '1px dashed #94a3b8', width: '90%', paddingTop: '4px', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#0f172a' }}>For PSK BROTHERS BUILDERS</div>
                     <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Licensed Structural Engineer &amp; Valuer</div>
                   </div>
@@ -1703,23 +1753,101 @@ function CustomerSavedPlansSection({ creds, me }) {
 
               {/* 3-COLUMN SIGNATURE BLOCK */}
               <div className="lhSignSection" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', alignItems: 'flex-end', marginTop: '30px', borderTop: '1px dashed #cbd5e1', paddingTop: '15px' }}>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ height: '50px', borderBottom: '1px dashed #94a3b8', width: '80%', marginBottom: '6px' }}></div>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ height: '65px', borderBottom: '1px dashed #94a3b8', width: '90%', marginBottom: '6px' }}></div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '600' }}>Client / Property Owner Signature</div>
                 </div>
                 <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <img src={localStorage.getItem('psk_custom_seal') || DEFAULT_CIRCULAR_SEAL_SVG} alt="Official Seal" style={{ height: '75px', objectFit: 'contain' }} />
+                  <img src={localStorage.getItem('psk_custom_seal') || DEFAULT_CIRCULAR_SEAL_SVG} alt="Official Seal" style={{ height: '80px', objectFit: 'contain' }} />
                   <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '700', marginTop: '4px' }}>OFFICIAL STAMP SEAL</div>
                 </div>
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                  <img src={localStorage.getItem('psk_custom_signature') || DEFAULT_DIGITAL_SIGNATURE_SVG} alt="Authorized Signature" style={{ height: '48px', objectFit: 'contain' }} />
-                  <div style={{ borderTop: '1px dashed #94a3b8', width: '85%', paddingTop: '4px' }}>
+                <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ minHeight: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px', width: '100%' }}>
+                    <img src={localStorage.getItem('psk_custom_signature') || DEFAULT_DIGITAL_SIGNATURE_SVG} alt="Authorized Signature" style={{ height: '75px', maxHeight: '85px', maxWidth: '220px', objectFit: 'contain' }} />
+                  </div>
+                  <div style={{ borderTop: '1px dashed #94a3b8', width: '90%', paddingTop: '4px', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#0f172a' }}>For PSK BROTHERS BUILDERS</div>
                     <div style={{ fontSize: '0.74rem', color: '#64748b' }}>(Authorized Signatory)</div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {payingInvoice && (
+        <div className="modalOverlay" style={{ zIndex: 1000 }}>
+          <div className="modalCard" style={{ maxWidth: '480px', borderRadius: '20px', padding: '24px', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a' }}>
+                💳 Online Milestone Payment Gateway
+              </h3>
+              <button onClick={() => setPayingInvoice(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>×</button>
+            </div>
+
+            <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '0 0 16px 0' }}>
+              Pay securely via Razorpay (GPay, PhonePe, Paytm, BHIM UPI, NetBanking or Cards).
+            </p>
+
+            <div style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Invoice / Bill Number:</div>
+              <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>{payingInvoice.invoiceNumber} ({payingInvoice.stageName || 'Stage Payment'})</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.88rem' }}>
+                <span>Balance Due:</span>
+                <strong style={{ color: '#dc2626', fontSize: '1rem' }}>₹{Number(payingInvoice.balanceDue).toLocaleString('en-IN')}</strong>
+              </div>
+            </div>
+
+            {paySuccessMsg ? (
+              <div style={{ background: '#f0fdf4', color: '#16a34a', padding: '16px', borderRadius: '12px', fontWeight: 'bold', textAlign: 'center', border: '1px solid #bbf7d0' }}>
+                {paySuccessMsg}
+              </div>
+            ) : (
+              <form onSubmit={handleProcessRazorpayPayment}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  Enter Amount to Pay (₹):
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={payingInvoice.balanceDue}
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '16px' }}
+                  required
+                />
+
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>
+                  Select Payment Method:
+                </label>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                  {['UPI (GPay/PhonePe)', 'NetBanking', 'Debit/Credit Card'].map((m) => (
+                    <button
+                      type="button"
+                      key={m}
+                      onClick={() => setPayMethod(m)}
+                      style={{
+                        padding: '8px 14px', borderRadius: '16px', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer',
+                        border: '1px solid #2563eb',
+                        background: payMethod === m ? '#2563eb' : '#fff',
+                        color: payMethod === m ? '#fff' : '#2563eb'
+                      }}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={payProcessing}
+                  style={{ width: '100%', padding: '14px', borderRadius: '12px', background: '#16a34a', color: '#fff', fontSize: '1rem', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  {payProcessing ? 'Processing Payment...' : `Pay ₹${Number(payAmount || 0).toLocaleString('en-IN')} via Razorpay 🔒`}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
