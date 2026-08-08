@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{Menu,X,Phone,MapPin,Mail,ArrowRight,CheckCircle2,Pencil,Hammer,MessageSquare,Send,ChevronLeft,ChevronRight,Printer,FileText,User,Building2,Sparkles}from'lucide-react';import'./style.css';import AdminApp from'./AdminApp.jsx';import CustomerApp from'./CustomerApp.jsx';import LoginPage from'./LoginPage.jsx';
+import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{Menu,X,Phone,MapPin,Mail,ArrowRight,CheckCircle2,Pencil,Hammer,MessageSquare,Send,ChevronLeft,ChevronRight,Printer,FileText,User,Building2,Sparkles,ShieldCheck,Award}from'lucide-react';import'./style.css';import AdminApp from'./AdminApp.jsx';import CustomerApp from'./CustomerApp.jsx';import LoginPage from'./LoginPage.jsx';import LeadershipPage from'./LeadershipPage.jsx';
 const API=import.meta.env.VITE_API_URL||'/api',fallback={services:['Residential Construction','Commercial Buildings','Renovation & Remodeling','Planning & Approval','Interior Works','Turnkey Projects'].map((title,id)=>({id,title,description:'Quality workmanship, transparent pricing and dependable project delivery.'})),projects:[{id:1,title:'Modern Family Residence',location:'Coimbatore',status:'Completed',imageUrl:'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'},{id:2,title:'Premium Villa',location:'Erode',status:'Completed',imageUrl:'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80'},{id:3,title:'Urban Business Centre',location:'Tiruppur',status:'Ongoing',imageUrl:'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'}],testimonials:[{id:1,customerName:'Ramesh Kumar',location:'Coimbatore',message:'PSK Brothers built our home on time and exactly as planned.',rating:5},{id:2,customerName:'Priya Selvam',location:'Erode',message:'Professional team, honest pricing, excellent finish quality.',rating:5},{id:3,customerName:'Arun Prakash',location:'Tiruppur',message:'They handled our office renovation smoothly with minimal disruption.',rating:4}]};
 // Fire-and-forget fetch to warm up Render server immediately on load
 fetch(`${API}/settings`).catch(()=>{});
@@ -18,17 +18,16 @@ function BuildingArt({sqft}){
   const idx=buildingTiers.indexOf(t);
   const floors=Math.min(t.floors,12);
   const width=Math.min(70+floors*14,220);
-  const maxBodyH=140; // keeps the tallest towers from growing past the card and clipping the sky
+  const maxBodyH=140; 
   const floorH=Math.min(Math.max(38-floors,20), maxBodyH/floors);
   const bodyH=floors*floorH;
   const baseY=225;
   const topY=baseY-bodyH;
   const bodyX=150-width/2;
   const grid=Math.min(3+Math.floor(floors/2),6);
-  // colour theme shifts warm (small home) -> cool glass (tower) as sqft grows
-  const theme=idx<=1?{roof:'#e2262b',roofDk:'#a81620',wall:'#fff8f0',wallDk:'#ffe6d9',win:'#ffd873'}
-    :idx<=3?{roof:'#5a6472',roofDk:'#3d444d',wall:'#f2f4f6',wallDk:'#e2e7ea',win:'#ffd873'}
-    :{roof:'#33415c',roofDk:'#222c40',wall:'#e9f1fb',wallDk:'#d3e3f4',win:'#bcd9ff'};
+  const theme=idx<=1?{roof:'#e2262b',roofDk:'#b71c1c',wall:'#ffffff',wallDk:'#e0e5ed',win:'#ffe600'}
+    :idx<=3?{roof:'#ff6a5e',roofDk:'#e2262b',wall:'#f1f5f9',wallDk:'#cbd5e1',win:'#60a5fa'}
+    :{roof:'#38bdf8',roofDk:'#0284c7',wall:'#f8fafc',wallDk:'#94a3b8',win:'#38bdf8'};
   const windows=[];
   for(let f=0;f<floors;f++){
     const winY=topY+f*floorH+floorH*0.26;
@@ -37,49 +36,56 @@ function BuildingArt({sqft}){
     for(let w=0;w<grid;w++){
       const wx=bodyX+gap*(w+1)-7;
       windows.push(<g key={f+'-'+w}>
-        <rect x={wx} y={winY} width="14" height={winH} rx="2" fill={theme.win}/>
-        <line x1={wx+7} y1={winY} x2={wx+7} y2={winY+winH} stroke="#fff" strokeWidth="1" opacity=".6"/>
+        <rect x={wx} y={winY} width="14" height={winH} rx="2" fill={theme.win} opacity="0.95"/>
+        <line x1={wx+7} y1={winY} x2={wx+7} y2={winY+winH} stroke="#fff" strokeWidth="1" opacity=".7"/>
       </g>);
     }
   }
   return (
     <div className="buildingArt">
-      <svg viewBox="0 0 300 250" width="230" height="192">
+      <svg viewBox="0 0 300 250" width="280" height="210">
         <defs>
           <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#eaf4ff"/><stop offset="1" stopColor="#fdfdfd"/>
+            <stop offset="0" stopColor="#0a0c12"/>
+            <stop offset="1" stopColor="#161b26"/>
           </linearGradient>
           <linearGradient id="wallG" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor={theme.wallDk}/><stop offset="1" stopColor={theme.wall}/>
+            <stop offset="0" stopColor={theme.wallDk}/>
+            <stop offset="1" stopColor={theme.wall}/>
           </linearGradient>
+          <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
+          </pattern>
         </defs>
-        <rect x="0" y="0" width="300" height="250" rx="14" fill="url(#skyG)"/>
-        <circle cx="256" cy="34" r="16" fill="#ffe8a3"/>
-        <ellipse cx="46" cy="30" rx="22" ry="9" fill="#fff" opacity=".8"/>
-        <ellipse cx="70" cy="24" rx="16" ry="7" fill="#fff" opacity=".8"/>
-        <rect x="0" y={baseY} width="300" height="25" fill="#dff0e4"/>
-        <line x1="0" y1={baseY} x2="300" y2={baseY} stroke="#2a2a2e" strokeWidth="2"/>
-        {/* small tree beside the building */}
-        <rect x={bodyX-26} y={baseY-26} width="6" height="26" fill="#8a5a3a"/>
-        <circle cx={bodyX-23} cy={baseY-34} r="15" fill="#4f9c6b"/>
-        <ellipse cx={150} cy={baseY+4} rx={width/2+14} ry="7" fill="#000" opacity=".08"/>
-        <rect x={bodyX} y={topY} width={width} height={bodyH} fill="url(#wallG)" stroke="#2a2a2e" strokeWidth="2"/>
-        {/* plinth accent stripe */}
+        <rect x="0" y="0" width="300" height="250" rx="16" fill="url(#skyG)"/>
+        <rect x="0" y="0" width="300" height="250" rx="16" fill="url(#gridPattern)"/>
+        <circle cx="256" cy="34" r="14" fill="#ff8a7a" opacity="0.3"/>
+        <circle cx="256" cy="34" r="8" fill="#e2262b" opacity="0.8"/>
+        
+        {/* Ground level */}
+        <rect x="0" y={baseY} width="300" height="25" fill="#1e2330"/>
+        <line x1="0" y1={baseY} x2="300" y2={baseY} stroke="#e2262b" strokeWidth="2" opacity="0.8"/>
+        
+        {/* Building structure */}
+        <ellipse cx={150} cy={baseY+4} rx={width/2+14} ry="7" fill="#000" opacity=".4"/>
+        <rect x={bodyX} y={topY} width={width} height={bodyH} fill="url(#wallG)" stroke="#1e293b" strokeWidth="2" rx="2"/>
         <rect x={bodyX} y={baseY-8} width={width} height="8" fill={theme.roof}/>
         {floors<=2
           ? <polygon points={`${bodyX-14},${topY} 150,${topY-36} ${bodyX+width+14},${topY}`} fill={theme.roof} stroke={theme.roofDk} strokeWidth="2"/>
           : <>
               <rect x={bodyX-6} y={topY-10} width={width+12} height="10" fill={theme.roof} stroke={theme.roofDk} strokeWidth="1.5"/>
-              <rect x={150-6} y={topY-26} width="12" height="16" fill="#9aa3ab"/>
-              <line x1="150" y1={topY-26} x2="150" y2={topY-38} stroke="#9aa3ab" strokeWidth="2"/>
-              <circle cx="150" cy={topY-40} r="2.5" fill="#e2262b"/>
+              <rect x={150-6} y={topY-26} width="12" height="16" fill="#64748b"/>
+              <line x1="150" y1={topY-26} x2="150" y2={topY-38} stroke="#e2262b" strokeWidth="2"/>
+              <circle cx="150" cy={topY-40} r="3" fill="#ff6a5e"/>
             </>}
         {windows}
-        <rect x={150-15} y={baseY-8-42} width="30" height="42" rx="2" fill="#fff" stroke="#2a2a2e" strokeWidth="1.6"/>
-        <line x1={150} y1={baseY-8-42} x2={150} y2={baseY-8} stroke="#2a2a2e" strokeWidth="1"/>
-        <circle cx={146} cy={baseY-8-20} r="1.6" fill="#2a2a2e"/>
+        <rect x={150-15} y={baseY-8-42} width="30" height="42" rx="2" fill="#0f172a" stroke="#e2262b" strokeWidth="1.6"/>
+        <line x1={150} y1={baseY-8-42} x2={150} y2={baseY-8} stroke="#e2262b" strokeWidth="1" opacity="0.6"/>
+        <circle cx="146" cy={baseY-8-20} r="1.6" fill="#ff8a7a"/>
       </svg>
-      <p className="buildingStage"><b>{sqft.toLocaleString('en-IN')} sqft</b> <span>·</span> {t.stage} <span>·</span> {t.label}</p>
+      <p className="buildingStage">
+        <b>{sqft.toLocaleString('en-IN')} SQFT</b> <span>·</span> {t.stage} <span>·</span> {t.label} ({floors} {floors > 1 ? 'FLOORS' : 'FLOOR'})
+      </p>
     </div>
   );
 }
@@ -182,18 +188,35 @@ function ProjectSlideshow({images}){
 }
 function TrustHands(){
   return (
-    <div className="trustHandWrap">
-      <svg width="0" height="0" style={{ position: 'absolute' }}>
-        <defs>
-          <clipPath id="cloudClip" clipPathUnits="objectBoundingBox">
-            <path d="M 0.2, 0.9 C 0.05, 0.9, 0, 0.75, 0.05, 0.55 C 0.02, 0.35, 0.15, 0.2, 0.3, 0.25 C 0.35, 0.05, 0.55, 0.02, 0.7, 0.1 C 0.85, 0.1, 0.98, 0.25, 0.95, 0.45 C 1, 0.6, 0.98, 0.8, 0.85, 0.9 C 0.75, 0.95, 0.35, 0.95, 0.2, 0.9 Z" />
-          </clipPath>
-        </defs>
-      </svg>
-      <div className="trustHandsClipWrap">
-        <img src="/trust-hands.png" alt="Your vision, safe in our hands" className="trustHandsImg"/>
+    <div className="trustHandContainer">
+      <div className="trustGlow" />
+      <div className="trustBadgeFloatingTop">
+        <ShieldCheck size={15} style={{ color: '#ff6a5e' }} />
+        <span>Grade-53 Cement &amp; Fe-550 Steel Quality</span>
       </div>
-      <div className="trustBadge"><CheckCircle2 size={15}/> On-time handover, guaranteed</div>
+
+      <div className="trustHandWrap">
+        <svg width="0" height="0" style={{ position: 'absolute' }}>
+          <defs>
+            <clipPath id="cloudClip" clipPathUnits="objectBoundingBox">
+              <path d="M 0.2, 0.9 C 0.05, 0.9, 0, 0.75, 0.05, 0.55 C 0.02, 0.35, 0.15, 0.2, 0.3, 0.25 C 0.35, 0.05, 0.55, 0.02, 0.7, 0.1 C 0.85, 0.1, 0.98, 0.25, 0.95, 0.45 C 1, 0.6, 0.98, 0.8, 0.85, 0.9 C 0.75, 0.95, 0.35, 0.95, 0.2, 0.9 Z" />
+            </clipPath>
+          </defs>
+        </svg>
+        <div className="trustHandsClipWrap">
+          <img src="/trust-hands.png" alt="Your vision, safe in our hands" className="trustHandsImg"/>
+        </div>
+      </div>
+
+      <div className="trustBadge">
+        <CheckCircle2 size={16}/> 
+        <span>100% On-Time Handover Guaranteed • Zero Mid-Costs</span>
+      </div>
+
+      <div className="trustBadgeFloatingBottom">
+        <Award size={15} style={{ color: '#ffd700' }} />
+        <span>75+ Landmarks Delivered</span>
+      </div>
     </div>
   );
 }
@@ -423,7 +446,7 @@ function GlobalLoader({message}){
   );
 }
 
-function App(){const[d,setD]=useState(fallback),[lightbox,setLightbox]=useState(null),[appLoading,setAppLoading]=useState(false),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[otherRate,setOtherRate]=useState(1980),[sqft,setSqft]=useState(500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null),[scrolled,setScrolled]=useState(false),[showEnquiryModal,setShowEnquiryModalRaw]=useState(false),[chatOpen,setChatOpen]=useState(false),[chatInput,setChatInput]=useState(''),[lang,setLang]=useState('en'),[calcTab,setCalcTab]=useState('cost'),[chatMessages,setChatMessages]=useState([{sender:'bot',text:'👋 **Welcome to PSK Brothers Builders & Constructions!**\n\nOur mission is to assist you in discovering your dream home or commercial space across Tamil Nadu. How can we help you today?',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}]),[chatTyping,setChatTyping]=useState(false),[enquiryStep,setEnquiryStep]=useState(0),[enquiryData,setEnquiryData]=useState({name:'',phone:'',service:'',message:''});const chatBodyRef=useRef(null);const[suggestions,setSuggestions]=useState([]);const suggestTimeout=useRef(null);
+function App(){const[d,setD]=useState(fallback),[lightbox,setLightbox]=useState(null),[profileModal,setProfileModal]=useState(null),[appLoading,setAppLoading]=useState(false),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[otherRate,setOtherRate]=useState(1980),[sqft,setSqft]=useState(500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null),[scrolled,setScrolled]=useState(false),[showEnquiryModal,setShowEnquiryModalRaw]=useState(false),[chatOpen,setChatOpen]=useState(false),[chatInput,setChatInput]=useState(''),[lang,setLang]=useState('en'),[calcTab,setCalcTab]=useState('cost'),[chatMessages,setChatMessages]=useState([{sender:'bot',text:'👋 **Welcome to PSK Brothers Builders & Constructions!**\n\nOur mission is to assist you in discovering your dream home or commercial space across Tamil Nadu. How can we help you today?',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}]),[chatTyping,setChatTyping]=useState(false),[enquiryStep,setEnquiryStep]=useState(0),[enquiryData,setEnquiryData]=useState({name:'',phone:'',service:'',message:''});const chatBodyRef=useRef(null);const[suggestions,setSuggestions]=useState([]);const suggestTimeout=useRef(null);
 const [coords, setCoords] = useState({ latitude: '', longitude: '' });
 function requestCoords() {
   if (navigator.geolocation) {
@@ -486,6 +509,15 @@ function setShowEnquiryModal(val) {
       entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});
     },{threshold:.12});
     targets.forEach(t=>io.observe(t));
+    if (window.location.hash) {
+      const hash = window.location.hash;
+      setTimeout(() => {
+        const el = document.querySelector(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+    }
     return ()=>io.disconnect();
   },[]);function goNext(){const f=formRef.current;const name=f.elements['name'],phone=f.elements['phone'];if(!name.value.trim()||!phone.checkValidity()){f.reportValidity();return}setStep(2)}
 function commitSqft(val){let n=Math.round(Number(val));if(!Number.isFinite(n))n=sqft;n=Math.min(100000,Math.max(500,n));setSqft(n);setEditingSqft(false)}
@@ -533,6 +565,7 @@ return <div className="site">
           {x}
         </a>
       ))}
+      <a className="leadershipNav" href="/leadership" style={{ color: '#ff8a7a', fontWeight: 700 }}>Leadership</a>
       <a className="loginNav" href="/login">Login</a>
       <button className="primary navCta" onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{cursor:'pointer',borderRadius:'20px'}}>GET A QUOTE</button>
     </nav>
@@ -540,7 +573,85 @@ return <div className="site">
   </header>
   <main>
 <section id="home" className="hero"><div className="shade"/><div className="heroText"><p className="eyebrow">BUILDING TRUST. CREATING LANDMARKS.</p><h1>We build spaces<br/>that inspire <em>life.</em></h1><p>Quality construction, honest communication and dependable delivery for homes and businesses across Tamil Nadu.</p><a className="primary" href="#projects">VIEW OUR WORK <ArrowRight size={18}/></a><a className="call" href="tel:+919003177934"><Phone size={18}/> +91 90031 77934 <br/>+91 99414 26479</a></div><div className="stats"><span><b>24+</b>YEARS EXPERIENCE</span><span><b>75+</b>PROJECTS COMPLETED</span><span><b>100%</b>QUALITY COMMITMENT</span></div></section>
-<section id="about" className="about wrap"><div><p className="eyebrow">WHO WE ARE</p><h2>Strong foundations.<br/>Lasting relationships.</h2><p>PSK Brothers Builders & Constructions is committed to quality workmanship, transparent pricing and timely delivery.</p>{['Skilled and experienced team','Quality materials and standards','Clear estimates and regular updates'].map(x=><div className="check" key={x}><CheckCircle2/> {x}</div>)}</div><div className="aboutImg"><img src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80"/><b>Built with<br/>responsibility.</b></div></section>
+<section id="about" className="about wrap"><div><p className="eyebrow">WHO WE ARE</p><h2>Strong foundations.<br/>Lasting relationships.</h2><p>PSK Brothers Builders & Constructions is committed to quality workmanship, transparent pricing and timely delivery.</p>{['Skilled and experienced team','Quality materials and standards','Clear estimates and regular updates'].map(x=><div className="check" key={x}><CheckCircle2/> {x}</div>)}</div><div className="aboutImg"><img src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80"/><b>Built with<br/>responsibility.</b></div>
+
+<div className="leadershipSection">
+  <div className="leadershipHeader">
+    <p className="eyebrow">LEADERSHIP &amp; HEAD OFFICE</p>
+    <h2>The Founders &amp; Heart of PSK Brothers</h2>
+    <p>Direct site ownership, transparent engineering guidance, and our main headquarters in Chennai.</p>
+  </div>
+
+  <div className="leadershipGrid">
+    <div className="ownerCard" onClick={() => window.location.href = '/leadership'}>
+      <div className="ownerImgWrap">
+        <img src="/owner1.png" alt="S. Senthil Murugan - Founder & Managing Director" />
+        <span className="ownerBadge">FOUNDER &amp; MD</span>
+        <span className="ownerClickHint"><Sparkles size={12}/> Open Page</span>
+      </div>
+      <div className="ownerInfo">
+        <h3>S. Senthil Murugan</h3>
+        <p className="ownerRole">Founder &amp; Managing Director</p>
+        <p className="ownerBio">
+          20+ years of civil engineering excellence. Directs structural load design, RCC beam standards, and institutional BOQ pricing transparency.
+        </p>
+        <div className="ownerTag"><CheckCircle2 size={15}/> Structural Engineering • Founder</div>
+        <div className="ownerActionBtn">
+          <span>VIEW FULL PAGE DETAILS</span> <ArrowRight size={14}/>
+        </div>
+      </div>
+    </div>
+
+    <div className="ownerCard" onClick={() => window.location.href = '/leadership'}>
+      <div className="ownerImgWrap">
+        <img src="/owner2.png" alt="S. Prakash - Co-Founder & Head of Operations" />
+        <span className="ownerBadge">CO-FOUNDER</span>
+        <span className="ownerClickHint"><Sparkles size={12}/> Open Page</span>
+      </div>
+      <div className="ownerInfo">
+        <h3>S. Prakash</h3>
+        <p className="ownerRole">Co-Founder &amp; Head of Operations</p>
+        <p className="ownerBio">
+          Commands daily site engineering, material quality audits, live customer progress tracking, and 100% on-time milestone handovers.
+        </p>
+        <div className="ownerTag"><CheckCircle2 size={15}/> Site Operations • Quality Control</div>
+        <div className="ownerActionBtn">
+          <span>VIEW FULL PAGE DETAILS</span> <ArrowRight size={14}/>
+        </div>
+      </div>
+    </div>
+
+    <div className="ownerCard officeCard" onClick={() => window.location.href = '/leadership'}>
+      <div className="ownerImgWrap">
+        <img 
+          src="/office.png" 
+          alt="PSK Main Head Office Chennai" 
+          onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80'; }}
+        />
+        <span className="ownerBadge officeBadge">CHENNAI HQ</span>
+        <span className="ownerClickHint"><Building2 size={12}/> Open Page</span>
+      </div>
+      <div className="ownerInfo">
+        <h3>PSK Main Head Office</h3>
+        <p className="ownerRole">Headquarters &amp; Design Suite</p>
+        <p className="ownerBio">
+          Located at Choolaimedu, Chennai. Features our client consultation lounge, material quality sample display, and digital BOQ estimation station.
+        </p>
+        <div className="ownerTag"><MapPin size={15}/> Choolaimedu, Chennai - 600094</div>
+        <div className="ownerActionBtn" style={{ background: 'rgba(37, 99, 235, 0.15)', borderColor: 'rgba(37, 99, 235, 0.3)' }}>
+          <span>VIEW HEADQUARTERS PAGE</span> <ArrowRight size={14}/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style={{ textAlign: 'center', marginTop: '45px' }}>
+    <a href="/leadership" className="primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', textDecoration: 'none', padding: '15px 36px', borderRadius: '30px', fontWeight: 800, fontSize: '0.95rem', boxShadow: '0 10px 30px rgba(226, 38, 43, 0.3)' }}>
+      EXPLORE DEDICATED LEADERSHIP &amp; OFFICE PAGE <ArrowRight size={18}/>
+    </a>
+  </div>
+</div>
+</section>
 <section id="services" className="light"><div className="wrap"><p className="eyebrow">WHAT WE DO</p><h2>Complete construction solutions</h2><div className="grid services">{(d.services || []).map((x,i)=>x && <article key={x.id}><ServiceIcon title={x.title} idKey={x.id}/><i>0{i+1}</i><h3>{x.title}</h3><p>{x.description}</p><button onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{background:'none',border:'none',padding:0,color:'#17201d',fontSize:'.75rem',fontWeight:700,display:'flex',gap:'8px',alignItems:'center',cursor:'pointer'}}>ENQUIRE <ArrowRight size={15}/></button></article>)}</div></div></section>
 <section id="projects" className="wrap"><p className="eyebrow">SELECTED PROJECTS</p><h2>Work we're proud of</h2><div className="grid projects">{(d.projects || []).map(x=>x && <article key={x.id} style={{ cursor: 'pointer' }} onClick={() => {
   const imgs = x.imageUrls && x.imageUrls.length ? x.imageUrls : (x.imageUrl ? [x.imageUrl] : []);
@@ -583,15 +694,47 @@ return <div className="site">
 
     <div className="calcRight">
       <BuildingArt sqft={sqft}/>
+      
+      {/* SQFT PRESETS BAR */}
+      <div style={{ display: 'flex', gap: '8px', margin: '14px 0 10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        {[
+          { label: '1,200 (2BHK)', val: 1200 },
+          { label: '1,800 (3BHK)', val: 1800 },
+          { label: '2,400 (Duplex)', val: 2400 },
+          { label: '5,000 (Villa)', val: 5000 },
+          { label: '10,000 (Tower)', val: 10000 }
+        ].map(p => (
+          <button 
+            key={p.val}
+            type="button" 
+            onClick={() => setSqft(p.val)}
+            style={{ 
+              background: sqft === p.val ? '#e2262b' : 'rgba(255,255,255,0.06)',
+              color: '#ffffff',
+              border: sqft === p.val ? '1px solid #e2262b' : '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '20px',
+              padding: '6px 14px',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: sqft === p.val ? '0 4px 14px rgba(226,38,43,0.4)' : 'none'
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
       <input type="range" min="500" max="100000" step="500" value={sqft} onChange={e=>setSqft(Number(e.target.value))}/>
-      <div className="calcRange"><span>500</span><span>100K</span></div>
+      <div className="calcRange"><span>500 SQFT</span><span>100K SQFT</span></div>
       {editingSqft?(
         <form className="calcSqft editing" onSubmit={e=>{e.preventDefault();commitSqft(e.target.elements.sqftVal.value)}}>
           <input name="sqftVal" type="number" min="500" max="100000" defaultValue={sqft} autoFocus onBlur={e=>commitSqft(e.target.value)}/>
           <small>SQFT</small>
         </form>
       ):(
-        <button type="button" className="calcSqft" onClick={()=>setEditingSqft(true)}>
+        <button type="button" className="calcSqft" onClick={()=>setEditingSqft(true)} style={{ marginTop: '12px' }}>
           {sqft.toLocaleString('en-IN')} <small>SQFT</small> <Pencil size={14}/>
         </button>
       )}
@@ -601,36 +744,143 @@ return <div className="site">
 <section id="process" className="light"><div className="wrap"><p className="eyebrow">HOW IT WORKS</p><h2>From first call to handover</h2><div className="grid process">{[['01','Enquiry','Tell us about your project — home, office or renovation.'],['02','Site Visit','Our team visits your site and understands your requirements.'],['03','Estimate & Plan','You get a clear, itemised cost estimate and timeline.'],['04','Execution & Handover','We build with regular updates, and hand over on schedule.']].map(([n,t,d2])=><div key={n} className="processCard"><span>{n}</span><h3>{t}</h3><p>{d2}</p></div>)}</div></div></section>
 <section id="testimonials" className="light"><div className="wrap"><p className="eyebrow">CLIENT WORDS</p><h2>What our clients say</h2><div className="grid testimonials">{(d.testimonials || []).map(x=>x && <article key={x.id}><div className="stars">{'★'.repeat(x.rating)}{'☆'.repeat(5-x.rating)}</div><p>"{x.message}"</p><b>{x.customerName}</b><span>{x.location}</span></article>)}</div></div></section>
 <section className="promise"><div><p className="eyebrow">THE PSK PROMISE</p><h2>Your vision. Safe in our hands.</h2><p>From first conversation to final handover, we bring care, clarity and craftsmanship to every square foot — no shortcuts, no surprises.</p><button className="primary" onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{cursor:'pointer'}}>START YOUR PROJECT <ArrowRight/></button></div><TrustHands/></section>
-<section id="contact" className="contact wrap" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '50px', alignItems: 'center' }}>
-  <div>
-    <p className="eyebrow">LET'S BUILD TOGETHER</p>
-    <h2>Tell us about your project.</h2>
-    <p style={{ marginBottom: '24px' }}>Planning a home, office or renovation? Our team will call you.</p>
+<section id="contact" className="contact wrap" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '48px', alignItems: 'stretch' }}>
+  {/* LEFT COLUMN: CONTACT DETAILS CARDS */}
+  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <p className="eyebrow" style={{ color: '#ff8a7a' }}>LET'S BUILD TOGETHER</p>
+    <h2 style={{ fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)', color: '#ffffff', fontFamily: 'Fraunces, serif', margin: '12px 0 16px 0', lineHeight: 1.15 }}>
+      Tell us about <br/><em style={{ color: '#e2262b', fontStyle: 'italic', fontWeight: 500 }}>your project.</em>
+    </h2>
+    <p style={{ color: '#a1a1aa', fontSize: '1.02rem', lineHeight: '1.6', marginBottom: '32px', maxWidth: '520px' }}>
+      Planning a residential home, commercial office, or renovation? Our senior civil engineer will review your project and get back to you within 2 hours.
+    </p>
+
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Phone size={18} style={{ color: '#e2262b' }}/> 
-        <span>
-          <a href="tel:+919003177934" style={{ color: 'inherit', textDecoration: 'none', fontWeight: '500' }}>+91 90031 77934</a>
-          <br/> 
-          <a href="tel:+919941426479" style={{ color: 'inherit', textDecoration: 'none', fontWeight: '500' }}>+91 99414 26479</a>
-        </span>
-      </p>
-      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <Mail size={18} style={{ color: '#e2262b' }}/> 
-        <a href="mailto:pskbrothers1991@gmail.com" style={{ color: 'inherit', textDecoration: 'none', fontWeight: '500' }}>pskbrothers1991@gmail.com</a>
-      </p>
-      <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <MapPin size={18} style={{ color: '#e2262b' }}/> 
-        <a href="https://maps.google.com/?q=Choolaimedu,+Chennai,+Tamil+Nadu+-+600094" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none', fontWeight: '500' }}>Choolaimedu, Chennai, Tamil Nadu - 600094</a>
-      </p>
+      {/* PHONE CARD */}
+      <div className="contactDetailCard" style={{ background: 'rgba(23, 23, 28, 0.85)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '18px 22px', display: 'flex', alignItems: 'center', gap: '18px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(226, 38, 43, 0.15)', border: '1px solid rgba(226, 38, 43, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff6a5e', flexShrink: 0 }}>
+          <Phone size={22} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '0.72rem', color: '#ff8a7a', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '2px' }}>
+            ENGINEERING &amp; ENQUIRY HOTLINE
+          </div>
+          <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '1.05rem', display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
+            <a href="tel:+919003177934" style={{ color: '#ffffff', textDecoration: 'none' }}>+91 90031 77934</a>
+            <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
+            <a href="tel:+919941426479" style={{ color: '#ffffff', textDecoration: 'none' }}>+91 99414 26479</a>
+          </div>
+        </div>
+      </div>
+
+      {/* EMAIL CARD */}
+      <div className="contactDetailCard" style={{ background: 'rgba(23, 23, 28, 0.85)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '18px 22px', display: 'flex', alignItems: 'center', gap: '18px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(226, 38, 43, 0.15)', border: '1px solid rgba(226, 38, 43, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff6a5e', flexShrink: 0 }}>
+          <Mail size={22} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '0.72rem', color: '#ff8a7a', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '2px' }}>
+            OFFICIAL CORRESPONDENCE
+          </div>
+          <a href="mailto:pskbrothers1991@gmail.com" style={{ color: '#ffffff', fontWeight: 700, fontSize: '1rem', textDecoration: 'none' }}>
+            pskbrothers1991@gmail.com
+          </a>
+        </div>
+      </div>
+
+      {/* ADDRESS CARD */}
+      <div className="contactDetailCard" style={{ background: 'rgba(23, 23, 28, 0.85)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '18px 22px', display: 'flex', alignItems: 'center', gap: '18px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
+        <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(226, 38, 43, 0.15)', border: '1px solid rgba(226, 38, 43, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff6a5e', flexShrink: 0 }}>
+          <MapPin size={22} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '0.72rem', color: '#ff8a7a', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '2px' }}>
+            MAIN HEAD OFFICE &amp; DESIGN SUITE
+          </div>
+          <a href="https://maps.google.com/?q=Choolaimedu,+Chennai,+Tamil+Nadu+-+600094" target="_blank" rel="noreferrer" style={{ color: '#ffffff', fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none', lineHeight: 1.4, display: 'inline-block' }}>
+            Choolaimedu, Chennai, Tamil Nadu - 600094
+          </a>
+        </div>
+      </div>
     </div>
   </div>
-  <div style={{ background: '#f8f8f7', padding: '40px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', border: '1px solid #ececea' }}>
-    <h3 style={{ margin: 0, fontSize: '1.4rem', color: '#17201d' }}>Have a project in mind?</h3>
-    <p style={{ fontSize: '0.9rem', margin: 0 }}>Click below to send us your requirements. We'll get back to you with a free cost estimation.</p>
-    <button className="primary" onClick={() => { setStep(1); setMsg(''); setShowEnquiryModal(true); }} style={{ cursor: 'pointer', width: '100%', justifyContent: 'center', borderRadius: '8px' }}>
-      SEND ENQUIRY <ArrowRight size={16}/>
-    </button>
+
+  {/* RIGHT COLUMN: MODERN DARK GLASSMORPHISM ENQUIRY CARD */}
+  <div style={{ 
+    background: 'linear-gradient(145deg, rgba(23, 23, 28, 0.95) 0%, rgba(15, 16, 21, 0.98) 100%)', 
+    padding: '44px 36px', 
+    borderRadius: '24px', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    justifyContent: 'space-between',
+    gap: '24px', 
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    boxShadow: '0 30px 70px rgba(0, 0, 0, 0.6)',
+    position: 'relative',
+    overflow: 'hidden'
+  }}>
+    {/* Red Top Accent Glow */}
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #e2262b 0%, #ff8a7a 50%, #e2262b 100%)' }} />
+
+    <div>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(226,38,43,0.12)', border: '1px solid rgba(226,38,43,0.3)', padding: '6px 14px', borderRadius: '20px', color: '#ff8a7a', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '20px' }}>
+        ⚡ FREE SITE VISIT &amp; ESTIMATE
+      </div>
+
+      <h3 style={{ margin: '0 0 10px 0', fontSize: '1.85rem', fontWeight: 800, color: '#ffffff', fontFamily: 'Fraunces, serif' }}>
+        Have a project in mind?
+      </h3>
+      <p style={{ fontSize: '0.92rem', color: '#a1a1aa', margin: 0, lineHeight: 1.6 }}>
+        Click below to submit your building requirements. Get a complete itemised estimate, 3D floor plan review, and clear construction timeline.
+      </p>
+    </div>
+
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <button 
+        className="primary" 
+        onClick={() => { setStep(1); setMsg(''); setShowEnquiryModal(true); }} 
+        style={{ 
+          cursor: 'pointer', 
+          width: '100%', 
+          justifyContent: 'center', 
+          borderRadius: '14px',
+          padding: '16px 24px',
+          fontSize: '0.95rem',
+          fontWeight: 800,
+          boxShadow: '0 12px 30px rgba(226, 38, 43, 0.4)'
+        }}
+      >
+        SEND PROJECT ENQUIRY <ArrowRight size={18}/>
+      </button>
+
+      <a 
+        href="https://wa.me/919003177934?text=Hello%20PSK%20Brothers,%20I%20have%20a%20construction%20enquiry" 
+        target="_blank" 
+        rel="noreferrer" 
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          gap: '8px', 
+          background: 'rgba(255,255,255,0.06)', 
+          color: '#ffffff', 
+          textDecoration: 'none', 
+          padding: '14px 20px', 
+          borderRadius: '14px', 
+          fontWeight: 700, 
+          fontSize: '0.88rem', 
+          border: '1px solid rgba(255,255,255,0.12)'
+        }}
+      >
+        <Phone size={16} style={{ color: '#25D366' }}/> Chat Instantly on WhatsApp
+      </a>
+    </div>
+
+    {/* TRUST HIGHLIGHTS AT BOTTOM OF CARD */}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', fontSize: '0.78rem', color: '#d4d4d8' }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle2 size={14} style={{ color: '#ff6a5e' }}/> Free Site Inspection</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><CheckCircle2 size={14} style={{ color: '#ff6a5e' }}/> Zero Obligation</span>
+    </div>
   </div>
 </section>
 </main>
@@ -962,5 +1212,154 @@ return <div className="site">
     )}
   </div>
 )}
+
+{profileModal && (
+  <div className="modalOverlay" onClick={() => setProfileModal(null)}>
+    <div className="profileModalContent" onClick={(e) => e.stopPropagation()}>
+      <button className="modalClose" onClick={() => setProfileModal(null)} style={{ zIndex: 10, background: 'rgba(0,0,0,0.5)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}><X size={20}/></button>
+
+      {profileModal === 'owner1' && (
+        <>
+          <div className="profileModalBanner">
+            <img src="/owner1.png" alt="P. Saravana Kumar" />
+            <div className="profileModalBannerShade" />
+            <span className="profileModalBadge">FOUNDER &amp; MANAGING DIRECTOR</span>
+          </div>
+          <div className="profileModalBody">
+            <h2 className="profileModalTitle">P. Saravana Kumar</h2>
+            <p className="profileModalSub">Founder &amp; Managing Director • 20+ Years Civil Expertise</p>
+            
+            <div className="profileQuoteBox">
+              "Building with integrity and structural perfection is our non-negotiable standard. Every foundation we lay is built as if our own family lived there."
+            </div>
+
+            <div className="profileSectionTitle">Key Responsibilities &amp; Direct Leadership</div>
+            <div className="profileFeatureList">
+              <div className="profileFeatureCard">
+                <h4><CheckCircle2 size={16} style={{ color: '#ff6a5e' }}/> Structural Engineering</h4>
+                <p>Personal oversight on building load calculations, foundation design, and RCC beam reinforcement standards.</p>
+              </div>
+              <div className="profileFeatureCard">
+                <h4><CheckCircle2 size={16} style={{ color: '#ff6a5e' }}/> Transparent BOQ Pricing</h4>
+                <p>Verifies itemised estimation quotes before client signing to guarantee zero mid-project cost escalations.</p>
+              </div>
+              <div className="profileFeatureCard">
+                <h4><CheckCircle2 size={16} style={{ color: '#ff6a5e' }}/> Client Trust &amp; Approvals</h4>
+                <p>Directly handles high-value project consultations, government site approvals, and structural certification.</p>
+              </div>
+              <div className="profileFeatureCard">
+                <h4><CheckCircle2 size={16} style={{ color: '#ff6a5e' }}/> 75+ Delivered Landmarks</h4>
+                <p>24+ years leading premium residential villas, multi-story apartments, and commercial projects in Tamil Nadu.</p>
+              </div>
+            </div>
+
+            <div className="profileModalActions">
+              <a href="https://wa.me/919003177934?text=Hello%20P.%20Saravana%20Kumar,%20I%20would%20like%20to%20discuss%20a%20construction%20project" target="_blank" rel="noreferrer" className="profileBtnPrimary">
+                <Phone size={16}/> Connect on WhatsApp (+91 90031 77934)
+              </a>
+              <button className="profileBtnSecondary" onClick={() => { setProfileModal(null); setShowEnquiryModal(true); }}>
+                <Sparkles size={16}/> Send Direct Project Enquiry
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {profileModal === 'owner2' && (
+        <>
+          <div className="profileModalBanner">
+            <img src="/owner2.png" alt="S. Suresh Kumar" />
+            <div className="profileModalBannerShade" />
+            <span className="profileModalBadge">CO-FOUNDER &amp; HEAD OF OPERATIONS</span>
+          </div>
+          <div className="profileModalBody">
+            <h2 className="profileModalTitle">S. Suresh Kumar</h2>
+            <p className="profileModalSub">Co-Founder &amp; Head of Site Operations • On-Time Delivery Guarantee</p>
+            
+            <div className="profileQuoteBox">
+              "A delay on site is a delay in a client's dream. We enforce daily progress milestones and strict material quality checks on every project."
+            </div>
+
+            <div className="profileSectionTitle">Field Execution &amp; Quality Control</div>
+            <div className="profileFeatureList">
+              <div className="profileFeatureCard">
+                <h4><CheckCircle2 size={16} style={{ color: '#ff6a5e' }}/> On-Site Quality Audits</h4>
+                <p>Daily inspections for concrete mixing ratios, brickwork verticality, slump testing, and waterproofing coats.</p>
+              </div>
+              <div className="profileFeatureCard">
+                <h4><CheckCircle2 size={16} style={{ color: '#ff6a5e' }}/> Daily Photo Tracking</h4>
+                <p>Oversees live site updates uploaded to the Customer Portal so clients see real-time building progress.</p>
+              </div>
+              <div className="profileFeatureCard">
+                <h4><CheckCircle2 size={16} style={{ color: '#ff6a5e' }}/> Approved Material Guarantee</h4>
+                <p>Ensures only 53-grade OPC/PPC cement and Fe-550 TMT steel bars enter the construction site.</p>
+              </div>
+              <div className="profileFeatureCard">
+                <h4><CheckCircle2 size={16} style={{ color: '#ff6a5e' }}/> 100% On-Time Handover</h4>
+                <p>Rigorous schedule tracking ensuring every project is handed over strictly within the agreed milestone date.</p>
+              </div>
+            </div>
+
+            <div className="profileModalActions">
+              <a href="https://wa.me/919941426479?text=Hello%20S.%20Suresh%20Kumar,%20I%20would%20like%20to%20discuss%20site%20operations" target="_blank" rel="noreferrer" className="profileBtnPrimary">
+                <Phone size={16}/> Call Operations (+91 99414 26479)
+              </a>
+              <button className="profileBtnSecondary" onClick={() => { setProfileModal(null); setShowEnquiryModal(true); }}>
+                <Hammer size={16}/> Book Site Visit &amp; Estimation
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {profileModal === 'office' && (
+        <>
+          <div className="profileModalBanner">
+            <img src="/office.png" alt="PSK Main Head Office" />
+            <div className="profileModalBannerShade" />
+            <span className="profileModalBadge" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>HEADQUARTERS &amp; DESIGN SUITE</span>
+          </div>
+          <div className="profileModalBody">
+            <h2 className="profileModalTitle">PSK Main Head Office</h2>
+            <p className="profileModalSub">Choolaimedu, Chennai, Tamil Nadu - 600094</p>
+            
+            <div className="profileQuoteBox" style={{ background: 'rgba(37, 99, 235, 0.08)', borderLeftColor: '#2563eb' }}>
+              "Visit our Chennai headquarters to review 3D floor plans, touch real material samples, and calculate your exact itemised construction budget."
+            </div>
+
+            <div className="profileSectionTitle">Headquarters Facilities &amp; Customer Suite</div>
+            <div className="profileFeatureList">
+              <div className="profileFeatureCard">
+                <h4><Building2 size={16} style={{ color: '#60a5fa' }}/> 3D Architectural Lounge</h4>
+                <p>Interactive floor plan review and 3D elevation walkthroughs with our senior civil engineers.</p>
+              </div>
+              <div className="profileFeatureCard">
+                <h4><Building2 size={16} style={{ color: '#60a5fa' }}/> Material Sample Gallery</h4>
+                <p>Examine first-quality chamber bricks, granite, vitrified tiles, electrical fittings, and plumbing fixtures in person.</p>
+              </div>
+              <div className="profileFeatureCard">
+                <h4><Building2 size={16} style={{ color: '#60a5fa' }}/> Instant BOQ Estimator Station</h4>
+                <p>Get instant itemised cost breakdowns based on current Tamil Nadu market standards and your customized sqft needs.</p>
+              </div>
+              <div className="profileFeatureCard">
+                <h4><Building2 size={16} style={{ color: '#60a5fa' }}/> Operating Hours</h4>
+                <p>Monday to Saturday: 9:00 AM – 7:30 PM • Sunday: Prior appointment site visits available.</p>
+              </div>
+            </div>
+
+            <div className="profileModalActions">
+              <a href="https://maps.google.com/?q=Choolaimedu,+Chennai,+Tamil+Nadu+-+600094" target="_blank" rel="noreferrer" className="profileBtnPrimary" style={{ background: '#2563eb' }}>
+                <MapPin size={16}/> Get Directions on Google Maps
+              </a>
+              <button className="profileBtnSecondary" onClick={() => { setProfileModal(null); setShowEnquiryModal(true); }}>
+                <Mail size={16}/> Schedule Office Appointment
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+)}
 </div>};
-createRoot(document.getElementById('root')).render(window.location.pathname.startsWith('/admin')?<AdminApp/>:window.location.pathname.startsWith('/portal')?<CustomerApp/>:window.location.pathname.startsWith('/login')?<LoginPage/>:<App/>);
+createRoot(document.getElementById('root')).render(window.location.pathname.startsWith('/admin')?<AdminApp/>:window.location.pathname.startsWith('/portal')?<CustomerApp/>:window.location.pathname.startsWith('/login')?<LoginPage/>:window.location.pathname.startsWith('/leadership')?<LeadershipPage/>:<App/>);

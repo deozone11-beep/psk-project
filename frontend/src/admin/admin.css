@@ -1532,3 +1532,1487 @@
     padding: 20px !important;
   }
 }
+
+/* ===== CENSUS WORK TAB STYLES ===== */
+.censusShell {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 8px 4px 40px;
+}
+
+.censusHeaderBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  padding: 20px 24px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.censusTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.iconRed {
+  color: #e2262b;
+}
+
+.censusSub {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.censusAddBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e2262b;
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.censusAddBtn:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+/* Filter Bar */
+.censusFilterBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.censusSearchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  padding: 8px 14px;
+  border-radius: 8px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.censusSearchIcon {
+  color: #94a3b8;
+}
+
+.censusSearchBox input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.88rem;
+  width: 100%;
+}
+
+.censusFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.censusFilterGroup select {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  padding: 7px 12px;
+  border-radius: 6px;
+  outline: none;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.censusBadgeCount {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+
+/* Cards Grid */
+.censusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.censusCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s;
+}
+
+.censusCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.censusCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.censusTag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #e2262b;
+  background: rgba(226, 38, 43, 0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.censusBlockNum {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.statusSuccess {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.statusWarning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.censusMetaRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.84rem;
+  background: #f8fafc;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  color: #475569;
+}
+
+.metaRow span {
+  color: #64748b;
+}
+
+.metaRow b {
+  color: #0f172a;
+}
+
+.textPrimary {
+  color: #2563eb !important;
+}
+
+.pdfAttached {
+  color: #0284c7;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  word-break: break-all;
+}
+
+/* Card Action Buttons */
+.censusCardActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btnAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnUpload {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+.btnUpload:hover { background: #dbeafe; }
+
+.btnViewMap {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.btnViewMap:hover { background: #dcfce7; }
+
+.btnCompare {
+  background: #faf5ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
+}
+.btnCompare:hover { background: #f3e8ff; }
+
+.downloadMenuContainer {
+  position: relative;
+}
+
+.btnDownload {
+  width: 100%;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+.btnDownload:hover { background: #f1f5f9; }
+
+.downloadDropdown {
+  position: absolute;
+  bottom: 105%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  overflow: hidden;
+}
+
+.downloadDropdown button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: left;
+  cursor: pointer;
+}
+.downloadDropdown button:hover { background: #f1f5f9; color: #e2262b; }
+
+.btnDelete {
+  grid-column: span 2;
+  background: #fff5f5;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.btnDelete:hover { background: #fee2e2; }
+
+/* Modals */
+.censusModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+}
+
+.censusModalContent {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.censusModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.censusModalHeader h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.censusModalHeader button {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 20px 24px;
+}
+
+.formGrid label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.formGrid input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.fileDropZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 20px 24px;
+  padding: 30px;
+  border: 2px dashed #94a3b8;
+  border-radius: 12px;
+  background: #f8fafc;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.dropIcon { color: #2563eb; }
+.fileNote { font-size: 0.75rem; color: #94a3b8; }
+
+.fileDropZone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btnCancel {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+
+.btnSubmit {
+  background: #e2262b;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* WIDESCREEN LANDSCAPE CENSUS MAP MODAL (Sample Image 3 Model) */
+.fullscreenOverlay {
+  padding: 0 !important;
+}
+
+.landscapeMapModal {
+  width: 100vw;
+  height: 100vh;
+  background: #0f172a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.landscapeMapToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e293b;
+  color: #ffffff;
+  padding: 12px 24px;
+  border-bottom: 1px solid #334155;
+}
+
+.toolbarTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toolBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #334155;
+  color: #ffffff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btnCompareHighlight {
+  background: #e2262b;
+}
+
+.toolBtnClose {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* Print/Landscape Layout Container */
+.landscapeMapContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  margin: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.landscapeHeaderTable {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #0f172a;
+  border-bottom: 2px solid #0f172a;
+}
+
+.tableCell {
+  background: #ffffff;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tableCell span { color: #64748b; font-weight: 600; }
+.tableCell b { color: #0f172a; font-weight: 800; }
+.textHighlight { color: #e2262b !important; font-size: 1.05rem; }
+
+.landscapeCanvasArea {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.censusSvgMap {
+  width: 100%;
+  height: 100%;
+  max-height: 75vh;
+}
+
+.streetText {
+  font-size: 12px;
+  font-weight: 800;
+  fill: #334155;
+  letter-spacing: 0.5px;
+}
+
+.buildingBlockGroup {
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.buildingBlockGroup:hover rect {
+  fill: #fde047;
+  stroke: #dc2626;
+  stroke-width: 2.5;
+}
+
+.compassIndicator {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-weight: 900;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.scaleBar {
+  position: absolute;
+  bottom: 20px;
+  left: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.scaleLine {
+  width: 80px;
+  height: 4px;
+  background: #0f172a;
+}
+
+.legendBox {
+  position: absolute;
+  bottom: 20px;
+  right: 30px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1.5px solid #0f172a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.legendHeader {
+  font-weight: 800;
+  text-decoration: underline;
+  color: #0f172a;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendRedLine {
+  color: #dc2626;
+  font-weight: 900;
+}
+
+.legendBoxSquare {
+  width: 14px;
+  height: 14px;
+  background: #fef08a;
+  border: 1.5px solid #78350f;
+}
+
+/* LIVE MAP COMPARE MODAL */
+.compareMapModal {
+  width: 100vw;
+  height: 100vh;
+  background: #0f172a;
+  display: flex;
+  flex-direction: column;
+}
+
+.compareHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e293b;
+  color: #ffffff;
+  padding: 12px 24px;
+}
+
+.compareTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.compareControls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btnGroup {
+  display: flex;
+  background: #334155;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.btnGroup button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btnGroup button.active {
+  background: #e2262b;
+  color: #ffffff;
+}
+
+.tileSelect {
+  background: #334155;
+  color: #ffffff;
+  border: none;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.opacityControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 0.82rem;
+}
+
+.compareBody {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.splitLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  height: 100%;
+}
+
+.overlayLayout {
+  width: 100%;
+  height: 100%;
+}
+
+.compareLeftPanel, .compareRightPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-right: 1px solid #334155;
+}
+
+.panelHeader {
+  background: #0f172a;
+  color: #94a3b8;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-bottom: 1px solid #1e293b;
+}
+
+.miniLayoutBox {
+  flex: 1;
+  background: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.miniSvg {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
+.leafletMapContainer {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+/* Building Inspector Modal */
+.modalBuilding {
+  max-width: 480px;
+}
+
+.buildingInfoBody {
+  padding: 20px;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.infoTile {
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.infoTile span { color: #64748b; font-size: 0.75rem; }
+.infoTile b { color: #0f172a; }
+.textSuccess { color: #16a34a !important; }
+
+/* Uploaded PDF & Image Map Controls */
+.searchBuildingBox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.searchBuildingBox input {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.8rem;
+  outline: none;
+  width: 140px;
+}
+
+.mapTransformWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.uploadedPdfViewer {
+  width: 100%;
+  height: 75vh;
+  border: none;
+  border-radius: 8px;
+}
+
+.uploadedImageContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.uploadedMapImg {
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  border-radius: 6px;
+}
+
+.miniUploadedImg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* ===== OFFICIAL CENSUS OF INDIA LAYOUT FRAME (IMAGE 1 MODEL) ===== */
+.officialCensusLayoutFrame {
+  width: 100vw;
+  height: 100vh;
+  background: #0f172a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.officialLayoutBody {
+  flex: 1;
+  display: flex;
+  background: #ffffff;
+  overflow: hidden;
+  margin: 12px;
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.3);
+  border: 2px solid #1e293b;
+}
+
+/* LEFT SIDEBAR: Census Table Form (Image 1 Left Box) */
+.censusFormSidebar {
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  background: #ffffff;
+  border-right: 2.5px solid #0f172a;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.censusFormTitleHeader {
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.censusFormTitleHeader h2 {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.censusFormSubTitle {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.censusTableForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px dashed #cbd5e1;
+  padding-bottom: 6px;
+  font-size: 0.78rem;
+}
+
+.fieldLabel {
+  color: #475569;
+  font-weight: 600;
+}
+
+.fieldValue {
+  color: #0f172a;
+}
+
+.codeBox {
+  border: 1px solid #0f172a;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 0.85rem;
+  background: #f8fafc;
+  letter-spacing: 2px;
+}
+
+.blockCodeBox {
+  background: #fef08a;
+  border-color: #dc2626;
+  color: #991b1b;
+  font-size: 0.95rem;
+  padding: 3px 8px;
+}
+
+.highlightRow {
+  background: #fffbeeb0;
+  padding: 6px;
+  border-radius: 4px;
+  border-bottom: 1.5px solid #e2262b;
+}
+
+/* Legend Box */
+.censusFormLegendSection {
+  margin-top: 14px;
+  border: 1.5px solid #0f172a;
+  padding: 10px;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.legendTitle {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 8px;
+  text-decoration: underline;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  margin-bottom: 6px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.legendBoundaryLine {
+  width: 22px;
+  height: 6px;
+  background: #ffffff;
+  border: 2px stroke #0f172a;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px #0f172a;
+}
+
+.legendBuildingBoxIcon {
+  width: 14px;
+  height: 14px;
+  background: #fde047;
+  border: 1.5px solid #78350f;
+  border-radius: 2px;
+}
+
+.formNote {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-top: 8px;
+  line-height: 1.3;
+}
+
+.timestampSection {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid #cbd5e1;
+  font-size: 0.7rem;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timestampSection b {
+  color: #0f172a;
+  font-family: monospace;
+}
+
+/* RIGHT MAIN SATELLITE MAP AREA */
+.censusMapRightContainer {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background: #0f172a;
+}
+
+.mainLeafletSatelliteContainer {
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+.buildingRoofBadge {
+  background: #fde047;
+  border: 1.5px solid #78350f;
+  color: #78350f;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+
+.buildingRoofBadge.searchMatched {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #991b1b;
+  transform: translate(-50%, -50%) scale(1.3);
+  z-index: 999;
+}
+
+.landmarkLabel {
+  display: block;
+  font-size: 0.6rem;
+  color: #0284c7;
+  font-weight: 800;
+}
+
+.customRoofIcon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.blueprintSvgContainer {
+  width: 100%;
+  height: 100%;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.censusSvgBlueprint {
+  width: 95%;
+  height: 90%;
+}
+
+.uploadedDocFrame {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a;
+}
+
+.uploadedIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.uploadedImageFull {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* ===== HLB CREATOR WEB MAP PORTAL STYLES (EXACT MATCH FOR SCREENSHOT) ===== */
+.hlbApplicationShell {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.hlbTopNavbar {
+  height: 60px;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  z-index: 1000;
+  flex-shrink: 0;
+}
+
+.hlbBrandSection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hlbSealIcon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.hlbTitleBox {
+  display: flex;
+  flex-direction: column;
+}
+
+.hlbMainTitle {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+
+.hlbSubTitle {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0284c7;
+  margin: 0;
+}
+
+.hlbGovtText {
+  font-size: 0.65rem;
+  color: #64748b;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Center Tabs */
+.hlbCenterTabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e2e8f0;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.hlbTabBtn {
+  background: transparent;
+  border: none;
+  padding: 6px 18px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hlbTabBtn:hover {
+  color: #0f172a;
+  background: rgba(255,255,255,0.6);
+}
+
+.hlbTabBtn.active, .hlbTabBtn.activeMapTab {
+  background: #1e293b !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Right Utility Bar */
+.hlbRightTools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hlbToolBtn {
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+}
+
+.hlbIconTool {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hlbIconTool:hover {
+  background: #f1f5f9;
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+.hlbUserTag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.hlbLangBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #0284c7;
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hlbLogoutBtn {
+  background: #dc2626;
+  border: none;
+  color: #ffffff;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* MAIN WEB MAP PORTAL CANVAS */
+.hlbMapPortalBody {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+.hlbMainMapCanvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* Floating Search Bar (Top Left) */
+.hlbMapSearchFloating {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 999;
+  background: #ffffff;
+  border: 2px solid #1e293b;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding: 4px 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  width: 320px;
+}
+
+.hlbMapSearchFloating .searchIcon {
+  color: #64748b;
+  margin: 0 6px;
+}
+
+.hlbMapSearchFloating input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 0.85rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.hlbMapSearchFloating .searchBtn {
+  background: #1e293b;
+  color: #ffffff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Left Vertical Toolbar Palette (Exact match for Screenshot) */
+.hlbLeftMapToolbar {
+  position: absolute;
+  top: 70px;
+  left: 14px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #ffffff;
+  border: 2px solid #1e293b;
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+}
+
+.toolBoxBtn {
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toolBoxBtn:hover, .toolBoxBtn.activeTool {
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #1e293b;
+}
+
+/* Bottom Info Bar (Scale & GEO-COORDINATES readout) */
+.hlbBottomInfoBar {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hlbScaleBadge {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid #64748b;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.scaleTicks {
+  width: 40px;
+  height: 4px;
+  background: #1e293b;
+}
+
+.hlbCoordsBadge {
+  background: #ffffff;
+  border: 2px solid #1e293b;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.hlbCoordsBadge span {
+  font-weight: 800;
+  color: #64748b;
+  font-size: 0.68rem;
+  letter-spacing: 0.5px;
+}
+
+.hlbCoordsBadge b {
+  color: #1e293b;
+  font-weight: 900;
+}
+
+/* HLB Block Map Badge (Label text inside block polygon like Screenshot) */
+.hlbLabelIcon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.hlbBlockMapBadge {
+  color: #1d4ed8;
+  font-size: 0.92rem;
+  font-weight: 900;
+  text-shadow: 0 0 3px #ffffff, 0 0 5px #ffffff, 0 0 8px #ffffff;
+  letter-spacing: 0.5px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.hlbBlockMapBadge.selectedHlb {
+  color: #dc2626;
+  font-size: 1.15rem;
+  text-shadow: 0 0 4px #ffffff, 0 0 8px #fef08a;
+  transform: scale(1.2);
+}
+
+
+
+
