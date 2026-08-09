@@ -46,40 +46,56 @@ public class DataSeeder {
                 } else if (dbProduct != null && dbProduct.toLowerCase().contains("postgresql")) {
                     try (Statement stmt = conn.createStatement()) {
                         stmt.executeUpdate("ALTER TABLE app_user DROP CONSTRAINT IF EXISTS app_user_role_check");
+                        stmt.executeUpdate("ALTER TABLE testimonial ADD COLUMN IF NOT EXISTS phone VARCHAR(255)");
+                        stmt.executeUpdate("ALTER TABLE testimonial ADD COLUMN IF NOT EXISTS email VARCHAR(255)");
+                        stmt.executeUpdate("ALTER TABLE testimonial ADD COLUMN IF NOT EXISTS status VARCHAR(255) DEFAULT 'APPROVED'");
+                        stmt.executeUpdate("ALTER TABLE testimonial ADD COLUMN IF NOT EXISTS created_at TIMESTAMP");
                     } catch (Exception ex) {
-                        System.err.println("Could not drop PostgreSQL check constraint: " + ex.getMessage());
+                        System.err.println("Could not update PostgreSQL testimonial schema: " + ex.getMessage());
                     }
                 }
             } catch (Exception e) {
                 System.err.println("Database metadata fetch failed: " + e.getMessage());
             }
-            if (services.count() == 0) {
-                services.saveAll(List.of(
-                    new ServiceItem(null, "Residential Construction", "Beautiful, durable homes with transparent estimates."),
-                    new ServiceItem(null, "Commercial Buildings", "Professional spaces built for long-term value."),
-                    new ServiceItem(null, "Renovation & Remodeling", "Modern upgrades for existing buildings."),
-                    new ServiceItem(null, "Planning & Approval", "Plans, estimates and approval guidance."),
-                    new ServiceItem(null, "Interior Works", "Elegant and practical interior execution."),
-                    new ServiceItem(null, "Turnkey Projects", "One team from concept through handover.")
-                ));
-            }
-            if (projects.count() == 0) {
-                projects.saveAll(List.of(
-                    new Project(null, "Modern Family Residence", "Coimbatore", "Completed", List.of("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80")),
-                    new Project(null, "Premium Villa", "Erode", "Completed", List.of("https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80")),
-                    new Project(null, "Urban Business Centre", "Tiruppur", "Ongoing", List.of("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80"))
-                ));
-            }
-            if (testimonials.count() == 0) {
-                testimonials.saveAll(List.of(
-                    new Testimonial(null, "Ramesh Kumar", "Coimbatore", "PSK Brothers built our home on time and exactly as planned. Clear communication throughout.", 5, "+91 98421 12345", "ramesh@gmail.com", "APPROVED", java.time.LocalDateTime.now()),
-                    new Testimonial(null, "Priya Selvam", "Erode", "Professional team, honest pricing, and the finish quality was excellent.", 5, "+91 97890 23456", "priya@gmail.com", "APPROVED", java.time.LocalDateTime.now()),
-                    new Testimonial(null, "Arun Prakash", "Tiruppur", "They handled our office renovation smoothly with minimal disruption to work.", 4, "+91 99440 34567", "arun@gmail.com", "APPROVED", java.time.LocalDateTime.now())
-                ));
-            }
-            if (settings.count() == 0) {
-                settings.save(new Settings(1L, 1650.0, 1980.0));
-            }
+
+            try {
+                if (services.count() == 0) {
+                    services.saveAll(List.of(
+                        new ServiceItem(null, "Residential Construction", "Beautiful, durable homes with transparent estimates."),
+                        new ServiceItem(null, "Commercial Buildings", "Professional spaces built for long-term value."),
+                        new ServiceItem(null, "Renovation & Remodeling", "Modern upgrades for existing buildings."),
+                        new ServiceItem(null, "Planning & Approval", "Plans, estimates and approval guidance."),
+                        new ServiceItem(null, "Interior Works", "Elegant and practical interior execution."),
+                        new ServiceItem(null, "Turnkey Projects", "One team from concept through handover.")
+                    ));
+                }
+            } catch (Exception ex) { System.err.println("Services seed error: " + ex.getMessage()); }
+
+            try {
+                if (projects.count() == 0) {
+                    projects.saveAll(List.of(
+                        new Project(null, "Modern Family Residence", "Coimbatore", "Completed", List.of("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80")),
+                        new Project(null, "Premium Villa", "Erode", "Completed", List.of("https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80")),
+                        new Project(null, "Urban Business Centre", "Tiruppur", "Ongoing", List.of("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80"))
+                    ));
+                }
+            } catch (Exception ex) { System.err.println("Projects seed error: " + ex.getMessage()); }
+
+            try {
+                if (testimonials.count() == 0) {
+                    testimonials.saveAll(List.of(
+                        new Testimonial(null, "Ramesh Kumar", "Coimbatore", "PSK Brothers built our home on time and exactly as planned. Clear communication throughout.", 5, "+91 98421 12345", "ramesh@gmail.com", "APPROVED", java.time.LocalDateTime.now()),
+                        new Testimonial(null, "Priya Selvam", "Erode", "Professional team, honest pricing, and the finish quality was excellent.", 5, "+91 97890 23456", "priya@gmail.com", "APPROVED", java.time.LocalDateTime.now()),
+                        new Testimonial(null, "Arun Prakash", "Tiruppur", "They handled our office renovation smoothly with minimal disruption to work.", 4, "+91 99440 34567", "arun@gmail.com", "APPROVED", java.time.LocalDateTime.now())
+                    ));
+                }
+            } catch (Exception ex) { System.err.println("Testimonials seed error: " + ex.getMessage()); }
+
+            try {
+                if (settings.count() == 0) {
+                    settings.save(new Settings(1L, 1650.0, 1980.0));
+                }
+            } catch (Exception ex) { System.err.println("Settings seed error: " + ex.getMessage()); }
 
             // Staff logins: owner + admin/employee — both get full ADMIN access.
             if (users.findByUsername("owner").isEmpty()) {
