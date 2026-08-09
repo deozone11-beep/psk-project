@@ -35,11 +35,12 @@ public class AdminController {
     final ProjectRepository projects;
     final PasswordEncoder encoder;
     final ProjectFileRepository files;
+    final TestimonialRepository testimonials;
 
     AdminController(EnquiryRepository enquiries, SettingsRepository settings, EmployeeRepository employees,
                      AttendanceRepository attendance, PaymentRepository payments, AppUserRepository users,
                      ProjectUpdateRepository updates, ProjectRepository projects, PasswordEncoder encoder,
-                     ProjectFileRepository files) {
+                     ProjectFileRepository files, TestimonialRepository testimonials) {
         this.enquiries = enquiries;
         this.settings = settings;
         this.employees = employees;
@@ -50,6 +51,7 @@ public class AdminController {
         this.projects = projects;
         this.encoder = encoder;
         this.files = files;
+        this.testimonials = testimonials;
     }
 
     @GetMapping("/whoami")
@@ -685,6 +687,40 @@ public class AdminController {
     ResponseEntity<?> deleteInvoice(@PathVariable Long id) {
         if (!invoiceRepository.existsById(id)) return ResponseEntity.notFound().build();
         invoiceRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ---------- Testimonials & Ratings Management ----------
+    @GetMapping("/testimonials")
+    List<Testimonial> listAllTestimonials() {
+        return testimonials.findAll();
+    }
+
+    @PostMapping("/testimonials")
+    ResponseEntity<?> createAdminTestimonial(@RequestBody Testimonial t) {
+        if (t.getCreatedAt() == null) t.setCreatedAt(java.time.LocalDateTime.now());
+        if (t.getStatus() == null) t.setStatus("APPROVED");
+        return ResponseEntity.ok(testimonials.save(t));
+    }
+
+    @PutMapping("/testimonials/{id}")
+    ResponseEntity<?> updateAdminTestimonial(@PathVariable Long id, @RequestBody Testimonial body) {
+        return testimonials.findById(id).map(t -> {
+            if (body.getCustomerName() != null) t.setCustomerName(body.getCustomerName());
+            if (body.getLocation() != null) t.setLocation(body.getLocation());
+            if (body.getMessage() != null) t.setMessage(body.getMessage());
+            if (body.getRating() != null) t.setRating(body.getRating());
+            if (body.getPhone() != null) t.setPhone(body.getPhone());
+            if (body.getEmail() != null) t.setEmail(body.getEmail());
+            if (body.getStatus() != null) t.setStatus(body.getStatus());
+            return ResponseEntity.ok(testimonials.save(t));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/testimonials/{id}")
+    ResponseEntity<?> deleteAdminTestimonial(@PathVariable Long id) {
+        if (!testimonials.existsById(id)) return ResponseEntity.notFound().build();
+        testimonials.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

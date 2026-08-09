@@ -760,6 +760,7 @@
 .site select option{color:#17201d}
 .stepBack{border-color:rgba(255,255,255,.15);color:#e7e7e6}
 
+
 section[id]{scroll-margin-top:76px}
 @media(max-width:1400px){
 .site nav{display:none;position:fixed;top:76px;left:0;right:0;background:rgba(10,10,12,.98);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:22px 28px 28px;flex-direction:column;align-items:flex-start;gap:2px;box-shadow:0 16px 34px rgba(0,0,0,.35);max-height:calc(100vh - 76px);overflow-y:auto}
@@ -2057,6 +2058,212 @@ section[id]{scroll-margin-top:76px}
   transform: translateX(6px);
   border-color: rgba(226, 38, 43, 0.4) !important;
   box-shadow: 0 15px 35px rgba(226, 38, 43, 0.15) !important;
+}
+
+/* CAROUSEL SLIDER & PROJECTS PAGE STYLES */
+.projectsCarouselRow {
+  display: flex !important;
+  gap: 28px !important;
+  overflow-x: auto !important;
+  scroll-snap-type: x mandatory !important;
+  padding: 10px 0 24px !important;
+  scroll-behavior: smooth !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.projectsCarouselRow::-webkit-scrollbar {
+  display: none !important;
+}
+
+.projectsCarouselRow article {
+  flex: 0 0 380px !important;
+  min-width: 360px !important;
+  max-width: 380px !important;
+  height: 450px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 24px !important;
+  background: rgba(23, 23, 28, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45) !important;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s, border-color 0.3s !important;
+  scroll-snap-align: start !important;
+}
+
+.projectsCarouselRow article:hover {
+  transform: translateY(-8px) !important;
+  border-color: rgba(226, 38, 43, 0.6) !important;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.65), 0 0 30px rgba(226, 38, 43, 0.2) !important;
+}
+
+.projectsCarouselRow article .projectSlideshow {
+  position: relative !important;
+  width: 100% !important;
+  height: 280px !important;
+  overflow: hidden !important;
+}
+
+.projectsCarouselRow article .projectSlideshow img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.projectsCarouselRow article div {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  padding: 22px 24px !important;
+  background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 14, 0.95) 40%, rgba(7, 7, 10, 0.99) 100%) !important;
+  z-index: 10 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.projectsCarouselRow article div h3 {
+  margin: 4px 0 0 0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  line-height: 1.3 !important;
+}
+
+.projectsCarouselRow article div small {
+  color: #ff8a7a !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.projectsCarouselRow article .statusPill {
+  position: absolute !important;
+  top: 18px !important;
+  left: 18px !important;
+  z-index: 15 !important;
+}
+
+.carouselArrowBtn:hover {
+  transform: scale(1.08);
+  border-color: #e2262b !important;
+  box-shadow: 0 6px 18px rgba(226, 38, 43, 0.4) !important;
+}
+
+.seeMoreProjectsBtn:hover {
+  transform: translateY(-3px);
+  border-color: #e2262b !important;
+  background: linear-gradient(135deg, rgba(226,38,43,0.35) 0%, rgba(255,255,255,0.1) 100%) !important;
+  box-shadow: 0 12px 30px rgba(226,38,43,0.45) !important;
+}
+
+.projectCardHover:hover {
+  transform: translateY(-6px);
+  border-color: rgba(226, 38, 43, 0.5) !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6) !important;
+}
+
+.projectCardHover:hover .cardImgZoom {
+  transform: scale(1.06);
+}
+
+.testimonialsCarouselRow {
+  display: flex !important;
+  gap: 24px !important;
+  overflow-x: auto !important;
+  scroll-snap-type: x mandatory !important;
+  padding: 10px 0 20px !important;
+  scroll-behavior: smooth !important;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+.testimonialsCarouselRow::-webkit-scrollbar {
+  display: none !important;
+}
+
+.testimonialsCarouselRow article:hover {
+  transform: translateY(-6px) !important;
+  border-color: rgba(226, 38, 43, 0.4) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 25px rgba(226, 38, 43, 0.15) !important;
+}
+
+/* ===== EXPANSIVE WIDESCREEN CONTAINER & SIDE AMBIENT GLOW SYSTEM ===== */
+@media (min-width: 1200px) {
+  .wrap {
+    max-width: 1440px !important;
+    padding: 90px max(4%, 32px) !important;
+  }
+
+  .about {
+    max-width: 1440px !important;
+    gap: 70px !important;
+    padding: 110px 32px !important;
+  }
+
+  .grid.services {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 28px !important;
+  }
+
+  .grid.why {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 24px !important;
+  }
+
+  .grid.process {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 24px !important;
+  }
+
+  .calcBox2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1.15fr !important;
+    gap: 40px !important;
+    width: 100% !important;
+  }
+
+  .pillarPanel {
+    width: 100% !important;
+    padding: 44px 48px !important;
+  }
+
+  #contact {
+    max-width: 1440px !important;
+    grid-template-columns: 1.1fr 0.9fr !important;
+    gap: 56px !important;
+  }
+}
+
+/* SIDE AMBIENT LIGHTING FOR ZERO DEAD BLACK SPACE */
+#services::before, 
+#pillars::before, 
+#process::before, 
+#why::before, 
+#calculator::before, 
+#testimonials::before, 
+#contact::before, 
+#projects::before, 
+.about::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  width: 100vw !important;
+  transform: translateX(-50%) !important;
+  z-index: -1 !important;
+  background-image: 
+    radial-gradient(950px 600px at 0% 15%, rgba(226, 38, 43, 0.16), transparent 65%),
+    radial-gradient(950px 600px at 100% 85%, rgba(226, 38, 43, 0.14), transparent 65%),
+    radial-gradient(700px 450px at 50% 50%, rgba(30, 30, 45, 0.25), transparent 80%),
+    linear-gradient(180deg, #09090b 0%, #111115 50%, #09090b 100%) !important;
 }
 
 

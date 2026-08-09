@@ -1,4 +1,4 @@
-import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{Menu,X,Phone,MapPin,Mail,ArrowRight,CheckCircle2,Pencil,Hammer,MessageSquare,Send,ChevronLeft,ChevronRight,Printer,FileText,User,Building2,Sparkles,ShieldCheck,Award}from'lucide-react';import'./style.css';import AdminApp from'./AdminApp.jsx';import CustomerApp from'./CustomerApp.jsx';import LoginPage from'./LoginPage.jsx';import LeadershipPage from'./LeadershipPage.jsx';
+import React,{useEffect,useState,useRef}from'react';import{createRoot}from'react-dom/client';import{Menu,X,Phone,MapPin,Mail,ArrowRight,CheckCircle2,Pencil,Hammer,MessageSquare,Send,ChevronLeft,ChevronRight,Printer,FileText,User,Building2,Sparkles,ShieldCheck,Award,Star,Plus}from'lucide-react';import'./style.css';import AdminApp from'./AdminApp.jsx';import CustomerApp from'./CustomerApp.jsx';import LoginPage from'./LoginPage.jsx';import LeadershipPage from'./LeadershipPage.jsx';import ProjectsPage, { PROJECTS_DATA } from'./ProjectsPage.jsx';import ReviewsPage, { INITIAL_TESTIMONIALS } from'./ReviewsPage.jsx';
 const API=import.meta.env.VITE_API_URL||'/api',fallback={services:['Residential Construction','Commercial Buildings','Renovation & Remodeling','Planning & Approval','Interior Works','Turnkey Projects'].map((title,id)=>({id,title,description:'Quality workmanship, transparent pricing and dependable project delivery.'})),projects:[{id:1,title:'Modern Family Residence',location:'Coimbatore',status:'Completed',imageUrl:'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'},{id:2,title:'Premium Villa',location:'Erode',status:'Completed',imageUrl:'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80'},{id:3,title:'Urban Business Centre',location:'Tiruppur',status:'Ongoing',imageUrl:'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'}],testimonials:[{id:1,customerName:'Ramesh Kumar',location:'Coimbatore',message:'PSK Brothers built our home on time and exactly as planned.',rating:5},{id:2,customerName:'Priya Selvam',location:'Erode',message:'Professional team, honest pricing, excellent finish quality.',rating:5},{id:3,customerName:'Arun Prakash',location:'Tiruppur',message:'They handled our office renovation smoothly with minimal disruption.',rating:4}]};
 // Fire-and-forget fetch to warm up Render server immediately on load
 fetch(`${API}/settings`).catch(()=>{});
@@ -446,7 +446,7 @@ function GlobalLoader({message}){
   );
 }
 
-function App(){const[d,setD]=useState(fallback),[lightbox,setLightbox]=useState(null),[profileModal,setProfileModal]=useState(null),[appLoading,setAppLoading]=useState(false),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[otherRate,setOtherRate]=useState(1980),[sqft,setSqft]=useState(500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null),[scrolled,setScrolled]=useState(false),[showEnquiryModal,setShowEnquiryModalRaw]=useState(false),[chatOpen,setChatOpen]=useState(false),[chatInput,setChatInput]=useState(''),[lang,setLang]=useState('en'),[calcTab,setCalcTab]=useState('cost'),[chatMessages,setChatMessages]=useState([{sender:'bot',text:'👋 **Welcome to PSK Brothers Builders & Constructions!**\n\nOur mission is to assist you in discovering your dream home or commercial space across Tamil Nadu. How can we help you today?',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}]),[chatTyping,setChatTyping]=useState(false),[enquiryStep,setEnquiryStep]=useState(0),[enquiryData,setEnquiryData]=useState({name:'',phone:'',service:'',message:''});const chatBodyRef=useRef(null);const[suggestions,setSuggestions]=useState([]);const suggestTimeout=useRef(null);
+function App(){const projectsRowRef=useRef(null);const testimonialsRowRef=useRef(null);const[selectedDetailProject,setSelectedDetailProject]=useState(null);const[detailPhotoIdx,setDetailPhotoIdx]=useState(0);const[showRateModal,setShowRateModal]=useState(false);const[rateFormData,setRateFormData]=useState({customerName:'',phone:'',email:'',location:'',rating:5,message:''});const[rateSuccessMsg,setRateSuccessMsg]=useState('');const[d,setD]=useState(fallback),[lightbox,setLightbox]=useState(null),[profileModal,setProfileModal]=useState(null),[appLoading,setAppLoading]=useState(false),[open,setOpen]=useState(false),[msg,setMsg]=useState(''),[rate,setRate]=useState(1650),[otherRate,setOtherRate]=useState(1980),[sqft,setSqft]=useState(500),[editingSqft,setEditingSqft]=useState(false),[pillar,setPillar]=useState('time'),[step,setStep]=useState(1),formRef=useRef(null),[scrolled,setScrolled]=useState(false),[showEnquiryModal,setShowEnquiryModalRaw]=useState(false),[chatOpen,setChatOpen]=useState(false),[chatInput,setChatInput]=useState(''),[lang,setLang]=useState('en'),[calcTab,setCalcTab]=useState('cost'),[chatMessages,setChatMessages]=useState([{sender:'bot',text:'👋 **Welcome to PSK Brothers Builders & Constructions!**\n\nOur mission is to assist you in discovering your dream home or commercial space across Tamil Nadu. How can we help you today?',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}]),[chatTyping,setChatTyping]=useState(false),[enquiryStep,setEnquiryStep]=useState(0),[enquiryData,setEnquiryData]=useState({name:'',phone:'',service:'',message:''});const chatBodyRef=useRef(null);const[suggestions,setSuggestions]=useState([]);const suggestTimeout=useRef(null);
 const [coords, setCoords] = useState({ latitude: '', longitude: '' });
 function requestCoords() {
   if (navigator.geolocation) {
@@ -555,7 +555,8 @@ async function submit(e){
 }
 const percentDiff = rate > 0 ? Math.round(((otherRate - rate) / rate) * 100) : 0;
 const savePercent = otherRate > 0 ? Math.round(((otherRate - rate) / otherRate) * 100) : 0;
-return <div className="site">
+return (
+  <div className="site">
   {appLoading && <GlobalLoader message="Loading details..."/>}
   <header className={scrolled?'scrolled':''}>
     <a className="logo" href="#home"><img src="/logo.png" alt="PSK Brothers Builders & Constructions"/></a>
@@ -653,10 +654,131 @@ return <div className="site">
 </div>
 </section>
 <section id="services" className="light"><div className="wrap"><p className="eyebrow">WHAT WE DO</p><h2>Complete construction solutions</h2><div className="grid services">{(d.services || []).map((x,i)=>x && <article key={x.id}><ServiceIcon title={x.title} idKey={x.id}/><i>0{i+1}</i><h3>{x.title}</h3><p>{x.description}</p><button onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{background:'none',border:'none',padding:0,color:'#17201d',fontSize:'.75rem',fontWeight:700,display:'flex',gap:'8px',alignItems:'center',cursor:'pointer'}}>ENQUIRE <ArrowRight size={15}/></button></article>)}</div></div></section>
-<section id="projects" className="wrap"><p className="eyebrow">SELECTED PROJECTS</p><h2>Work we're proud of</h2><div className="grid projects">{(d.projects || []).map(x=>x && <article key={x.id} style={{ cursor: 'pointer' }} onClick={() => {
-  const imgs = x.imageUrls && x.imageUrls.length ? x.imageUrls : (x.imageUrl ? [x.imageUrl] : []);
-  setLightbox({ images: imgs, idx: 0, title: x.title, location: x.location });
-}}><ProjectSlideshow images={x.imageUrls&&x.imageUrls.length?x.imageUrls:(x.imageUrl?[x.imageUrl]:[])}/><span className={'statusPill'+(x.status==='Completed'?' done':'')}>{x.status==='Completed'?<CheckCircle2 size={13}/>:<Hammer size={13}/>} {x.status}</span><div><small>{x.location}</small><h3>{x.title}</h3></div></article>)}</div></section>
+<section id="projects" className="wrap" style={{ position: 'relative' }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+    <div>
+      <p className="eyebrow">SELECTED LANDMARKS</p>
+      <h2 style={{ margin: 0 }}>Work we're proud of</h2>
+    </div>
+
+    {/* CAROUSEL ARROW BUTTONS (LEFT & RIGHT) */}
+    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+      <button 
+        type="button" 
+        onClick={() => projectsRowRef.current?.scrollBy({ left: -380, behavior: 'smooth' })}
+        aria-label="Previous Projects"
+        style={{
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          color: '#ffffff',
+          width: '44px',
+          height: '44px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease'
+        }}
+        className="carouselArrowBtn"
+      >
+        <ChevronLeft size={22}/>
+      </button>
+
+      <button 
+        type="button" 
+        onClick={() => projectsRowRef.current?.scrollBy({ left: 380, behavior: 'smooth' })}
+        aria-label="Next Projects"
+        style={{
+          background: 'rgba(226,38,43,0.85)',
+          border: '1px solid #e2262b',
+          color: '#ffffff',
+          width: '44px',
+          height: '44px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 4px 14px rgba(226,38,43,0.4)',
+          transition: 'all 0.2s ease'
+        }}
+        className="carouselArrowBtn"
+      >
+        <ChevronRight size={22}/>
+      </button>
+    </div>
+  </div>
+
+  {/* PROJECTS HORIZONTAL CAROUSEL SLIDER */}
+  <div 
+    ref={projectsRowRef}
+    className="projectsCarouselRow"
+    style={{
+      display: 'flex',
+      gap: '24px',
+      overflowX: 'auto',
+      scrollSnapType: 'x mandatory',
+      paddingBottom: '20px',
+      scrollBehavior: 'smooth'
+    }}
+  >
+    {((d.projects && d.projects.length > 3 ? d.projects : PROJECTS_DATA) || []).map(x => x && (
+      <article 
+        key={x.id} 
+        style={{ 
+          minWidth: '340px',
+          maxWidth: '380px',
+          flex: '0 0 auto',
+          scrollSnapAlign: 'start',
+          cursor: 'pointer',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          background: 'rgba(23, 23, 28, 0.85)',
+          border: '1px solid rgba(255,255,255,0.1)'
+        }} 
+        onClick={() => {
+          setSelectedDetailProject(x);
+        }}
+      >
+        <ProjectSlideshow images={x.gallery && x.gallery.length ? x.gallery : (x.imageUrls && x.imageUrls.length ? x.imageUrls : (x.imageUrl ? [x.imageUrl] : (x.coverImage ? [x.coverImage] : [])))}/>
+        <span className={'statusPill' + (x.status === 'Completed' ? ' done' : '')}>
+          {x.status === 'Completed' ? <CheckCircle2 size={13}/> : <Hammer size={13}/>} {x.status}
+        </span>
+        <div>
+          <small><MapPin size={12}/> {x.location}</small>
+          <h3>{x.title}</h3>
+          {x.sqft && <span style={{ fontSize: '0.78rem', color: '#ff8a7a', fontWeight: 600 }}>{x.sqft} · Click for photos</span>}
+        </div>
+      </article>
+    ))}
+  </div>
+
+  {/* SEE MORE PROJECTS CTA BUTTON */}
+  <div style={{ textAlign: 'center', marginTop: '28px' }}>
+    <a 
+      href="/projects" 
+      style={{ 
+        display: 'inline-flex', 
+        alignItems: 'center', 
+        gap: '10px', 
+        background: 'linear-gradient(135deg, rgba(226,38,43,0.2) 0%, rgba(255,255,255,0.06) 100%)', 
+        border: '1.5px solid rgba(226,38,43,0.5)', 
+        color: '#ffffff', 
+        padding: '14px 32px', 
+        borderRadius: '30px', 
+        fontWeight: 800, 
+        fontSize: '0.94rem', 
+        textDecoration: 'none',
+        boxShadow: '0 8px 25px rgba(226,38,43,0.3)',
+        transition: 'all 0.25s ease'
+      }}
+      className="seeMoreProjectsBtn"
+    >
+      <span>SEE ALL PROJECTS &amp; SITE PHOTOS ({PROJECTS_DATA.length}+ LANDMARKS)</span> <ArrowRight size={18}/>
+    </a>
+  </div>
+</section>
 <section id="why" className="wrap"><p className="eyebrow">WHY PSK BROTHERS</p><h2>Built on trust, backed by process</h2><div className="grid why">{[['Time','On-time delivery — no cost overruns from delayed schedules.'],['Transparency','Clear estimates, no hidden charges. Every cost explained upfront.'],['Quality Materials','We use only trusted, standard-grade materials — no shortcuts.'],['Regular Updates','You get progress updates at every stage, not just at handover.'],['In-house Team','Our own skilled masons and supervisors — no unreliable subcontracting.'],['Post-Construction Support','Issues after handover? We stay reachable, not gone with the payment.'],['Fair Pricing','Right quality for the right price — quotes tailored to your budget.'],['Local Expertise','Deep knowledge of Coimbatore soil, weather and approval processes.']].map(([t,d2])=><div key={t} className="whyCard"><h3>{t}</h3><p>{d2}</p></div>)}</div></section>
 <section id="pillars" className="light"><div className="wrap"><p className="eyebrow">HOW WE WORK</p><h2>4 things we don't compromise on</h2><div className="pillarTabs">{Object.keys(pillars).map(k=><button key={k} className={'pillarTab'+(pillar===k?' active':'')} onClick={()=>setPillar(k)}>{pillars[k].label}</button>)}</div><div className="pillarPanel"><h3>{pillars[pillar].title}</h3><p>{pillars[pillar].body}</p><ul>{pillars[pillar].points.map(pt=><li key={pt}><CheckCircle2 size={16}/> {pt}</li>)}</ul></div></div></section>
 
@@ -742,7 +864,164 @@ return <div className="site">
   </div>
 </section>
 <section id="process" className="light"><div className="wrap"><p className="eyebrow">HOW IT WORKS</p><h2>From first call to handover</h2><div className="grid process">{[['01','Enquiry','Tell us about your project — home, office or renovation.'],['02','Site Visit','Our team visits your site and understands your requirements.'],['03','Estimate & Plan','You get a clear, itemised cost estimate and timeline.'],['04','Execution & Handover','We build with regular updates, and hand over on schedule.']].map(([n,t,d2])=><div key={n} className="processCard"><span>{n}</span><h3>{t}</h3><p>{d2}</p></div>)}</div></div></section>
-<section id="testimonials" className="light"><div className="wrap"><p className="eyebrow">CLIENT WORDS</p><h2>What our clients say</h2><div className="grid testimonials">{(d.testimonials || []).map(x=>x && <article key={x.id}><div className="stars">{'★'.repeat(x.rating)}{'☆'.repeat(5-x.rating)}</div><p>"{x.message}"</p><b>{x.customerName}</b><span>{x.location}</span></article>)}</div></div></section>
+<section id="testimonials" className="wrap" style={{ position: 'relative' }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+    <div>
+      <p className="eyebrow">CLIENT WORDS &amp; RATINGS</p>
+      <h2 style={{ margin: 0 }}>What our clients say</h2>
+    </div>
+
+    {/* CAROUSEL ARROW BUTTONS & WRITE REVIEW BUTTON */}
+    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <button 
+        type="button" 
+        onClick={() => setShowRateModal(true)}
+        style={{
+          background: '#e2262b',
+          color: '#ffffff',
+          border: 'none',
+          padding: '10px 20px',
+          borderRadius: '20px',
+          fontWeight: 800,
+          fontSize: '0.82rem',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          boxShadow: '0 4px 14px rgba(226,38,43,0.4)'
+        }}
+      >
+        <Plus size={16}/> WRITE A REVIEW / RATE US
+      </button>
+
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button 
+          type="button" 
+          onClick={() => testimonialsRowRef.current?.scrollBy({ left: -360, behavior: 'smooth' })}
+          aria-label="Previous Reviews"
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            color: '#ffffff',
+            width: '42px',
+            height: '42px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          className="carouselArrowBtn"
+        >
+          <ChevronLeft size={20}/>
+        </button>
+
+        <button 
+          type="button" 
+          onClick={() => testimonialsRowRef.current?.scrollBy({ left: 360, behavior: 'smooth' })}
+          aria-label="Next Reviews"
+          style={{
+            background: 'rgba(226,38,43,0.85)',
+            border: '1px solid #e2262b',
+            color: '#ffffff',
+            width: '42px',
+            height: '42px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(226,38,43,0.4)',
+            transition: 'all 0.2s ease'
+          }}
+          className="carouselArrowBtn"
+        >
+          <ChevronRight size={20}/>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {/* TESTIMONIALS CAROUSEL SLIDER */}
+  <div 
+    ref={testimonialsRowRef}
+    className="testimonialsCarouselRow"
+    style={{
+      display: 'flex',
+      gap: '24px',
+      overflowX: 'auto',
+      scrollSnapType: 'x mandatory',
+      paddingBottom: '16px',
+      scrollBehavior: 'smooth'
+    }}
+  >
+    {((d.testimonials && d.testimonials.length > 2 ? d.testimonials : INITIAL_TESTIMONIALS) || []).map(x => x && (
+      <article 
+        key={x.id} 
+        style={{ 
+          minWidth: '340px',
+          maxWidth: '380px',
+          flex: '0 0 auto',
+          scrollSnapAlign: 'start',
+          borderRadius: '20px',
+          padding: '24px',
+          background: 'rgba(23, 23, 28, 0.85)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '16px',
+          boxShadow: '0 12px 30px rgba(0,0,0,0.35)'
+        }}
+      >
+        <div>
+          <div style={{ color: '#ffc107', fontSize: '1.2rem', letterSpacing: '2px', marginBottom: '10px' }}>
+            {'★'.repeat(x.rating || 5)}{'☆'.repeat(5 - (x.rating || 5))}
+          </div>
+          <p style={{ fontSize: '0.94rem', color: '#e4e4e7', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
+            "{x.message}"
+          </p>
+        </div>
+
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <b style={{ color: '#ffffff', fontSize: '0.98rem', display: 'block', marginBottom: '2px' }}>{x.customerName}</b>
+            <span style={{ fontSize: '0.78rem', color: '#ff8a7a', display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={12}/> {x.location}</span>
+          </div>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '3px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700 }}>
+            <CheckCircle2 size={11}/> Verified
+          </span>
+        </div>
+      </article>
+    ))}
+  </div>
+
+  {/* SEE ALL REVIEWS BUTTON */}
+  <div style={{ textAlign: 'center', marginTop: '28px' }}>
+    <a 
+      href="/reviews" 
+      style={{ 
+        display: 'inline-flex', 
+        alignItems: 'center', 
+        gap: '10px', 
+        background: 'linear-gradient(135deg, rgba(226,38,43,0.2) 0%, rgba(255,255,255,0.06) 100%)', 
+        border: '1.5px solid rgba(226,38,43,0.5)', 
+        color: '#ffffff', 
+        padding: '14px 32px', 
+        borderRadius: '30px', 
+        fontWeight: 800, 
+        fontSize: '0.92rem', 
+        textDecoration: 'none',
+        boxShadow: '0 8px 25px rgba(226,38,43,0.3)',
+        transition: 'all 0.25s ease'
+      }}
+      className="seeMoreProjectsBtn"
+    >
+      <span>SEE ALL CLIENT RATINGS &amp; REVIEWS (4.9 ★★★★★)</span> <ArrowRight size={18}/>
+    </a>
+  </div>
+</section>
 <section className="promise"><div><p className="eyebrow">THE PSK PROMISE</p><h2>Your vision. Safe in our hands.</h2><p>From first conversation to final handover, we bring care, clarity and craftsmanship to every square foot — no shortcuts, no surprises.</p><button className="primary" onClick={()=>{setStep(1);setMsg('');setShowEnquiryModal(true)}} style={{cursor:'pointer'}}>START YOUR PROJECT <ArrowRight/></button></div><TrustHands/></section>
 <section id="contact" className="contact wrap" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '48px', alignItems: 'stretch' }}>
   {/* LEFT COLUMN: CONTACT DETAILS CARDS */}
@@ -1361,5 +1640,179 @@ return <div className="site">
     </div>
   </div>
 )}
-</div>};
-createRoot(document.getElementById('root')).render(window.location.pathname.startsWith('/admin')?<AdminApp/>:window.location.pathname.startsWith('/portal')?<CustomerApp/>:window.location.pathname.startsWith('/login')?<LoginPage/>:window.location.pathname.startsWith('/leadership')?<LeadershipPage/>:<App/>);
+
+{selectedDetailProject && (
+  <div className="modalOverlay" onClick={() => setSelectedDetailProject(null)} style={{ zIndex: 9999, background: 'rgba(5, 5, 8, 0.92)', backdropFilter: 'blur(12px)' }}>
+    <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '920px', width: '95%', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', padding: '0', background: '#0d0d11', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 30px 80px rgba(0,0,0,0.9)' }}>
+      <button type="button" onClick={() => setSelectedDetailProject(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.7)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
+        <X size={20} />
+      </button>
+
+      <div style={{ position: 'relative', height: '400px', background: '#000' }}>
+        <img 
+          src={(selectedDetailProject.gallery && selectedDetailProject.gallery[detailPhotoIdx]) || selectedDetailProject.coverImage || selectedDetailProject.imageUrl} 
+          alt={selectedDetailProject.title} 
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)' }} />
+
+        {selectedDetailProject.gallery && selectedDetailProject.gallery.length > 1 && (
+          <>
+            <button type="button" onClick={() => setDetailPhotoIdx((prev) => (prev === 0 ? selectedDetailProject.gallery.length - 1 : prev - 1))} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '42px', height: '42px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ChevronLeft size={24} />
+            </button>
+            <button type="button" onClick={() => setDetailPhotoIdx((prev) => (prev === selectedDetailProject.gallery.length - 1 ? 0 : prev + 1))} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '42px', height: '42px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ChevronRight size={24} />
+            </button>
+          </>
+        )}
+
+        <div style={{ position: 'absolute', bottom: '20px', left: '24px', right: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff8a7a', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
+              <MapPin size={16}/> {selectedDetailProject.location}
+            </div>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', margin: 0, fontFamily: 'Fraunces, serif' }}>
+              {selectedDetailProject.title}
+            </h2>
+          </div>
+          <span style={{ background: selectedDetailProject.status === 'Completed' ? '#22c55e' : '#e2262b', color: '#fff', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {selectedDetailProject.status === 'Completed' ? <CheckCircle2 size={14}/> : <Hammer size={14}/>}
+            {selectedDetailProject.status}
+          </span>
+        </div>
+      </div>
+
+      {selectedDetailProject.gallery && selectedDetailProject.gallery.length > 1 && (
+        <div style={{ display: 'flex', gap: '10px', padding: '14px 24px', background: '#070709', borderBottom: '1px solid rgba(255,255,255,0.08)', overflowX: 'auto' }}>
+          {selectedDetailProject.gallery.map((img, idx) => (
+            <img key={idx} src={img} alt={`Photo ${idx + 1}`} onClick={() => setDetailPhotoIdx(idx)} style={{ width: '72px', height: '52px', objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: detailPhotoIdx === idx ? '2px solid #e2262b' : '2px solid transparent', opacity: detailPhotoIdx === idx ? 1 : 0.6 }} />
+          ))}
+        </div>
+      )}
+
+      <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', background: 'rgba(255,255,255,0.04)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div><small style={{ color: '#a1a1aa', fontSize: '0.76rem', display: 'block', marginBottom: '2px' }}>BUILT-UP AREA</small><strong style={{ color: '#ffffff', fontSize: '1rem' }}>{selectedDetailProject.sqft || '3,200 Sq.Ft.'}</strong></div>
+          <div><small style={{ color: '#a1a1aa', fontSize: '0.76rem', display: 'block', marginBottom: '2px' }}>CONSTRUCTION DURATION</small><strong style={{ color: '#ffffff', fontSize: '1rem' }}>{selectedDetailProject.duration || '12 Months'}</strong></div>
+          <div><small style={{ color: '#a1a1aa', fontSize: '0.76rem', display: 'block', marginBottom: '2px' }}>PROJECT TYPE</small><strong style={{ color: '#ff8a7a', fontSize: '1rem' }}>{selectedDetailProject.category || 'Residential'}</strong></div>
+        </div>
+
+        <div>
+          <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#f4f4f5', margin: '0 0 8px 0' }}>Project Overview</h4>
+          <p style={{ fontSize: '0.94rem', color: '#a1a1aa', lineHeight: 1.6, margin: 0 }}>
+            {selectedDetailProject.description || 'Quality residential & commercial construction project built by PSK Brothers with premium materials and on-time handover guarantee.'}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '14px', justifyContent: 'flex-end', paddingTop: '10px' }}>
+          <button type="button" onClick={() => { setSelectedDetailProject(null); setShowEnquiryModal(true); }} style={{ background: '#e2262b', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '20px', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            Enquire About Similar Project <Phone size={16}/>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{showRateModal && (
+  <div className="modalOverlay" onClick={() => setShowRateModal(false)} style={{ zIndex: 9999, background: 'rgba(5, 5, 8, 0.92)', backdropFilter: 'blur(12px)' }}>
+    <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '560px', width: '92%', borderRadius: '24px', padding: '32px', background: '#0d0d11', border: '1px solid rgba(255,255,255,0.15)' }}>
+      <button type="button" onClick={() => setShowRateModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.7)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <X size={20} />
+      </button>
+
+      <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(226,38,43,0.15)', color: '#ff8a7a', padding: '4px 12px', borderRadius: '16px', fontSize: '0.72rem', fontWeight: 800, marginBottom: '10px' }}>
+          ⭐ PUBLIC CLIENT RATING
+        </div>
+        <h2 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0 0 6px 0', color: '#ffffff', fontFamily: 'Fraunces, serif' }}>
+          Rate Your Experience with PSK
+        </h2>
+        <p style={{ fontSize: '0.84rem', color: '#a1a1aa', margin: 0, lineHeight: 1.4 }}>
+          Provide your name, mobile number, and email address to submit your genuine rating &amp; review.
+        </p>
+      </div>
+
+      <form onSubmit={async (e) => {
+        e.preventDefault();
+        setRateSuccessMsg('');
+        try {
+          const resp = await fetch(`${API}/testimonials`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(rateFormData)
+          });
+          if (resp.ok) {
+            const newT = await resp.json();
+            setD(prev => ({ ...prev, testimonials: [newT, ...(prev.testimonials || [])] }));
+          } else {
+            setD(prev => ({ ...prev, testimonials: [{ id: Date.now(), ...rateFormData }, ...(prev.testimonials || [])] }));
+          }
+          setRateSuccessMsg('🎉 Thank you! Your rating & review has been posted successfully.');
+          setTimeout(() => {
+            setShowRateModal(false);
+            setRateSuccessMsg('');
+            setRateFormData({ customerName: '', phone: '', email: '', location: '', rating: 5, message: '' });
+          }, 1800);
+        } catch (err) {
+          setD(prev => ({ ...prev, testimonials: [{ id: Date.now(), ...rateFormData }, ...(prev.testimonials || [])] }));
+          setRateSuccessMsg('🎉 Thank you! Rating saved.');
+          setTimeout(() => {
+            setShowRateModal(false);
+            setRateSuccessMsg('');
+            setRateFormData({ customerName: '', phone: '', email: '', location: '', rating: 5, message: '' });
+          }, 1800);
+        }
+      }} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#d4d4d8', marginBottom: '4px' }}>Full Name *</label>
+            <input required placeholder="e.g. Ramesh Kumar" value={rateFormData.customerName} onChange={(e) => setRateFormData({ ...rateFormData, customerName: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: '#fff', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#d4d4d8', marginBottom: '4px' }}>Mobile Phone *</label>
+            <input required type="tel" placeholder="+91 98765 43210" value={rateFormData.phone} onChange={(e) => setRateFormData({ ...rateFormData, phone: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: '#fff', outline: 'none' }} />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#d4d4d8', marginBottom: '4px' }}>Email Address *</label>
+            <input required type="email" placeholder="name@gmail.com" value={rateFormData.email} onChange={(e) => setRateFormData({ ...rateFormData, email: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: '#fff', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#d4d4d8', marginBottom: '4px' }}>City / Location *</label>
+            <input required placeholder="e.g. Coimbatore, Erode" value={rateFormData.location} onChange={(e) => setRateFormData({ ...rateFormData, location: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: '#fff', outline: 'none' }} />
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#d4d4d8', marginBottom: '4px' }}>Rating (1 to 5 Stars) *</label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button key={star} type="button" onClick={() => setRateFormData({ ...rateFormData, rating: star })} style={{ background: star <= rateFormData.rating ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255,255,255,0.06)', border: star <= rateFormData.rating ? '1px solid #ffc107' : '1px solid rgba(255,255,255,0.14)', color: star <= rateFormData.rating ? '#ffc107' : '#71717a', borderRadius: '12px', padding: '8px 14px', fontSize: '1.1rem', cursor: 'pointer' }}>
+                ★ {star}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#d4d4d8', marginBottom: '4px' }}>Review Feedback *</label>
+          <textarea required rows={3} placeholder="Tell us about the construction quality, timing, and experience..." value={rateFormData.message} onChange={(e) => setRateFormData({ ...rateFormData, message: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: '#fff', outline: 'none', resize: 'vertical' }} />
+        </div>
+
+        {rateSuccessMsg && <p style={{ color: '#4ade80', fontSize: '0.84rem', fontWeight: 700, margin: 0 }}>{rateSuccessMsg}</p>}
+
+        <button type="submit" style={{ background: '#e2262b', color: '#fff', border: 'none', padding: '13px', borderRadius: '14px', fontWeight: 800, fontSize: '0.92rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '4px', boxShadow: '0 8px 20px rgba(226,38,43,0.4)' }}>
+          <Send size={16}/> SUBMIT YOUR RATING &amp; REVIEW
+        </button>
+      </form>
+    </div>
+  </div>
+)}
+</div>
+);
+}
+createRoot(document.getElementById('root')).render(window.location.pathname.startsWith('/admin')?<AdminApp/>:window.location.pathname.startsWith('/portal')?<CustomerApp/>:window.location.pathname.startsWith('/login')?<LoginPage/>:window.location.pathname.startsWith('/leadership')?<LeadershipPage/>:window.location.pathname.startsWith('/projects')?<ProjectsPage/>:window.location.pathname.startsWith('/reviews')||window.location.pathname.startsWith('/testimonials')?<ReviewsPage/>:<App/>);

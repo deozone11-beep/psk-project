@@ -37,6 +37,30 @@ public class PublicController {
     @GetMapping("/testimonials") 
     List<Testimonial> testimonials() { return t.findAll(); }
 
+    record TestimonialRequest(
+        @NotBlank String customerName,
+        @NotBlank @Pattern(regexp = "^[0-9+ -]{10,16}$") String phone,
+        @NotBlank @Email String email,
+        @NotNull @Min(1) @Max(5) Integer rating,
+        @NotBlank String location,
+        @NotBlank String message
+    ) {}
+
+    @PostMapping("/testimonials")
+    ResponseEntity<?> addTestimonial(@Valid @RequestBody TestimonialRequest r) {
+        Testimonial tm = new Testimonial();
+        tm.setCustomerName(r.customerName());
+        tm.setPhone(r.phone());
+        tm.setEmail(r.email());
+        tm.setRating(r.rating());
+        tm.setLocation(r.location());
+        tm.setMessage(r.message());
+        tm.setStatus("APPROVED");
+        tm.setCreatedAt(java.time.LocalDateTime.now());
+        Testimonial saved = t.save(tm);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    }
+
     @GetMapping("/settings") 
     Settings settings() { return st.findById(1L).orElse(new Settings(1L, 1650.0)); }
 

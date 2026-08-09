@@ -89,7 +89,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/forgot-password", "/api/auth/temp-login").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/services/**", "/api/projects/**", "/api/testimonials/**", "/api/settings").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/enquiries").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/enquiries", "/api/testimonials").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ENGINEER")
                 .requestMatchers("/api/customer/**").hasAnyRole("ADMIN", "CUSTOMER", "ENGINEER")
