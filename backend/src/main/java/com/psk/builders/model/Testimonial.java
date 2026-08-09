@@ -25,4 +25,14 @@ public class Testimonial {
     String status = "APPROVED"; // APPROVED, PENDING, HIDDEN
 
     LocalDateTime createdAt = LocalDateTime.now();
+
+    public Testimonial(Long id, String customerName, String location, String message, Integer rating) {
+        this.id = id;
+        this.customerName = customerName;
+        this.location = location;
+        this.message = message;
+        this.rating = rating;
+        this.status = "APPROVED";
+        this.createdAt = LocalDateTime.now();
+    }
 }

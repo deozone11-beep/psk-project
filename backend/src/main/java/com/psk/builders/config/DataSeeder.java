@@ -72,9 +72,9 @@ public class DataSeeder {
             }
             if (testimonials.count() == 0) {
                 testimonials.saveAll(List.of(
-                    new Testimonial(null, "Ramesh Kumar", "Coimbatore", "PSK Brothers built our home on time and exactly as planned. Clear communication throughout.", 5),
-                    new Testimonial(null, "Priya Selvam", "Erode", "Professional team, honest pricing, and the finish quality was excellent.", 5),
-                    new Testimonial(null, "Arun Prakash", "Tiruppur", "They handled our office renovation smoothly with minimal disruption to work.", 4)
+                    new Testimonial(null, "Ramesh Kumar", "Coimbatore", "PSK Brothers built our home on time and exactly as planned. Clear communication throughout.", 5, "+91 98421 12345", "ramesh@gmail.com", "APPROVED", java.time.LocalDateTime.now()),
+                    new Testimonial(null, "Priya Selvam", "Erode", "Professional team, honest pricing, and the finish quality was excellent.", 5, "+91 97890 23456", "priya@gmail.com", "APPROVED", java.time.LocalDateTime.now()),
+                    new Testimonial(null, "Arun Prakash", "Tiruppur", "They handled our office renovation smoothly with minimal disruption to work.", 4, "+91 99440 34567", "arun@gmail.com", "APPROVED", java.time.LocalDateTime.now())
                 ));
             }
             if (settings.count() == 0) {
