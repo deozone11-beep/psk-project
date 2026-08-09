@@ -137,9 +137,10 @@ export default function TestimonialsTab({ creds }) {
           <button 
             type="button" 
             onClick={loadTestimonials}
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '10px 16px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            disabled={loading}
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '10px 16px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <RefreshCw size={15}/> Refresh
+            <RefreshCw size={15} className={loading ? 'spinIcon' : ''}/> Refresh
           </button>
           <button 
             type="button"

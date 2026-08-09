@@ -124,35 +124,35 @@ export default function PaymentsTab({ creds }) {
       {/* Metrics Summary Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
         
-        <div className="estCard" style={{ borderLeft: '4px solid #10b981', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="statCard" style={{ borderLeft: '4px solid #10b981', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Total Disbursed</span>
-            <b style={{ fontSize: '1.3rem', fontWeight: '800', color: '#0f172a' }}>₹{totalWagesPaid.toLocaleString('en-IN')}</b>
-            <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'none' }}>Overall wages recorded</span>
+            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#94a3b8' }}>Total Disbursed</span>
+            <b style={{ fontSize: '1.3rem', fontWeight: '800', color: '#ffffff' }}>₹{totalWagesPaid.toLocaleString('en-IN')}</b>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'none' }}>Overall wages recorded</span>
           </div>
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <TrendingUp size={20} />
           </div>
         </div>
 
-        <div className="estCard" style={{ borderLeft: '4px solid #3b82f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="statCard" style={{ borderLeft: '4px solid #3b82f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Transactions</span>
-            <b style={{ fontSize: '1.3rem', fontWeight: '800', color: '#0f172a' }}>{totalTransactions} Payments</b>
-            <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'none' }}>Wage slips logged</span>
+            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#94a3b8' }}>Transactions</span>
+            <b style={{ fontSize: '1.3rem', fontWeight: '800', color: '#ffffff' }}>{totalTransactions} Payments</b>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'none' }}>Wage slips logged</span>
           </div>
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Coins size={20} />
           </div>
         </div>
 
-        <div className="estCard" style={{ borderLeft: '4px solid #f59e0b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="statCard" style={{ borderLeft: '4px solid #f59e0b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Last Wage Payout</span>
-            <b style={{ fontSize: '1.3rem', fontWeight: '800', color: '#0f172a' }}>{lastPaymentDate}</b>
-            <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'none' }}>Most recent ledger entry</span>
+            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#94a3b8' }}>Last Wage Payout</span>
+            <b style={{ fontSize: '1.3rem', fontWeight: '800', color: '#ffffff' }}>{lastPaymentDate}</b>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'none' }}>Most recent ledger entry</span>
           </div>
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#fffbeb', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Calendar size={20} />
           </div>
         </div>
@@ -163,121 +163,121 @@ export default function PaymentsTab({ creds }) {
         
         {/* Left Side: Record New Payment Form */}
         <section className="adminCard" style={{ padding: '24px', borderRadius: '16px' }}>
-          <span className="eyebrow" style={{ justifyContent: 'flex-start' }}>FINANCE LEDGER</span>
-          <h3 style={{ margin: '4px 0 16px' }}>Record Labor Wage Payment</h3>
+          <span className="eyebrow" style={{ justifyContent: 'flex-start', color: '#ff6b6b' }}>FINANCE LEDGER</span>
+          <h3 style={{ margin: '4px 0 16px', color: '#ffffff' }}>Record Labor Wage Payment</h3>
           
           <form onSubmit={pay} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Select Employee *</label>
+              <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8' }}>Select Employee *</label>
               <select 
                 value={form.employeeId} 
                 onChange={(e) => setForm({ ...form, employeeId: e.target.value })} 
                 required 
-                style={{ width: '100%', padding: '10px' }}
+                style={{ width: '100%', padding: '10px', background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#ffffff', borderRadius: '10px' }}
               >
-                <option value="">Choose worker...</option>
+                <option value="" style={{ background: '#0f172a' }}>Choose worker...</option>
                 {employees.filter(e => e.active !== false).map((e) => (
-                  <option key={e.id} value={e.id}>{e.name} ({e.role || 'Laborer'})</option>
+                  <option key={e.id} value={e.id} style={{ background: '#0f172a' }}>{e.name} ({e.role || 'Laborer'})</option>
                 ))}
               </select>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Date *</label>
+                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8' }}>Date *</label>
                 <input 
                   type="date" 
                   value={form.date} 
                   onChange={(e) => setForm({ ...form, date: e.target.value })} 
                   required 
-                  style={{ width: '100%', padding: '10px' }} 
+                  style={{ width: '100%', padding: '10px', background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#ffffff', borderRadius: '10px' }} 
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Amount (₹) *</label>
+                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8' }}>Amount (₹) *</label>
                 <input 
                   type="number" 
                   placeholder="Amount in Rupees" 
                   value={form.amount} 
                   onChange={(e) => setForm({ ...form, amount: e.target.value })} 
                   required 
-                  style={{ width: '100%', padding: '10px' }} 
+                  style={{ width: '100%', padding: '10px', background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#ffffff', borderRadius: '10px' }} 
                 />
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Job Site / Project</label>
+              <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8' }}>Job Site / Project</label>
               <select 
                 value={form.siteName} 
                 onChange={(e) => setForm({ ...form, siteName: e.target.value })}
-                style={{ width: '100%', padding: '10px' }}
+                style={{ width: '100%', padding: '10px', background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#ffffff', borderRadius: '10px' }}
               >
-                <option value="">Select Project...</option>
+                <option value="" style={{ background: '#0f172a' }}>Select Project...</option>
                 {customers.map(c => (
-                  <option key={c.id} value={c.projectName || c.displayName}>{c.projectName || c.displayName}</option>
+                  <option key={c.id} value={c.projectName || c.displayName} style={{ background: '#0f172a' }}>{c.projectName || c.displayName}</option>
                 ))}
               </select>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Additional Notes</label>
+              <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94a3b8' }}>Additional Notes</label>
               <input 
                 placeholder="Optional descriptions (e.g. Bank transfer, week-end wage)" 
                 value={form.notes} 
                 onChange={(e) => setForm({ ...form, notes: e.target.value })} 
-                style={{ width: '100%', padding: '10px' }} 
+                style={{ width: '100%', padding: '10px', background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#ffffff', borderRadius: '10px' }} 
               />
             </div>
 
-            <button className="primary" style={{ width: '100%', borderRadius: '10px', height: '46px', marginTop: '10px' }}>
+            <button className="primary" style={{ width: '100%', borderRadius: '10px', height: '46px', marginTop: '10px', fontWeight: '700' }}>
               <Plus size={16} /> Record Wage Payment
             </button>
           </form>
-          {msg && <p style={{ margin: '12px 0 0', fontSize: '0.82rem', fontWeight: 700, color: '#059669' }}>{msg}</p>}
+          {msg && <p style={{ margin: '12px 0 0', fontSize: '0.82rem', fontWeight: 700, color: '#34d399' }}>{msg}</p>}
         </section>
 
         {/* Right Side: Ledger history & filter */}
         <section className="adminCard" style={{ padding: '24px', borderRadius: '16px' }}>
-          <h3 style={{ margin: 0, marginBottom: '4px' }}>Wage Ledger Transactions</h3>
-          <p className="adminHint" style={{ marginBottom: '18px' }}>Review the history of wages paid, advances cleared, and cash transactions.</p>
+          <h3 style={{ margin: 0, marginBottom: '4px', color: '#ffffff' }}>Wage Ledger Transactions</h3>
+          <p className="adminHint" style={{ marginBottom: '18px', color: '#94a3b8' }}>Review the history of wages paid, advances cleared, and cash transactions.</p>
           
           {/* Filters Dashboard */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', background: 'rgba(15, 23, 42, 0.6)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
             <div style={{ display: 'flex', gap: '10px' }}>
               <div style={{ position: 'relative', flex: 1 }}>
                 <input 
                   placeholder="Search payments..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px 8px 30px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.82rem' }}
+                  style={{ width: '100%', padding: '8px 12px 8px 30px', border: '1px solid rgba(255, 255, 255, 0.15)', background: 'rgba(255, 255, 255, 0.06)', color: '#ffffff', borderRadius: '8px', fontSize: '0.82rem' }}
                 />
                 <Search size={14} style={{ position: 'absolute', left: '10px', top: '11px', color: '#94a3b8' }} />
               </div>
               <select 
                 value={filterEmp} 
                 onChange={(e) => setFilterEmp(e.target.value)}
-                style={{ width: '140px', padding: '8px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.82rem', background: '#fff' }}
+                style={{ width: '140px', padding: '8px', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '8px', fontSize: '0.82rem', background: '#0f172a', color: '#ffffff' }}
               >
-                <option value="ALL">All Workers</option>
-                {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                <option value="ALL" style={{ background: '#0f172a' }}>All Workers</option>
+                {employees.map(e => <option key={e.id} value={e.id} style={{ background: '#0f172a' }}>{e.name}</option>)}
               </select>
             </div>
             
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: '700' }}>Date Range:</span>
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: '700' }}>Date Range:</span>
               <input 
                 type="date" 
                 value={startDate} 
                 onChange={(e) => setStartDate(e.target.value)} 
-                style={{ flex: 1, padding: '6px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.78rem' }}
+                style={{ flex: 1, padding: '6px', border: '1px solid rgba(255, 255, 255, 0.15)', background: 'rgba(255, 255, 255, 0.06)', color: '#ffffff', borderRadius: '8px', fontSize: '0.78rem' }}
               />
               <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>to</span>
               <input 
                 type="date" 
                 value={endDate} 
                 onChange={(e) => setEndDate(e.target.value)} 
-                style={{ flex: 1, padding: '6px', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.78rem' }}
+                style={{ flex: 1, padding: '6px', border: '1px solid rgba(255, 255, 255, 0.15)', background: 'rgba(255, 255, 255, 0.06)', color: '#ffffff', borderRadius: '8px', fontSize: '0.78rem' }}
               />
             </div>
           </div>
@@ -292,26 +292,26 @@ export default function PaymentsTab({ creds }) {
                   padding: '12px 14px', 
                   borderRadius: '12px', 
                   marginBottom: '8px',
-                  border: '1.5px solid #e2e8f0',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
                   transition: 'all 0.2s',
-                  background: '#ffffff'
+                  background: 'rgba(15, 23, 42, 0.7)'
                 }}
-                onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)'; }}
               >
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1 }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Wallet size={16} />
                   </div>
                   <div>
-                    <b style={{ fontSize: '0.94rem', color: '#0f172a' }}>{empName(p.employee.id)}</b>
-                    <span className="tableSub" style={{ display: 'block', marginTop: '2px', fontSize: '0.76rem', color: '#64748b' }}>
+                    <b style={{ fontSize: '0.94rem', color: '#ffffff' }}>{empName(p.employee.id)}</b>
+                    <span className="tableSub" style={{ display: 'block', marginTop: '2px', fontSize: '0.76rem', color: '#cbd5e1' }}>
                       📅 {p.date} {p.notes ? ` · 📝 ${p.notes}` : ''}
                     </span>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ fontSize: '0.98rem', fontWeight: '800', color: '#10b981' }}>
+                  <div style={{ fontSize: '0.98rem', fontWeight: '800', color: '#34d399' }}>
                     ₹{p.amount.toLocaleString('en-IN')}
                   </div>
                   <button 

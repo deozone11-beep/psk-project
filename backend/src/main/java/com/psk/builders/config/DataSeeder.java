@@ -72,12 +72,22 @@ public class DataSeeder {
             } catch (Exception ex) { System.err.println("Services seed error: " + ex.getMessage()); }
 
             try {
-                if (projects.count() == 0) {
-                    projects.saveAll(List.of(
-                        new Project(null, "Modern Family Residence", "Coimbatore", "Completed", List.of("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80")),
-                        new Project(null, "Premium Villa", "Erode", "Completed", List.of("https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80")),
-                        new Project(null, "Urban Business Centre", "Tiruppur", "Ongoing", List.of("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80"))
-                    ));
+                List<Project> defaultProjects = List.of(
+                    new Project(null, "Modern Family Residence", "Porur, Chennai", "Completed", "Residential", "2,800 Sq.Ft.", "10 Months", "Karthik & Family", "2024", "Ultra-modern 3-story luxury residential home built with RCC framed structure, Italian marble flooring, teakwood joinery, and custom glass elevation.", List.of("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80")),
+                    new Project(null, "Premium Contemporary Villa", "Perundurai, Erode", "Completed", "Villa", "4,500 Sq.Ft.", "12 Months", "Senthil Kumar", "2024", "Spacious 4BHK architectural masterpiece with indoor courtyard, private swimming pool, home automation, and solar roofing system.", List.of("https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80")),
+                    new Project(null, "Urban Business Centre & Complex", "Tiruppur", "Ongoing", "Commercial", "14,000 Sq.Ft.", "14 Months", "Apex Garment Exports", "2025", "5-story commercial corporate headquarters with glass curtain wall facade, basement parking, high-speed elevator shafts, and fire safety systems.", List.of("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?auto=format&fit=crop&w=1200&q=80")),
+                    new Project(null, "Grand Horizon Luxury Apartments", "R.S. Puram, Coimbatore", "Completed", "Residential", "18,500 Sq.Ft.", "18 Months", "Horizon Realty Group", "2023", "Boutique multi-family residential complex featuring 12 luxury 3BHK apartments with underground parking, gym, and rooftop garden.", List.of("https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80")),
+                    new Project(null, "Heritage Villa Structural Renovation", "Choolaimedu, Chennai", "Completed", "Renovation", "3,200 Sq.Ft.", "6 Months", "Dr. V. Natarajan", "2023", "Complete modern structural overhaul of a 35-year-old traditional home, adding a modern floor, new RCC beams, updated plumbing, and contemporary interiors.", List.of("https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1600573472550-8090b5e0745e?auto=format&fit=crop&w=1200&q=80")),
+                    new Project(null, "Eco-Green Gated Community", "Saravanampatti, Coimbatore", "Ongoing", "Residential", "22,000 Sq.Ft.", "20 Months", "PSK Green Enclave", "2025", "Gated community featuring 8 eco-friendly smart villas with rainwater harvesting, solar integration, and landscaped private gardens.", List.of("https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80")),
+                    new Project(null, "Imperial Plaza Commercial Retail Hub", "Fairlands, Salem", "Completed", "Commercial", "9,800 Sq.Ft.", "11 Months", "Imperial Retails Ltd", "2024", "Modern multi-retail shopping plaza with structural steel glass front, high durability epoxy flooring, and centralized air conditioning ducting.", List.of("https://images.unsplash.com/photo-1555636222-cae831e670b3?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80")),
+                    new Project(null, "Skyline Duplex Villa", "Thillai Nagar, Trichy", "Ongoing", "Villa", "3,600 Sq.Ft.", "10 Months", "Anand Kumar", "2025", "Duplex villa featuring double-height ceiling living hall, modern cantilevered staircase, master bedroom balconies, and exterior wood louvers.", List.of("https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"))
+                );
+
+                List<Project> existingList = projects.findAll();
+                for (Project dp : defaultProjects) {
+                    if (existingList.stream().noneMatch(existing -> existing.getTitle().equalsIgnoreCase(dp.getTitle()))) {
+                        projects.save(dp);
+                    }
                 }
             } catch (Exception ex) { System.err.println("Projects seed error: " + ex.getMessage()); }
 

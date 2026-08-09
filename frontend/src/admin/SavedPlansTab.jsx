@@ -99,10 +99,10 @@ export default function SavedPlansTab({ userRole }) {
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a', fontWeight: '800' }}>
+          <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#ffffff', fontWeight: '800' }}>
             Customer 2D AutoCAD Plans & Favorites
           </h2>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '4px 0 0 0' }}>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 0 0' }}>
             {isFullAdmin
               ? 'Viewing all customer favorited designs & plot dimensions across all projects.'
               : 'Viewing 2D plans for customers assigned to your engineer account.'}
@@ -114,8 +114,9 @@ export default function SavedPlansTab({ userRole }) {
           style={{
             padding: '8px 16px',
             borderRadius: '8px',
-            border: '1px solid #cbd5e1',
-            background: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            background: 'rgba(255, 255, 255, 0.06)',
+            color: '#ffffff',
             fontWeight: '600',
             cursor: 'pointer',
           }}
@@ -125,16 +126,16 @@ export default function SavedPlansTab({ userRole }) {
       </div>
 
       {loading ? (
-        <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading customer plans...</div>
+        <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading customer plans...</div>
       ) : plans.length === 0 ? (
         <div
           style={{
             padding: '40px',
             textAlign: 'center',
-            background: '#f8fafc',
+            background: 'rgba(15, 23, 42, 0.6)',
             borderRadius: '12px',
-            border: '1px border-dashed #cbd5e1',
-            color: '#64748b',
+            border: '1px dashed rgba(255, 255, 255, 0.15)',
+            color: '#94a3b8',
           }}
         >
           No saved customer plans found. When customers favorite a 2D AutoCAD layout, it will appear here!
@@ -149,14 +150,14 @@ export default function SavedPlansTab({ userRole }) {
               <div
                 key={p.id}
                 style={{
-                  background: '#ffffff',
+                  background: 'rgba(19, 27, 45, 0.8)',
                   borderRadius: '14px',
                   padding: '20px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
                   display: 'flex',
                   flexDirection: 'column',
-                  justify: 'space-between',
+                  justifyContent: 'space-between',
                 }}
               >
                 <div>
@@ -164,20 +165,21 @@ export default function SavedPlansTab({ userRole }) {
                     <div>
                       <span
                         style={{
-                          background: '#e0f2fe',
-                          color: '#0369a1',
+                          background: 'rgba(3, 105, 161, 0.25)',
+                          color: '#38bdf8',
                           padding: '3px 8px',
                           borderRadius: '4px',
                           fontSize: '11px',
                           fontWeight: '700',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
                         }}
                       >
                         Option #{p.designOptionIndex + 1}
                       </span>
-                      <h3 style={{ margin: '6px 0 2px 0', fontSize: '1.15rem', color: '#0f172a', fontWeight: '700' }}>
+                      <h3 style={{ margin: '6px 0 2px 0', fontSize: '1.15rem', color: '#ffffff', fontWeight: '700' }}>
                         {customerName}
                       </h3>
-                      <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                      <div style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
                         Phone: {p.customer?.phone || 'N/A'} • {p.customer?.email || ''}
                       </div>
                     </div>
@@ -188,7 +190,7 @@ export default function SavedPlansTab({ userRole }) {
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#ef4444',
+                          color: '#ff6b6b',
                           cursor: 'pointer',
                           padding: '4px',
                         }}
@@ -198,29 +200,29 @@ export default function SavedPlansTab({ userRole }) {
                     )}
                   </div>
 
-                  <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: '14px 0' }} />
+                  <hr style={{ border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.1)', margin: '14px 0' }} />
 
                   {/* Plan Details Grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.85rem' }}>
                     <div>
-                      <strong style={{ color: '#475569' }}>Plot Dimensions:</strong>
-                      <div style={{ fontWeight: '700', color: '#0f172a' }}>
+                      <strong style={{ color: '#94a3b8' }}>Plot Dimensions:</strong>
+                      <div style={{ fontWeight: '700', color: '#ffffff' }}>
                         {p.plotLength}ft × {p.plotWidth}ft ({p.totalSqft?.toLocaleString()} sqft)
                       </div>
                     </div>
                     <div>
-                      <strong style={{ color: '#475569' }}>Facing / Floors:</strong>
-                      <div style={{ fontWeight: '700', color: '#0f172a' }}>
+                      <strong style={{ color: '#94a3b8' }}>Facing / Floors:</strong>
+                      <div style={{ fontWeight: '700', color: '#ffffff' }}>
                         {p.facingDirection} • {p.floors}
                       </div>
                     </div>
                     <div style={{ gridColumn: '1 / -1', marginTop: '4px' }}>
-                      <strong style={{ color: '#475569' }}>Selected Design Style:</strong>
-                      <div style={{ color: '#0284c7', fontWeight: '700' }}>{p.designOptionName}</div>
+                      <strong style={{ color: '#94a3b8' }}>Selected Design Style:</strong>
+                      <div style={{ color: '#38bdf8', fontWeight: '700' }}>{p.designOptionName}</div>
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <strong style={{ color: '#475569' }}>Estimated Cost:</strong>
-                      <div style={{ color: '#16a34a', fontWeight: '800', fontSize: '1.05rem' }}>
+                      <strong style={{ color: '#94a3b8' }}>Estimated Cost:</strong>
+                      <div style={{ color: '#34d399', fontWeight: '800', fontSize: '1.05rem' }}>
                         ₹{p.estimatedCost?.toLocaleString()}
                       </div>
                     </div>
@@ -228,10 +230,10 @@ export default function SavedPlansTab({ userRole }) {
                 </div>
 
                 {/* Footer Section & Engineer Assignment */}
-                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
                   {isFullAdmin ? (
                     <div style={{ marginBottom: '10px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
                         Assigned Site Engineer:
                       </label>
                       <select
@@ -241,23 +243,25 @@ export default function SavedPlansTab({ userRole }) {
                           width: '100%',
                           padding: '6px 8px',
                           borderRadius: '6px',
-                          border: '1px solid #cbd5e1',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          background: 'rgba(15, 23, 42, 0.7)',
+                          color: '#ffffff',
                           fontSize: '12px',
                           fontWeight: '600',
                         }}
                       >
-                        <option value="Unassigned">Unassigned</option>
-                        <option value="engineer">engineer (Er. Dinesh)</option>
+                        <option value="Unassigned" style={{ background: '#0f172a' }}>Unassigned</option>
+                        <option value="engineer" style={{ background: '#0f172a' }}>engineer (Er. Dinesh)</option>
                         {engineers.map((eng) => (
-                          <option key={eng.id} value={eng.name}>
+                          <option key={eng.id} value={eng.name} style={{ background: '#0f172a' }}>
                             {eng.name}
                           </option>
                         ))}
                       </select>
                     </div>
                   ) : (
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
-                      Assigned Engineer: <strong style={{ color: '#0f172a' }}>{assignedEng}</strong>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>
+                      Assigned Engineer: <strong style={{ color: '#ffffff' }}>{assignedEng}</strong>
                     </div>
                   )}
 

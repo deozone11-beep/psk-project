@@ -10,6 +10,7 @@ import java.util.List;
 @Entity
 @Getter @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class Project {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -19,11 +20,15 @@ public class Project {
     String title;
     String location;
     String status;
+    String category;
+    String sqft;
+    String duration;
+    String client;
+    String year;
 
-    // Photos are stored as a single JSON array inside one LONGTEXT column — this is the
-    // exact same proven pattern as ProjectUpdate.photoUrl (@Lob LONGTEXT), instead of a
-    // separate @ElementCollection table, which can hit MySQL "BLOB/TEXT column used in
-    // key" errors on some setups. get/setImageUrls() below convert to/from a real List.
+    @Column(length = 2000)
+    String description;
+
     @Column(length = 16777215)
     @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
     String imageUrlsJson;
@@ -33,6 +38,20 @@ public class Project {
         this.title = title;
         this.location = location;
         this.status = status;
+        setImageUrls(imageUrls);
+    }
+
+    public Project(Long id, String title, String location, String status, String category, String sqft, String duration, String client, String year, String description, List<String> imageUrls) {
+        this.id = id;
+        this.title = title;
+        this.location = location;
+        this.status = status;
+        this.category = category;
+        this.sqft = sqft;
+        this.duration = duration;
+        this.client = client;
+        this.year = year;
+        this.description = description;
         setImageUrls(imageUrls);
     }
 

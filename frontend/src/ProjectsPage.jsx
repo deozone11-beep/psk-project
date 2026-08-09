@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, CheckCircle2, Hammer, MapPin, Calendar, 
   Ruler, Clock, Search, Filter, X, ChevronLeft, ChevronRight, 
@@ -157,8 +157,52 @@ export default function ProjectsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [dbProjects, setDbProjects] = useState([]);
 
-  const filteredProjects = PROJECTS_DATA.filter((item) => {
+  useEffect(() => {
+    fetch('/api/projects')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setDbProjects(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const formattedDbProjects = dbProjects.map((p) => {
+    const gallery = p.imageUrls && p.imageUrls.length > 0 
+      ? p.imageUrls 
+      : (p.imageUrl ? [p.imageUrl] : ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80']);
+    
+    const titleLower = (p.title || '').toLowerCase();
+    let category = p.category;
+    if (!category) {
+      if (titleLower.includes('villa')) category = 'Villa';
+      else if (titleLower.includes('commercial') || titleLower.includes('business') || titleLower.includes('plaza') || titleLower.includes('complex')) category = 'Commercial';
+      else if (titleLower.includes('renovat')) category = 'Renovation';
+      else category = 'Residential';
+    }
+
+    return {
+      id: 'db-' + (p.id || Math.random()),
+      title: p.title || 'Landmark Construction Project',
+      location: p.location || 'Tamil Nadu',
+      category: category,
+      status: p.status || 'Completed',
+      year: p.year || '2024',
+      sqft: p.sqft || 'Custom Sq.Ft.',
+      duration: p.duration || 'On Schedule',
+      client: p.client || 'Valued Client',
+      description: p.description || `${p.title} executed with RCC framed structure, premium fittings, and architectural perfection in ${p.location}.`,
+      coverImage: gallery[0],
+      gallery: gallery
+    };
+  });
+
+  const allProjects = formattedDbProjects.length > 0 ? formattedDbProjects : PROJECTS_DATA;
+
+  const filteredProjects = allProjects.filter((item) => {
     const matchesFilter = 
       filter === 'All' ? true :
       filter === 'Completed' ? item.status === 'Completed' :

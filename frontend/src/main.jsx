@@ -723,7 +723,13 @@ return (
       scrollBehavior: 'smooth'
     }}
   >
-    {((d.projects && d.projects.length > 3 ? d.projects : PROJECTS_DATA) || []).map(x => x && (
+    {(() => {
+      const dbList = (d.projects || []).map((p) => ({
+        ...p,
+        gallery: p.imageUrls && p.imageUrls.length ? p.imageUrls : (p.imageUrl ? [p.imageUrl] : (p.gallery || []))
+      }));
+      return dbList.length > 0 ? dbList : PROJECTS_DATA;
+    })().map((x) => x && (
       <article 
         key={x.id} 
         style={{ 
@@ -775,7 +781,7 @@ return (
       }}
       className="seeMoreProjectsBtn"
     >
-      <span>SEE ALL PROJECTS &amp; SITE PHOTOS ({PROJECTS_DATA.length}+ LANDMARKS)</span> <ArrowRight size={18}/>
+      <span>SEE ALL PROJECTS &amp; SITE PHOTOS ({(d.projects && d.projects.length > 0 ? d.projects.length : PROJECTS_DATA.length)}+ LANDMARKS)</span> <ArrowRight size={18}/>
     </a>
   </div>
 </section>
@@ -1641,55 +1647,61 @@ return (
   </div>
 )}
 
-{selectedDetailProject && (
-  <div className="modalOverlay" onClick={() => setSelectedDetailProject(null)} style={{ zIndex: 9999, background: 'rgba(5, 5, 8, 0.92)', backdropFilter: 'blur(12px)' }}>
-    <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '920px', width: '95%', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', padding: '0', background: '#0d0d11', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 30px 80px rgba(0,0,0,0.9)' }}>
-      <button type="button" onClick={() => setSelectedDetailProject(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.7)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
-        <X size={20} />
-      </button>
+{selectedDetailProject && (() => {
+  const detailGallery = selectedDetailProject.gallery && selectedDetailProject.gallery.length 
+    ? selectedDetailProject.gallery 
+    : (selectedDetailProject.imageUrls && selectedDetailProject.imageUrls.length 
+      ? selectedDetailProject.imageUrls 
+      : (selectedDetailProject.imageUrl ? [selectedDetailProject.imageUrl] : (selectedDetailProject.coverImage ? [selectedDetailProject.coverImage] : [])));
+  return (
+    <div className="modalOverlay" onClick={() => setSelectedDetailProject(null)} style={{ zIndex: 9999, background: 'rgba(5, 5, 8, 0.92)', backdropFilter: 'blur(12px)' }}>
+      <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '920px', width: '95%', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', padding: '0', background: '#0d0d11', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 30px 80px rgba(0,0,0,0.9)' }}>
+        <button type="button" onClick={() => setSelectedDetailProject(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.7)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
+          <X size={20} />
+        </button>
 
-      <div style={{ position: 'relative', height: '400px', background: '#000' }}>
-        <img 
-          src={(selectedDetailProject.gallery && selectedDetailProject.gallery[detailPhotoIdx]) || selectedDetailProject.coverImage || selectedDetailProject.imageUrl} 
-          alt={selectedDetailProject.title} 
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)' }} />
+        <div style={{ position: 'relative', height: '400px', background: '#000' }}>
+          <img 
+            src={detailGallery[detailPhotoIdx] || detailGallery[0] || selectedDetailProject.coverImage || selectedDetailProject.imageUrl} 
+            alt={selectedDetailProject.title} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)' }} />
 
-        {selectedDetailProject.gallery && selectedDetailProject.gallery.length > 1 && (
-          <>
-            <button type="button" onClick={() => setDetailPhotoIdx((prev) => (prev === 0 ? selectedDetailProject.gallery.length - 1 : prev - 1))} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '42px', height: '42px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ChevronLeft size={24} />
-            </button>
-            <button type="button" onClick={() => setDetailPhotoIdx((prev) => (prev === selectedDetailProject.gallery.length - 1 ? 0 : prev + 1))} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '42px', height: '42px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ChevronRight size={24} />
-            </button>
-          </>
-        )}
+          {detailGallery.length > 1 && (
+            <>
+              <button type="button" onClick={() => setDetailPhotoIdx((prev) => (prev === 0 ? detailGallery.length - 1 : prev - 1))} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '42px', height: '42px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ChevronLeft size={24} />
+              </button>
+              <button type="button" onClick={() => setDetailPhotoIdx((prev) => (prev === detailGallery.length - 1 ? 0 : prev + 1))} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '42px', height: '42px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ChevronRight size={24} />
+              </button>
+            </>
+          )}
 
-        <div style={{ position: 'absolute', bottom: '20px', left: '24px', right: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff8a7a', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
-              <MapPin size={16}/> {selectedDetailProject.location}
+          <div style={{ position: 'absolute', bottom: '20px', left: '24px', right: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff8a7a', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
+                <MapPin size={16}/> {selectedDetailProject.location}
+              </div>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', margin: 0, fontFamily: 'Fraunces, serif' }}>
+                {selectedDetailProject.title}
+              </h2>
             </div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', margin: 0, fontFamily: 'Fraunces, serif' }}>
-              {selectedDetailProject.title}
-            </h2>
+            <span style={{ background: selectedDetailProject.status === 'Completed' ? '#22c55e' : '#e2262b', color: '#fff', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {selectedDetailProject.status === 'Completed' ? <CheckCircle2 size={14}/> : <Hammer size={14}/>}
+              {selectedDetailProject.status}
+            </span>
           </div>
-          <span style={{ background: selectedDetailProject.status === 'Completed' ? '#22c55e' : '#e2262b', color: '#fff', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {selectedDetailProject.status === 'Completed' ? <CheckCircle2 size={14}/> : <Hammer size={14}/>}
-            {selectedDetailProject.status}
-          </span>
         </div>
-      </div>
 
-      {selectedDetailProject.gallery && selectedDetailProject.gallery.length > 1 && (
-        <div style={{ display: 'flex', gap: '10px', padding: '14px 24px', background: '#070709', borderBottom: '1px solid rgba(255,255,255,0.08)', overflowX: 'auto' }}>
-          {selectedDetailProject.gallery.map((img, idx) => (
-            <img key={idx} src={img} alt={`Photo ${idx + 1}`} onClick={() => setDetailPhotoIdx(idx)} style={{ width: '72px', height: '52px', objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: detailPhotoIdx === idx ? '2px solid #e2262b' : '2px solid transparent', opacity: detailPhotoIdx === idx ? 1 : 0.6 }} />
-          ))}
-        </div>
-      )}
+        {detailGallery.length > 1 && (
+          <div style={{ display: 'flex', gap: '10px', padding: '14px 24px', background: '#070709', borderBottom: '1px solid rgba(255,255,255,0.08)', overflowX: 'auto' }}>
+            {detailGallery.map((img, idx) => (
+              <img key={idx} src={img} alt={`Photo ${idx + 1}`} onClick={() => setDetailPhotoIdx(idx)} style={{ width: '72px', height: '52px', objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: detailPhotoIdx === idx ? '2px solid #e2262b' : '2px solid transparent', opacity: detailPhotoIdx === idx ? 1 : 0.6 }} />
+            ))}
+          </div>
+        )}
 
       <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', background: 'rgba(255,255,255,0.04)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -1713,7 +1725,7 @@ return (
       </div>
     </div>
   </div>
-)}
+); })()}
 
 {showRateModal && (
   <div className="modalOverlay" onClick={() => setShowRateModal(false)} style={{ zIndex: 9999, background: 'rgba(5, 5, 8, 0.92)', backdropFilter: 'blur(12px)' }}>

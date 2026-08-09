@@ -147,7 +147,14 @@ public class AdminController {
 
     @PostMapping(value = "/projects", consumes = "multipart/form-data")
     ResponseEntity<?> createProject(@RequestParam String title, @RequestParam String location,
-                                     @RequestParam String status, @RequestParam MultipartFile[] photos) throws IOException {
+                                     @RequestParam String status,
+                                     @RequestParam(required = false) String category,
+                                     @RequestParam(required = false) String sqft,
+                                     @RequestParam(required = false) String duration,
+                                     @RequestParam(required = false) String client,
+                                     @RequestParam(required = false) String year,
+                                     @RequestParam(required = false) String description,
+                                     @RequestParam MultipartFile[] photos) throws IOException {
         if (title.isBlank() || location.isBlank())
             return ResponseEntity.badRequest().body(Map.of("message", "Title and location are required"));
         if (photos == null || photos.length == 0)
@@ -159,20 +166,33 @@ public class AdminController {
                 return ResponseEntity.badRequest().body(Map.of("message", "Every photo must be JPEG/PNG/WEBP/GIF and under 3MB"));
             imageUrls.add(url);
         }
-        Project p = new Project(null, title, location, status, imageUrls);
+        Project p = new Project(null, title, location, status,
+                category != null && !category.isBlank() ? category : "Residential",
+                sqft != null && !sqft.isBlank() ? sqft : "Custom Sq.Ft.",
+                duration != null && !duration.isBlank() ? duration : "On Schedule",
+                client != null && !client.isBlank() ? client : "Valued Client",
+                year != null && !year.isBlank() ? year : "2024",
+                description != null && !description.isBlank() ? description : title + " executed by PSK Brothers in " + location + ".",
+                imageUrls);
         return ResponseEntity.ok(projects.save(p));
     }
 
     @PutMapping("/projects/{id}")
     ResponseEntity<?> updateProject(@PathVariable Long id, @RequestBody ProjectTextUpdate body) {
         return projects.findById(id).map(p -> {
-            p.setTitle(body.title());
-            p.setLocation(body.location());
-            p.setStatus(body.status());
+            if (body.title() != null) p.setTitle(body.title());
+            if (body.location() != null) p.setLocation(body.location());
+            if (body.status() != null) p.setStatus(body.status());
+            if (body.category() != null) p.setCategory(body.category());
+            if (body.sqft() != null) p.setSqft(body.sqft());
+            if (body.duration() != null) p.setDuration(body.duration());
+            if (body.client() != null) p.setClient(body.client());
+            if (body.year() != null) p.setYear(body.year());
+            if (body.description() != null) p.setDescription(body.description());
             return ResponseEntity.ok(projects.save(p));
         }).orElse(ResponseEntity.notFound().build());
     }
-    record ProjectTextUpdate(String title, String location, String status) {}
+    record ProjectTextUpdate(String title, String location, String status, String category, String sqft, String duration, String client, String year, String description) {}
 
     // Add one or more additional photos to an existing project's slideshow.
     @PostMapping(value = "/projects/{id}/images", consumes = "multipart/form-data")

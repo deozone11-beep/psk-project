@@ -55,15 +55,15 @@ function WeeklyActivityChart({ attendanceData, updatesData }) {
   const maxVal = Math.max(...weekData.map(d => d.val), 5);
 
   return (
-    <div style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.04)' }}>
+    <div style={{ background: 'rgba(23, 31, 48, 0.8)', backdropFilter: 'blur(16px)', padding: '24px', borderRadius: '18px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 12px 30px rgba(0, 0, 0, 0.3)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#ffffff', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <BarChart3 size={18} style={{ color: '#e2262b' }} /> Weekly Site Analytics
           </h4>
-          <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: '500' }}>Daily attendance &amp; site updates logged (Sun - Sat)</span>
+          <span style={{ fontSize: '0.76rem', color: '#94a3b8', fontWeight: '500' }}>Daily attendance &amp; site updates logged (Sun - Sat)</span>
         </div>
-        <span style={{ background: '#fef2f2', color: '#e2262b', fontSize: '0.72rem', fontWeight: '800', padding: '4px 10px', borderRadius: '12px' }}>
+        <span style={{ background: 'rgba(226, 38, 43, 0.18)', color: '#ff8a7a', fontSize: '0.72rem', fontWeight: '800', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(226,38,43,0.3)' }}>
           This Week
         </span>
       </div>
@@ -80,14 +80,14 @@ function WeeklyActivityChart({ attendanceData, updatesData }) {
                   height: `${heightPercent}%`,
                   background: d.isToday 
                     ? 'linear-gradient(180deg, #e2262b 0%, #ff5252 100%)' 
-                    : (d.val > 0 ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)' : '#f1f5f9'),
+                    : (d.val > 0 ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)' : 'rgba(255,255,255,0.08)'),
                   borderRadius: '16px',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: d.isToday ? '0 8px 18px rgba(226,38,43,0.35)' : (d.val > 0 ? '0 4px 10px rgba(16,185,129,0.2)' : 'none'),
                   cursor: 'pointer'
                 }}
               />
-              <span style={{ fontSize: '0.78rem', fontWeight: d.isToday ? '800' : '600', color: d.isToday ? '#e2262b' : '#64748b' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: d.isToday ? '800' : '600', color: d.isToday ? '#ff8a7a' : '#94a3b8' }}>
                 {d.label}
               </span>
             </div>
@@ -110,12 +110,12 @@ function ProjectProgressGauge({ activeSites }) {
   const dashOffset = circumference * (1 - avgProgress / 100);
 
   return (
-    <div style={{ background: '#ffffff', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.04)' }}>
+    <div style={{ background: 'rgba(23, 31, 48, 0.8)', backdropFilter: 'blur(16px)', padding: '24px', borderRadius: '18px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', boxShadow: '0 12px 30px rgba(0, 0, 0, 0.3)' }}>
       <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#0f172a', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#ffffff', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <PieChart size={18} style={{ color: '#10b981' }} /> Overall Project Progress
         </h4>
-        <span style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: '700', background: '#ecfdf5', padding: '3px 8px', borderRadius: '10px' }}>
+        <span style={{ fontSize: '0.74rem', color: '#34d399', fontWeight: '700', background: 'rgba(16, 185, 129, 0.18)', padding: '3px 10px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
           {activeSites.length} Job Sites
         </span>
       </div>
@@ -132,7 +132,7 @@ function ProjectProgressGauge({ activeSites }) {
           <path
             d="M 25 100 A 75 75 0 0 1 175 100"
             fill="transparent"
-            stroke="#f1f5f9"
+            stroke="rgba(255, 255, 255, 0.08)"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
@@ -149,12 +149,12 @@ function ProjectProgressGauge({ activeSites }) {
           />
         </svg>
         <div style={{ position: 'absolute', bottom: '2px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <span style={{ fontSize: '2rem', fontWeight: '900', color: '#0f172a', lineHeight: '1' }}>{avgProgress}%</span>
-          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700', marginTop: '3px' }}>Milestone Target</span>
+          <span style={{ fontSize: '2rem', fontWeight: '900', color: '#ffffff', lineHeight: '1' }}>{avgProgress}%</span>
+          <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', marginTop: '3px' }}>Milestone Target</span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', fontSize: '0.76rem', color: '#64748b', fontWeight: '700', marginTop: '2px' }}>
+      <div style={{ display: 'flex', gap: '16px', fontSize: '0.76rem', color: '#94a3b8', fontWeight: '700', marginTop: '2px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} /> Completed
         </div>
@@ -162,7 +162,7 @@ function ProjectProgressGauge({ activeSites }) {
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#e2262b' }} /> In-Progress
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#cbd5e1' }} /> Planning
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#64748b' }} /> Planning
         </div>
       </div>
     </div>
@@ -381,22 +381,23 @@ export default function OverviewTab({ creds, setTab }) {
             justifyContent: 'space-between', 
             alignItems: 'center', 
             padding: '20px', 
-            background: '#ffffff', 
-            borderRadius: '16px',
-            border: '1.5px solid #e2e8f0',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            background: 'rgba(23, 31, 48, 0.8)', 
+            backdropFilter: 'blur(16px)',
+            borderRadius: '18px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Today's Attendance</span>
-            <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>{stats.presentToday} / {stats.totalEmployees} Present</b>
-            <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: '700', marginTop: '4px' }}>{stats.attendanceRate}% active today</span>
+            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#94a3b8' }}>Today's Attendance</span>
+            <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff' }}>{stats.presentToday} / {stats.totalEmployees} Present</b>
+            <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: '700', marginTop: '4px' }}>{stats.attendanceRate}% active today</span>
           </div>
           <div style={{ position: 'relative', width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="52" height="52" viewBox="0 0 52 52">
-              <circle cx="26" cy="26" r="20" fill="transparent" stroke="#f1f5f9" strokeWidth="4" />
+              <circle cx="26" cy="26" r="20" fill="transparent" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
               <circle cx="26" cy="26" r="20" fill="transparent" stroke="#10b981" strokeWidth="4" 
                 strokeDasharray={2 * Math.PI * 20}
                 strokeDashoffset={2 * Math.PI * 20 * (1 - stats.attendanceRate / 100)}
@@ -404,7 +405,7 @@ export default function OverviewTab({ creds, setTab }) {
                 transform="rotate(-90 26 26)"
               />
             </svg>
-            <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: '800', color: '#10b981' }}>
+            <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: '800', color: '#34d399' }}>
               {stats.attendanceRate}%
             </span>
           </div>
@@ -418,22 +419,23 @@ export default function OverviewTab({ creds, setTab }) {
             justifyContent: 'space-between', 
             alignItems: 'center', 
             padding: '20px', 
-            background: '#ffffff', 
-            borderRadius: '16px',
-            border: '1.5px solid #e2e8f0',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            background: 'rgba(23, 31, 48, 0.8)', 
+            backdropFilter: 'blur(16px)',
+            borderRadius: '18px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Active Job Sites</span>
-            <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>{stats.totalSites} Projects</b>
-            <span style={{ fontSize: '0.72rem', color: '#3b82f6', fontWeight: '700', marginTop: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#94a3b8' }}>Active Job Sites</span>
+            <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff' }}>{stats.totalSites} Projects</b>
+            <span style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: '700', marginTop: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
               Timeline active <ChevronRight size={12} />
             </span>
           </div>
-          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa' }}>
             <Compass size={22} />
           </div>
         </div>
@@ -446,20 +448,21 @@ export default function OverviewTab({ creds, setTab }) {
             justifyContent: 'space-between', 
             alignItems: 'center', 
             padding: '20px', 
-            background: '#ffffff', 
-            borderRadius: '16px',
-            border: '1.5px solid #e2e8f0',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            background: 'rgba(23, 31, 48, 0.8)', 
+            backdropFilter: 'blur(16px)',
+            borderRadius: '18px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Total Wages Paid</span>
-            <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>₹{stats.totalPayments.toLocaleString('en-IN')}</b>
-            <span style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>Labor wage payouts</span>
+            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#94a3b8' }}>Total Wages Paid</span>
+            <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff' }}>₹{stats.totalPayments.toLocaleString('en-IN')}</b>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>Labor wage payouts</span>
           </div>
-          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e2262b' }}>
+          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(226, 38, 43, 0.15)', border: '1px solid rgba(226, 38, 43, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff6b6b' }}>
             <Wallet size={22} />
           </div>
         </div>
@@ -472,22 +475,23 @@ export default function OverviewTab({ creds, setTab }) {
             justifyContent: 'space-between', 
             alignItems: 'center', 
             padding: '20px', 
-            background: '#ffffff', 
-            borderRadius: '16px',
-            border: '1.5px solid #e2e8f0',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            background: 'rgba(23, 31, 48, 0.8)', 
+            backdropFilter: 'blur(16px)',
+            borderRadius: '18px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#64748b' }}>Pending Leads</span>
-            <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>{stats.pendingLeads} Client Enquiries</b>
-            <span style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: '700', marginTop: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#94a3b8' }}>Pending Leads</span>
+            <b style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ffffff' }}>{stats.pendingLeads} Client Enquiries</b>
+            <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '700', marginTop: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
               Awaiting response <ChevronRight size={12} />
             </span>
           </div>
-          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24' }}>
             <Mail size={22} />
           </div>
         </div>
@@ -507,15 +511,15 @@ export default function OverviewTab({ creds, setTab }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {/* Active Job Site Construction Progress */}
-          <section className="adminCard" style={{ padding: '24px', borderRadius: '16px' }}>
+          <section className="adminCard" style={{ padding: '24px', borderRadius: '18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '800' }}>Job Site Construction Progress</h3>
-                <p className="adminHint" style={{ margin: '2px 0 0', fontSize: '0.78rem' }}>Live project completion estimates based on progress updates.</p>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#ffffff', fontWeight: '800' }}>Job Site Construction Progress</h3>
+                <p className="adminHint" style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#94a3b8' }}>Live project completion estimates based on progress updates.</p>
               </div>
               <button 
                 onClick={() => setTab && setTab('updates')}
-                style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer' }}
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#ffffff', padding: '6px 12px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer' }}
               >
                 Post Update
               </button>
@@ -523,32 +527,32 @@ export default function OverviewTab({ creds, setTab }) {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {activeSites.map(s => (
-                <div key={s.id} style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div key={s.id} style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <b style={{ fontSize: '0.98rem', color: '#0f172a', fontWeight: '800' }}>{s.name}</b>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', marginLeft: '6px' }}>({s.project})</span>
+                      <b style={{ fontSize: '0.98rem', color: '#ffffff', fontWeight: '800' }}>{s.name}</b>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: '600', marginLeft: '6px' }}>({s.project})</span>
                     </div>
-                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#e2262b', background: '#fef2f2', padding: '3px 10px', borderRadius: '12px' }}>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#ff6b6b', background: 'rgba(226, 38, 43, 0.2)', border: '1px solid rgba(226,38,43,0.3)', padding: '3px 10px', borderRadius: '12px' }}>
                       {s.progress}%
                     </span>
                   </div>
 
                   {/* Progress Bar */}
-                  <div style={{ width: '100%', background: '#f1f5f9', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', background: 'rgba(255,255,255,0.08)', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ width: `${s.progress}%`, background: 'linear-gradient(90deg, #e2262b 0%, #ff5252 100%)', height: '100%', borderRadius: '4px' }} />
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '0.76rem', color: '#64748b' }}>
-                    <span>👷 In-Charge: <b>{s.engineerName}</b></span>
-                    {s.latestDate && <span>📅 Logged: <b>{s.latestDate}</b></span>}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '0.76rem', color: '#94a3b8' }}>
+                    <span>👷 In-Charge: <b style={{ color: '#fff' }}>{s.engineerName}</b></span>
+                    {s.latestDate && <span>📅 Logged: <b style={{ color: '#fff' }}>{s.latestDate}</b></span>}
                   </div>
 
                   {s.workerNames && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', fontSize: '0.72rem', color: '#475569' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', fontSize: '0.72rem', color: '#94a3b8' }}>
                       <span>👥 Active Team:</span>
                       {s.workerNames.split(',').map((w, idx) => (
-                        <span key={idx} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '1px 6px', borderRadius: '4px', fontWeight: '600' }}>
+                        <span key={idx} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '1px 6px', borderRadius: '4px', fontWeight: '600' }}>
                           {w.trim()}
                         </span>
                       ))}
@@ -565,20 +569,20 @@ export default function OverviewTab({ creds, setTab }) {
           </section>
 
           {/* Role & Skill Distribution Today */}
-          <section className="adminCard" style={{ padding: '24px', borderRadius: '16px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '800' }}>Active Labor Skills Breakdown (Today)</h3>
-            <p className="adminHint" style={{ marginBottom: '18px', fontSize: '0.78rem' }}>Distribution of worker roles checked in today across all sites.</p>
+          <section className="adminCard" style={{ padding: '24px', borderRadius: '18px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#ffffff', fontWeight: '800' }}>Active Labor Skills Breakdown (Today)</h3>
+            <p className="adminHint" style={{ marginBottom: '18px', fontSize: '0.78rem', color: '#94a3b8' }}>Distribution of worker roles checked in today across all sites.</p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {roleBreakdown.map(r => (
                 <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '120px', fontSize: '0.82rem', fontWeight: '700', color: '#334155', textTransform: 'capitalize' }}>
+                  <div style={{ width: '120px', fontSize: '0.82rem', fontWeight: '700', color: '#cbd5e1', textTransform: 'capitalize' }}>
                     {r.name.toLowerCase()}
                   </div>
-                  <div style={{ flex: 1, background: '#f1f5f9', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ flex: 1, background: 'rgba(255,255,255,0.08)', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ width: `${r.percent}%`, background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', height: '100%' }} />
                   </div>
-                  <div style={{ width: '40px', textAlign: 'right', fontSize: '0.82rem', fontWeight: '800', color: '#0f172a' }}>
+                  <div style={{ width: '40px', textAlign: 'right', fontSize: '0.82rem', fontWeight: '800', color: '#ffffff' }}>
                     {r.count}
                   </div>
                 </div>
@@ -594,11 +598,11 @@ export default function OverviewTab({ creds, setTab }) {
         </div>
 
         {/* Right Column: Live Operations Feed */}
-        <section className="adminCard" style={{ padding: '24px', borderRadius: '16px' }}>
+        <section className="adminCard" style={{ padding: '24px', borderRadius: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <div>
-              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#e2262b' }}>REALTIME AUDIT LOG</span>
-              <h3 style={{ margin: '2px 0 0', fontSize: '1.15rem', color: '#0f172a', fontWeight: '800' }}>Recent Operations Feed</h3>
+              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '800', color: '#ff6b6b' }}>REALTIME AUDIT LOG</span>
+              <h3 style={{ margin: '2px 0 0', fontSize: '1.15rem', color: '#ffffff', fontWeight: '800' }}>Recent Operations Feed</h3>
             </div>
           </div>
           
@@ -611,20 +615,20 @@ export default function OverviewTab({ creds, setTab }) {
                     height: '12px',
                     borderRadius: '50%',
                     background: a.type === 'checkin' ? '#10b981' : (a.type === 'payment' ? '#e2262b' : (a.type === 'enquiry' ? '#f59e0b' : '#3b82f6')),
-                    border: '2px solid #fff',
-                    boxShadow: '0 0 0 2px rgba(15,23,42,0.08)',
+                    border: '2px solid #0d1322',
+                    boxShadow: '0 0 0 2px rgba(255,255,255,0.1)',
                     zIndex: 2
                   }} />
                   {idx !== recentActions.length - 1 && (
-                    <div style={{ width: '2px', flex: 1, background: '#e2e8f0', marginTop: '6px', marginBottom: '-24px', minHeight: '42px' }} />
+                    <div style={{ width: '2px', flex: 1, background: 'rgba(255,255,255,0.08)', marginTop: '6px', marginBottom: '-24px', minHeight: '42px' }} />
                   )}
                 </div>
                 <div style={{ flex: 1, marginTop: '-3px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                    <b style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: '800' }}>{a.title}</b>
+                    <b style={{ fontSize: '0.88rem', color: '#ffffff', fontWeight: '800' }}>{a.title}</b>
                     <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '600' }}>{a.time}</span>
                   </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#475569', lineHeight: '1.4', fontWeight: '500' }}>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.4', fontWeight: '500' }}>
                     {a.desc}
                   </p>
                   {a.type === 'checkin' && a.meta && (
@@ -632,7 +636,7 @@ export default function OverviewTab({ creds, setTab }) {
                       href={a.meta} 
                       target="_blank" 
                       rel="noreferrer"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.74rem', color: '#e2262b', textDecoration: 'none', fontWeight: '700', marginTop: '6px' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.74rem', color: '#ff6b6b', textDecoration: 'none', fontWeight: '700', marginTop: '6px' }}
                     >
                       <MapPin size={12} /> Pin Location
                     </a>

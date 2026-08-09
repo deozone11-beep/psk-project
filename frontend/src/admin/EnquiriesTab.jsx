@@ -246,10 +246,10 @@ export default function EnquiriesTab({ creds }) {
                         {en.status || 'NEW'}
                       </span>
                     </div>
-                    <div className="tableSub" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '6px' }}>
-                      <span>Phone: <b>{en.phone}</b></span>
-                      <span>Service: <b style={{ color: '#0f172a' }}>{en.service}</b></span>
-                      <span>Date: <b>{new Date(en.createdAt).toLocaleDateString('en-IN')}</b></span>
+                    <div className="tableSub" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '6px', color: '#cbd5e1' }}>
+                      <span>Phone: <b style={{ color: '#ffffff' }}>{en.phone}</b></span>
+                      <span>Service: <b style={{ color: '#60a5fa' }}>{en.service}</b></span>
+                      <span>Date: <b style={{ color: '#ffffff' }}>{new Date(en.createdAt).toLocaleDateString('en-IN')}</b></span>
                     </div>
                     {/* Visual Status Timeline Stepper */}
                     <div style={{ display: 'flex', alignItems: 'center', marginTop: '12px', gap: '4px', maxWidth: '380px' }}>

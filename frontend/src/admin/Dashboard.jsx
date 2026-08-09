@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogOut, Menu, X, Mail, Save, Image, Users, Calendar, Wallet, Camera, LayoutDashboard, FileText, Layers, MapPin, Star } from 'lucide-react';
+import { LogOut, Menu, X, Mail, Save, Image, Users, Calendar, Wallet, Camera, LayoutDashboard, FileText, Layers, Star } from 'lucide-react';
 import OverviewTab from './OverviewTab.jsx';
 import EnquiriesTab from './EnquiriesTab.jsx';
 import RateTab from './RateTab.jsx';
@@ -11,13 +11,11 @@ import CustomersTab from './CustomersTab.jsx';
 import UpdatesTab from './UpdatesTab.jsx';
 import InvoicesTab from './InvoicesTab.jsx';
 import SavedPlansTab from './SavedPlansTab.jsx';
-import CensusWorkTab from './CensusWorkTab.jsx';
 import TestimonialsTab from './TestimonialsTab.jsx';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'testimonials', label: 'Client Reviews', icon: Star },
-  { id: 'census', label: 'Census Work', icon: MapPin },
   { id: 'plans', label: 'Customer 2D Plans', icon: Layers },
   { id: 'invoices', label: 'Bills & Invoices', icon: FileText },
   { id: 'enquiries', label: 'Enquiries', icon: Mail },
@@ -33,7 +31,7 @@ const TABS = [
 export default function Dashboard({ creds, onLogout }) {
   const availableTabs = TABS.filter((t) => {
     if (creds.role === 'ENGINEER') {
-      return ['overview', 'census', 'plans', 'invoices', 'enquiries', 'customers', 'updates', 'attendance', 'payments', 'employees'].includes(t.id);
+      return ['overview', 'plans', 'invoices', 'enquiries', 'customers', 'updates', 'attendance', 'payments', 'employees'].includes(t.id);
     }
     return true;
   });
@@ -83,7 +81,6 @@ export default function Dashboard({ creds, onLogout }) {
         <div className="adminContent">
           {tab === 'overview' && <OverviewTab creds={creds} setTab={selectTab} />}
           {tab === 'testimonials' && <TestimonialsTab creds={creds} />}
-          {tab === 'census' && <CensusWorkTab creds={creds} />}
           {tab === 'plans' && <SavedPlansTab userRole={creds.role} />}
           {tab === 'invoices' && <InvoicesTab creds={creds} />}
           {tab === 'enquiries' && <EnquiriesTab creds={creds} />}

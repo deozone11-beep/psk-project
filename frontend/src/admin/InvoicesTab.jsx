@@ -460,22 +460,22 @@ export default function InvoicesTab({ creds }) {
             ) : (
               filteredInvoices.map((inv) => (
                 <tr key={inv.id}>
-                  <td><strong>{inv.invoiceNumber}</strong></td>
+                  <td><strong style={{ color: '#ffffff' }}>{inv.invoiceNumber}</strong></td>
                   <td>
-                    <div style={{ fontWeight: '600', color: '#1e293b' }}>{inv.customer?.displayName || 'N/A'}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{inv.customer?.projectName || ''}</div>
+                    <div style={{ fontWeight: '600', color: '#ffffff' }}>{inv.customer?.displayName || 'N/A'}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{inv.customer?.projectName || ''}</div>
                   </td>
                   <td>
                     <span className={`badgeType ${inv.billType === 'ESTIMATE' ? 'badgeEst' : ''}`}>
                       {inv.billType === 'ESTIMATE' ? '📄 Full Estimation' : inv.billType}
                     </span>
-                    <div style={{ fontSize: '0.825rem', color: '#475569', marginTop: '3px' }}>{inv.stageName || '-'}</div>
+                    <div style={{ fontSize: '0.825rem', color: '#cbd5e1', marginTop: '3px' }}>{inv.stageName || '-'}</div>
                   </td>
-                  <td>{inv.invoiceDate}</td>
-                  <td><strong style={{ color: '#0f172a' }}>₹{inv.totalAmount?.toLocaleString('en-IN')}</strong></td>
+                  <td style={{ color: '#cbd5e1' }}>{inv.invoiceDate}</td>
+                  <td><strong style={{ color: '#ffffff' }}>₹{inv.totalAmount?.toLocaleString('en-IN')}</strong></td>
                   <td>
-                    <div style={{ color: '#16a34a', fontSize: '0.85rem' }}>Paid: ₹{inv.amountPaidSoFar?.toLocaleString('en-IN') || 0}</div>
-                    <div style={{ color: '#dc2626', fontSize: '0.85rem', fontWeight: '500' }}>Bal: ₹{inv.balanceDue?.toLocaleString('en-IN') || 0}</div>
+                    <div style={{ color: '#34d399', fontSize: '0.85rem' }}>Paid: ₹{inv.amountPaidSoFar?.toLocaleString('en-IN') || 0}</div>
+                    <div style={{ color: '#ff6b6b', fontSize: '0.85rem', fontWeight: '500' }}>Bal: ₹{inv.balanceDue?.toLocaleString('en-IN') || 0}</div>
                   </td>
                   <td>
                     <span className={`statusBadge status-${(inv.status || 'DRAFT').toLowerCase()}`}>
