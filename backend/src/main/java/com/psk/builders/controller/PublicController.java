@@ -38,27 +38,30 @@ public class PublicController {
     List<Testimonial> testimonials() { return t.findAll(); }
 
     record TestimonialRequest(
-        @NotBlank String customerName,
-        @NotBlank @Pattern(regexp = "^[0-9+ -]{10,16}$") String phone,
-        @NotBlank @Email String email,
-        @NotNull @Min(1) @Max(5) Integer rating,
-        @NotBlank String location,
-        @NotBlank String message
+        String customerName,
+        String phone,
+        String email,
+        Integer rating,
+        String location,
+        String message
     ) {}
 
     @PostMapping("/testimonials")
-    ResponseEntity<?> addTestimonial(@Valid @RequestBody TestimonialRequest r) {
+    ResponseEntity<?> addTestimonial(@RequestBody TestimonialRequest r) {
+        if (r == null || r.customerName() == null || r.customerName().isBlank()) {
+            return ResponseEntity.badRequest().body("Customer name is required");
+        }
         Testimonial tm = new Testimonial();
         tm.setCustomerName(r.customerName());
-        tm.setPhone(r.phone());
-        tm.setEmail(r.email());
-        tm.setRating(r.rating());
-        tm.setLocation(r.location());
-        tm.setMessage(r.message());
+        tm.setPhone(r.phone() != null ? r.phone() : "");
+        tm.setEmail(r.email() != null ? r.email() : "");
+        tm.setRating(r.rating() != null ? Math.min(5, Math.max(1, r.rating())) : 5);
+        tm.setLocation(r.location() != null && !r.location().isBlank() ? r.location() : "Tamil Nadu");
+        tm.setMessage(r.message() != null ? r.message() : "");
         tm.setStatus("APPROVED");
         tm.setCreatedAt(java.time.LocalDateTime.now());
         Testimonial saved = t.save(tm);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        return ResponseEntity.ok(saved);
     }
 
     @GetMapping("/settings") 
