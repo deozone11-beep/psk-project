@@ -748,13 +748,73 @@ export default function CensusWorkTab({ creds }) {
     window.print();
   }
 
-  const filteredBlocks = blocks.filter(b => {
-    const matchesSearch = (b.rawBlockNo && b.rawBlockNo.includes(searchTerm)) || 
-                          b.wardNo.includes(searchTerm) || 
-                          b.subDistrictName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Dashboard uses real gdbSummaryData (9,269 HLB blocks from GDB)
+  const [dashZoneFilter, setDashZoneFilter] = useState('');
+  const [dashWardFilter, setDashWardFilter] = useState('');
+  const [dashPage, setDashPage] = useState(0);
+  const [sortCol, setSortCol] = useState('blockNo');
+  const [sortDir, setSortDir] = useState('asc');
+
+  const DASH_PAGE_SIZE = 50;
+
+  const dashAvailableZones = useMemo(() => {
+    const s = new Set();
+    gdbSummaryData.forEach(d => { if (d.zoneNo && d.zoneNo !== 'None') s.add(String(parseInt(d.zoneNo, 10))); });
+    return Array.from(s).sort((a, b) => parseInt(a) - parseInt(b));
+  }, [gdbSummaryData]);
+
+  const dashAvailableWards = useMemo(() => {
+    const s = new Set();
+    gdbSummaryData.forEach(d => {
+      const zm = !dashZoneFilter || String(parseInt(d.zoneNo, 10)) === dashZoneFilter;
+      if (zm && d.wardNo && d.wardNo !== 'None') s.add(String(parseInt(d.wardNo, 10)));
+    });
+    return Array.from(s).sort((a, b) => parseInt(a) - parseInt(b));
+  }, [gdbSummaryData, dashZoneFilter]);
+
+  const filteredBlocks = useMemo(() => {
+    const q = searchTerm.toLowerCase();
+    return gdbSummaryData.filter(d => {
+      const matchSearch = !q ||
+        d.blockNo.includes(searchTerm) ||
+        String(parseInt(d.wardNo, 10)).includes(searchTerm) ||
+        String(parseInt(d.zoneNo, 10)).includes(searchTerm) ||
+        (d.landmark && d.landmark.toLowerCase().includes(q));
+      const matchZone = !dashZoneFilter || String(parseInt(d.zoneNo, 10)) === dashZoneFilter;
+      const matchWard = !dashWardFilter || String(parseInt(d.wardNo, 10)) === dashWardFilter;
+      return matchSearch && matchZone && matchWard;
+    });
+  }, [gdbSummaryData, searchTerm, dashZoneFilter, dashWardFilter]);
+
+  const dashSorted = useMemo(() => {
+    const arr = [...filteredBlocks];
+    arr.sort((a, b) => {
+      let va = a[sortCol], vb = b[sortCol];
+      if (['blockNo', 'wardNo', 'zoneNo'].includes(sortCol)) { va = parseInt(va, 10); vb = parseInt(vb, 10); }
+      else if (['buildings', 'population'].includes(sortCol)) { va = Number(va); vb = Number(vb); }
+      else { va = String(va || '').toLowerCase(); vb = String(vb || '').toLowerCase(); }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filteredBlocks, sortCol, sortDir]);
+
+  const dashTotalBuildings = useMemo(() => gdbSummaryData.reduce((s, d) => s + (d.buildings || 0), 0), [gdbSummaryData]);
+  const dashTotalPop = useMemo(() => gdbSummaryData.reduce((s, d) => s + (d.population || 0), 0), [gdbSummaryData]);
+  const dashTotalZones = useMemo(() => new Set(gdbSummaryData.map(d => parseInt(d.zoneNo, 10))).size, [gdbSummaryData]);
+  const dashTotalWards = useMemo(() => new Set(gdbSummaryData.map(d => parseInt(d.wardNo, 10))).size, [gdbSummaryData]);
+
+  const dashTotalPages = Math.ceil(dashSorted.length / DASH_PAGE_SIZE);
+  const dashPageItems = useMemo(() => {
+    return dashSorted.slice(dashPage * DASH_PAGE_SIZE, (dashPage + 1) * DASH_PAGE_SIZE);
+  }, [dashSorted, dashPage, DASH_PAGE_SIZE]);
+
+  function handleDashSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+    setDashPage(0);
+  }
 
   if (activeModule === 'MODULE_SELECTION') {
     return (
@@ -1099,156 +1159,23 @@ export default function CensusWorkTab({ creds }) {
             Dashboard
           </button>
           <button 
-            className="hlbTabBtn" 
-            onClick={() => alert('Assignment module active for Census Officers')}
-          >
-            Assignment
-          </button>
-          <button 
             className={appNavTab === 'MAP_APPLICATION' ? 'hlbTabBtn activeMapTab' : 'hlbTabBtn'} 
             onClick={() => setAppNavTab('MAP_APPLICATION')}
           >
             Map
           </button>
-          <button 
-            className={appNavTab === 'TABLES' ? 'hlbTabBtn active' : 'hlbTabBtn'} 
-            onClick={() => setAppNavTab('TABLES')}
-          >
-            Tables
-          </button>
         </nav>
-
-        {/* Right Utility Bar */}
-        <div className="hlbRightTools">
-          <button className="hlbToolBtn">User Manual ▾</button>
-          <button className="hlbIconTool" onClick={() => setShowShpUploadModal(true)} title="Upload GIS Shapefile">
-            <HardDrive size={18} />
-          </button>
-          <button className="hlbIconTool" onClick={() => setShowAddModal(true)} title="Add Census Block">
-            <Plus size={18} />
-          </button>
-
-          <div className="hlbUserTag">
-            <User size={14} /> <span>cma_3470160011</span>
-          </div>
-
-          <div className="hlbLangBadge">
-            <Globe size={14} /> <span>En ▾</span>
-          </div>
-
-          <button className="hlbLogoutBtn" title="Logout Application">
-            <LogOut size={16} />
-          </button>
-        </div>
       </header>
 
       {/* --- RENDER 1: OFFICIAL GOOGLE MAPS WEB PORTAL APPLICATION --- */}
       {appNavTab === 'MAP_APPLICATION' && (
         <div className="hlbMapPortalBody">
-          {/* UNIFIED TOP LEFT CONTROL PANEL (SEARCH + CENSUS FILTERS) */}
-          <div className="googleLeftFloatingPanel">
-            {/* Floating Google Maps Location Search Bar */}
-            <form onSubmit={handleGoogleSearch} className="googleMapsSearchBar">
-              <Search size={18} style={{ color: '#5f6368', flexShrink: 0 }} />
-              <input 
-                type="text" 
-                className="googleMapsSearchInput"
-                placeholder="Search Ward (e.g. Ward 7, Ward 12), Block (#0320, #0174), or Places..."
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-              />
-              {locationQuery && (
-                <X size={16} style={{ color: '#70757a', cursor: 'pointer', flexShrink: 0 }} onClick={() => { setLocationQuery(''); setSuggestions([]); }} />
-              )}
-              <button type="submit" className="googleMapsSearchBtn" disabled={isSearching}>
-                {isSearching ? <RefreshCw size={14} className="spin" /> : <Search size={14} />} Search
-              </button>
 
-              {/* LIVE AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
-              {suggestions.length > 0 && (
-                <div className="googleSearchSuggestionsDropdown">
-                  {suggestions.map((item, idx) => (
-                    <div 
-                      key={idx} 
-                      className="googleSearchSuggestionItem"
-                      onClick={() => selectPlaceItem(item)}
-                    >
-                      <MapPin size={18} color="#ea4335" style={{ flexShrink: 0 }} />
-                      <div style={{ overflow: 'hidden' }}>
-                        <p className="googleSearchSuggestionTitle">{item.title || (item.display_name ? item.display_name.split(',')[0] : 'Location')}</p>
-                        <p className="googleSearchSuggestionSubtitle">{item.subtitle || item.display_name || ''}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </form>
-
-            {/* FLOATING CENSUS ZONE -> WARD -> HLB BLOCK HIERARCHICAL FILTER BAR */}
-            <div className="googleFilterBarPill">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1a73e8', fontWeight: 800, fontSize: '0.84rem' }}>
-                <Filter size={16} /> <span>Census Filter:</span>
-              </div>
-
-              {/* 1. Zone Dropdown */}
-              <select 
-                className="googleFilterSelect"
-                value={selectedFilterZone}
-                onChange={(e) => {
-                  setSelectedFilterZone(e.target.value);
-                  setSelectedFilterWard('');
-                  setSelectedFilterBlock('');
-                }}
-              >
-                <option value="">-- All Zones (1-15) --</option>
-                {availableZones.map(z => (
-                  <option key={z} value={z}>Zone {z}</option>
-                ))}
-              </select>
-
-              {/* 2. Ward Dropdown */}
-              <select 
-                className="googleFilterSelect"
-                value={selectedFilterWard}
-                onChange={(e) => {
-                  setSelectedFilterWard(e.target.value);
-                  setSelectedFilterBlock('');
-                }}
-              >
-                <option value="">-- Select Ward --</option>
-                {availableWards.map(w => (
-                  <option key={w} value={w}>Ward {w}</option>
-                ))}
-              </select>
-
-              {/* 3. HLB Block Number Dropdown */}
-              <select 
-                className="googleFilterSelect"
-                value={selectedFilterBlock}
-                onChange={(e) => handleSelectBlockFromFilter(e.target.value)}
-              >
-                <option value="">-- Select HLB Block --</option>
-                {availableBlocks.map(b => (
-                  <option key={b.id} value={b.id}>
-                    Block #{b.blockNo} (Ward {b.wardNo} - {b.buildings} Bldgs)
-                  </option>
-                ))}
-              </select>
-
-              {/* Reset Filters Button */}
-              {(selectedFilterZone || selectedFilterWard || selectedFilterBlock) && (
-                <button className="googleFilterResetBtn" onClick={handleResetFilters} title="Reset Census Filters">
-                  <FilterX size={14} /> Reset
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Map Type Selector (Top Right) */}
-          <div className="googleMapTypeSelector">
+          {/* ---- FULL TOOLBAR: Basemap + Search + Filters (single row) ---- */}
+          <div className="hlbBasemapBar">
+            {/* Left: Polygon toggle + basemap buttons */}
             <button 
-              className={`googleTypeBtn ${showGdbPolygons ? 'active' : ''}`}
-              style={{ background: showGdbPolygons ? '#1a73e8' : '#ffffff', color: showGdbPolygons ? '#ffffff' : '#3c4043' }}
+              className={`hlbBasemapBtn ${showGdbPolygons ? 'activePoly' : ''}`}
               onClick={() => {
                 if (gdbGeoJsonLayerRef.current && hlbLeafletRef.current) {
                   if (showGdbPolygons) {
@@ -1260,38 +1187,113 @@ export default function CensusWorkTab({ creds }) {
                 }
               }}
             >
-              📍 HLB Polygons (9,269 Blocks)
+              📍 HLB Polygons (9,269)
             </button>
-            <button 
-              className={`googleTypeBtn ${basemapType === 'OSM' || basemapType === 'VECTOR' ? 'active' : ''}`}
-              onClick={() => setBasemapType('OSM')}
-            >
-              OpenStreetMap (Vector)
-            </button>
-            <button 
-              className={`googleTypeBtn ${basemapType === 'HYBRID' ? 'active' : ''}`}
-              onClick={() => setBasemapType('HYBRID')}
-            >
-              Google Hybrid
-            </button>
-            <button 
-              className={`googleTypeBtn ${basemapType === 'ROADMAP' ? 'active' : ''}`}
-              onClick={() => setBasemapType('ROADMAP')}
-            >
-              Google Roadmap
-            </button>
-            <button 
-              className={`googleTypeBtn ${basemapType === 'SATELLITE' ? 'active' : ''}`}
-              onClick={() => setBasemapType('SATELLITE')}
-            >
-              Satellite
-            </button>
-            <button 
-              className={`googleTypeBtn ${basemapType === 'TERRAIN' ? 'active' : ''}`}
-              onClick={() => setBasemapType('TERRAIN')}
-            >
-              Terrain
-            </button>
+            <div className="hlbBasemapDivider" />
+            {[
+              { key: 'OSM', label: 'OSM Vector' },
+              { key: 'HYBRID', label: 'Google Hybrid' },
+              { key: 'ROADMAP', label: 'Roadmap' },
+              { key: 'SATELLITE', label: 'Satellite' },
+              { key: 'TERRAIN', label: 'Terrain' },
+            ].map(bm => (
+              <button
+                key={bm.key}
+                className={`hlbBasemapBtn ${basemapType === bm.key || (bm.key === 'OSM' && basemapType === 'VECTOR') ? 'active' : ''}`}
+                onClick={() => setBasemapType(bm.key)}
+              >
+                {bm.label}
+              </button>
+            ))}
+
+            {/* Spacer pushes filters to right */}
+            <div style={{ flex: 1 }} />
+
+            {/* Center: Inline Search */}
+            <div className="hlbBarSearchWrap">
+              <form onSubmit={handleGoogleSearch} className="hlbBarSearchForm">
+                <Search size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                <input
+                  type="text"
+                  className="hlbBarSearchInput"
+                  placeholder="Search Ward, Block or Places..."
+                  value={locationQuery}
+                  onChange={(e) => setLocationQuery(e.target.value)}
+                />
+                {locationQuery && (
+                  <X size={12} style={{ color: '#64748b', cursor: 'pointer', flexShrink: 0 }}
+                    onClick={() => { setLocationQuery(''); setSuggestions([]); }} />
+                )}
+                <button type="submit" className="hlbBarSearchBtn" disabled={isSearching}>
+                  {isSearching ? <RefreshCw size={12} className="spin" /> : 'Go'}
+                </button>
+                {suggestions.length > 0 && (
+                  <div className="googleSearchSuggestionsDropdown" style={{ top: '38px', left: 0, minWidth: '300px' }}>
+                    {suggestions.map((item, idx) => (
+                      <div key={idx} className="googleSearchSuggestionItem" onClick={() => selectPlaceItem(item)}>
+                        <MapPin size={14} color="#ea4335" style={{ flexShrink: 0 }} />
+                        <div style={{ overflow: 'hidden' }}>
+                          <p className="googleSearchSuggestionTitle">{item.title || (item.display_name ? item.display_name.split(',')[0] : 'Location')}</p>
+                          <p className="googleSearchSuggestionSubtitle">{item.subtitle || item.display_name || ''}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </form>
+            </div>
+
+            <div style={{ flex: 1 }} />
+            <div className="hlbBasemapDivider" />
+
+            {/* Right: Census Zone → Ward → Block Filter */}
+            <div className="hlbBarFilterGroup">
+              <Filter size={13} style={{ color: '#60a5fa', flexShrink: 0 }} />
+              <select
+                className="hlbBarSelect"
+                value={selectedFilterZone}
+                onChange={(e) => {
+                  setSelectedFilterZone(e.target.value);
+                  setSelectedFilterWard('');
+                  setSelectedFilterBlock('');
+                }}
+              >
+                <option value="">All Zones</option>
+                {availableZones.map(z => (
+                  <option key={z} value={z}>Zone {z}</option>
+                ))}
+              </select>
+              <select
+                className="hlbBarSelect"
+                value={selectedFilterWard}
+                onChange={(e) => {
+                  setSelectedFilterWard(e.target.value);
+                  setSelectedFilterBlock('');
+                }}
+              >
+                <option value="">-- Ward --</option>
+                {availableWards.map(w => (
+                  <option key={w} value={w}>Ward {w}</option>
+                ))}
+              </select>
+              <select
+                className="hlbBarSelect"
+                value={selectedFilterBlock}
+                onChange={(e) => handleSelectBlockFromFilter(e.target.value)}
+              >
+                <option value="">-- Block --</option>
+                {availableBlocks.map(b => (
+                  <option key={b.id} value={b.id}>
+                    #{b.blockNo} (W{b.wardNo})
+                  </option>
+                ))}
+              </select>
+              {(selectedFilterZone || selectedFilterWard || selectedFilterBlock) && (
+                <button className="hlbBarResetBtn" onClick={handleResetFilters} title="Reset Filters">
+                  <FilterX size={13} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Floating Google Maps Utility Buttons (Bottom Right) */}
@@ -1391,64 +1393,144 @@ export default function CensusWorkTab({ creds }) {
         </div>
       )}
 
-      {/* --- RENDER 2: DASHBOARD / TABLES VIEW (CARDS GRID) --- */}
-      {(appNavTab === 'DASHBOARD' || appNavTab === 'TABLES') && (
-        <div className="censusGridShell">
-          <div className="censusFilterBar">
-            <div className="censusSearchBox">
-              <Search size={16} className="censusSearchIcon" />
-              <input 
-                type="text" 
-                placeholder="Search Block No, Ward No, or Location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+      {/* ===== RENDER 2: PREMIUM HLB ANALYTICS DASHBOARD ===== */}
+      {appNavTab === 'DASHBOARD' && (
+        <div className="hlbDashShell">
 
-            <div className="censusFilterGroup">
-              <Filter size={15} />
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="ALL">All Status</option>
-                <option value="PDF_UPLOADED">Map PDF Uploaded</option>
-                <option value="PENDING_UPLOAD">Pending Upload</option>
-              </select>
-            </div>
-
-            <div className="censusBadgeCount">
-              Total Blocks: <b>{filteredBlocks.length}</b>
-            </div>
-          </div>
-
-          <div className="censusGrid">
-            {filteredBlocks.map((block) => (
-              <div key={block.id} className="censusCard">
-                <div className="censusCardHead">
-                  <div>
-                    <span className="censusTag">Ward {block.wardNo}</span>
-                    <h3 className="censusBlockNum">Block No. {block.rawBlockNo || block.blockNo}</h3>
-                  </div>
-                  <span className={`statusPill ${block.status === 'PDF_UPLOADED' ? 'statusSuccess' : 'statusWarning'}`}>
-                    {block.status === 'PDF_UPLOADED' ? <CheckCircle size={13} /> : <Clock size={13} />}
-                    {block.status === 'PDF_UPLOADED' ? 'PDF Uploaded' : 'Pending Upload'}
-                  </span>
+          {/* ── TOP: STAT KPI CARDS ── */}
+          <div className="hlbStatRow">
+            {[
+              { label: 'Total HLB Blocks', value: gdbSummaryData.length.toLocaleString(), sub: 'Greater Chennai Corporation', icon: '🏛️', color: '#1a73e8' },
+              { label: 'Total Buildings', value: dashTotalBuildings.toLocaleString(), sub: 'All enumerated structures', icon: '🏢', color: '#0f9d58' },
+              { label: 'Est. Population', value: dashTotalPop.toLocaleString(), sub: 'Aggregate census count', icon: '👥', color: '#f4b400' },
+              { label: 'Zones', value: dashTotalZones, sub: `${dashTotalWards} Wards across city`, icon: '📍', color: '#db4437' },
+            ].map(sc => (
+              <div key={sc.label} className="hlbStatCard">
+                <div className="hlbStatIcon">{sc.icon}</div>
+                <div className="hlbStatBody">
+                  <div className="hlbStatValue">{sc.value}</div>
+                  <div className="hlbStatLabel">{sc.label}</div>
+                  <div className="hlbStatSub">{sc.sub}</div>
                 </div>
-
-                <div className="censusMetaRows">
-                  <div className="metaRow"><span>State / District:</span> <b>{block.stateName} / {block.districtName}</b></div>
-                  <div className="metaRow"><span>Sub-District / Town:</span> <b>{block.subDistrictName} ({block.townVillage})</b></div>
-                  <div className="metaRow"><span>Total Households:</span> <b className="textPrimary">{block.totalHouseholds} Building Blocks</b></div>
-                  <div className="metaRow"><span>Date of Map:</span> <b>{block.dateOfMap}</b></div>
-                </div>
-
-                <div className="censusCardActions">
-                  <button className="btnAction btnUpload" onClick={() => setUploadTargetBlock(block)}><Upload size={15} /> Upload PDF</button>
-                  <button className="btnAction btnViewMap" onClick={() => openLandscapeView(block)}><Eye size={15} /> View Landscape Map</button>
-                  <button className="btnAction btnCompare" onClick={() => { setAppNavTab('MAP_APPLICATION'); setTappedMapBlock(block); }}><Layers size={15} /> View on Map</button>
-                  <button className="btnAction btnDelete" onClick={() => handleDeleteBlock(block.id)}><Trash2 size={15} /></button>
-                </div>
+                <div className="hlbStatBar" style={{ background: sc.color }} />
               </div>
             ))}
           </div>
+
+          {/* ── FILTER + SEARCH TOOLBAR ── */}
+          <div className="hlbDashToolbar">
+            <div className="hlbDashSearch">
+              <Search size={15} style={{ color: '#64748b', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder="Search Block No, Ward, Zone, Landmark..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setDashPage(0); }}
+              />
+              {searchTerm && <X size={13} style={{ cursor: 'pointer', color: '#64748b' }} onClick={() => setSearchTerm('')} />}
+            </div>
+            <div className="hlbDashFilterRow">
+              <select className="hlbDashSelect" value={dashZoneFilter} onChange={(e) => { setDashZoneFilter(e.target.value); setDashWardFilter(''); setDashPage(0); }}>
+                <option value="">All Zones</option>
+                {dashAvailableZones.map(z => <option key={z} value={z}>Zone {z}</option>)}
+              </select>
+              <select className="hlbDashSelect" value={dashWardFilter} onChange={(e) => { setDashWardFilter(e.target.value); setDashPage(0); }}>
+                <option value="">All Wards</option>
+                {dashAvailableWards.map(w => <option key={w} value={w}>Ward {w}</option>)}
+              </select>
+              {(dashZoneFilter || dashWardFilter || searchTerm) && (
+                <button className="hlbDashClearBtn" onClick={() => { setDashZoneFilter(''); setDashWardFilter(''); setSearchTerm(''); setDashPage(0); }}>
+                  <FilterX size={13} /> Clear
+                </button>
+              )}
+            </div>
+            <div className="hlbDashCount">
+              Showing <b>{dashSorted.length.toLocaleString()}</b> of <b>{gdbSummaryData.length.toLocaleString()}</b> blocks
+              {dashTotalPages > 1 && <span className="hlbDashPageBadge">Page {dashPage + 1} / {dashTotalPages}</span>}
+            </div>
+          </div>
+
+          {/* ── DATA TABLE ── */}
+          <div className="hlbTableWrap">
+            {gdbSummaryData.length === 0 ? (
+              <div className="hlbTableEmpty">
+                <RefreshCw size={28} className="spin" />
+                <p>Loading HLB block data from GDB...</p>
+              </div>
+            ) : (
+              <table className="hlbDataTable">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}>#</th>
+                    <th onClick={() => handleDashSort('blockNo')} className="hlbThSort">
+                      Block No {sortCol === 'blockNo' ? <span style={{ color: '#1a73e8', fontSize: '0.7rem' }}>{sortDir === 'asc' ? '↑' : '↓'}</span> : <span style={{ opacity: 0.3, fontSize: '0.7rem' }}>⇅</span>}
+                    </th>
+                    <th onClick={() => handleDashSort('zoneNo')} className="hlbThSort">
+                      Zone {sortCol === 'zoneNo' ? <span style={{ color: '#1a73e8', fontSize: '0.7rem' }}>{sortDir === 'asc' ? '↑' : '↓'}</span> : <span style={{ opacity: 0.3, fontSize: '0.7rem' }}>⇅</span>}
+                    </th>
+                    <th onClick={() => handleDashSort('wardNo')} className="hlbThSort">
+                      Ward {sortCol === 'wardNo' ? <span style={{ color: '#1a73e8', fontSize: '0.7rem' }}>{sortDir === 'asc' ? '↑' : '↓'}</span> : <span style={{ opacity: 0.3, fontSize: '0.7rem' }}>⇅</span>}
+                    </th>
+                    <th onClick={() => handleDashSort('buildings')} className="hlbThSort">
+                      Buildings {sortCol === 'buildings' ? <span style={{ color: '#1a73e8', fontSize: '0.7rem' }}>{sortDir === 'asc' ? '↑' : '↓'}</span> : <span style={{ opacity: 0.3, fontSize: '0.7rem' }}>⇅</span>}
+                    </th>
+                    <th onClick={() => handleDashSort('population')} className="hlbThSort">
+                      Population {sortCol === 'population' ? <span style={{ color: '#1a73e8', fontSize: '0.7rem' }}>{sortDir === 'asc' ? '↑' : '↓'}</span> : <span style={{ opacity: 0.3, fontSize: '0.7rem' }}>⇅</span>}
+                    </th>
+                    <th onClick={() => handleDashSort('landmark')} className="hlbThSort">
+                      Landmark {sortCol === 'landmark' ? <span style={{ color: '#1a73e8', fontSize: '0.7rem' }}>{sortDir === 'asc' ? '↑' : '↓'}</span> : <span style={{ opacity: 0.3, fontSize: '0.7rem' }}>⇅</span>}
+                    </th>
+                    <th>Coordinates</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashPageItems.map((block, i) => (
+                    <tr key={block.id} className="hlbTableRow">
+                      <td className="hlbTdMuted">{dashPage * DASH_PAGE_SIZE + i + 1}</td>
+                      <td><span className="hlbBlockTag">#{block.blockNo}</span></td>
+                      <td><span className="hlbZoneBadge">Z{parseInt(block.zoneNo, 10)}</span></td>
+                      <td className="hlbTdWard">W{parseInt(block.wardNo, 10)}</td>
+                      <td>
+                        <span className="hlbBldgBar">
+                          <span className="hlbBldgFill" style={{ width: `${Math.min(100, (block.buildings / 300) * 100)}%` }} />
+                        </span>
+                        <span className="hlbBldgNum">{block.buildings.toLocaleString()}</span>
+                      </td>
+                      <td className="hlbTdPop">{block.population.toLocaleString()}</td>
+                      <td className="hlbTdLandmark">{block.landmark && block.landmark !== 'nan' ? block.landmark : <span style={{ color: '#334155' }}>—</span>}</td>
+                      <td className="hlbTdCoords">{block.centerLat.toFixed(4)}, {block.centerLng.toFixed(4)}</td>
+                      <td>
+                        <button className="hlbViewBtn" onClick={() => {
+                          setAppNavTab('MAP_APPLICATION');
+                          setTimeout(() => { if (hlbLeafletRef.current) hlbLeafletRef.current.flyTo([block.centerLat, block.centerLng], 18, { duration: 1.2 }); }, 600);
+                        }}>
+                          <MapPin size={13} /> Map
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* ── PAGINATION ── */}
+          {dashTotalPages > 1 && (
+            <div className="hlbPagination">
+              <button className="hlbPageBtn" onClick={() => setDashPage(0)} disabled={dashPage === 0}>«</button>
+              <button className="hlbPageBtn" onClick={() => setDashPage(p => Math.max(0, p - 1))} disabled={dashPage === 0}>‹ Prev</button>
+              {Array.from({ length: Math.min(dashTotalPages, 9) }, (_, i) => {
+                const pg = Math.min(Math.max(dashPage - 4, 0), Math.max(dashTotalPages - 9, 0)) + i;
+                if (pg >= dashTotalPages) return null;
+                return (
+                  <button key={pg} className={`hlbPageBtn ${pg === dashPage ? 'hlbPageActive' : ''}`} onClick={() => setDashPage(pg)}>{pg + 1}</button>
+                );
+              })}
+              <button className="hlbPageBtn" onClick={() => setDashPage(p => Math.min(dashTotalPages - 1, p + 1))} disabled={dashPage === dashTotalPages - 1}>Next ›</button>
+              <button className="hlbPageBtn" onClick={() => setDashPage(dashTotalPages - 1)} disabled={dashPage === dashTotalPages - 1}>»</button>
+            </div>
+          )}
         </div>
       )}
 

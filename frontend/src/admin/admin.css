@@ -3328,19 +3328,169 @@ body .modalContent .modalClose:hover {
 }
 
 .googleMapTypeSelector {
+  display: none; /* replaced by hlbBasemapBar */
+}
+
+/* ===== BASEMAP SUB-TOOLBAR (below navbar, full-width, no overlap) ===== */
+.hlbBasemapBar {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 1000;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 4px;
+  z-index: 999;
+  flex-shrink: 0;
+}
+
+.hlbBasemapBtn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.hlbBasemapBtn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #ffffff;
+}
+
+.hlbBasemapBtn.active {
+  background: #1a73e8;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(26,115,232,0.4);
+}
+
+.hlbBasemapBtn.activePoly {
+  background: rgba(26,115,232,0.25);
+  color: #60a5fa;
+  border: 1px solid rgba(26,115,232,0.5);
+}
+
+.hlbBasemapDivider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.15);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+
+/* ===== IN-BAR FILTER GROUP (right side of basemap toolbar) ===== */
+.hlbBarFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.hlbBarSelect {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+  max-width: 130px;
+}
+
+.hlbBarSelect:focus {
+  border-color: #60a5fa;
+}
+
+.hlbBarSelect option {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.hlbBarResetBtn {
+  background: rgba(239,68,68,0.18);
+  border: 1px solid rgba(239,68,68,0.35);
+  color: #fca5a5;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.hlbBarResetBtn:hover {
+  background: rgba(239,68,68,0.35);
+  color: #ffffff;
+}
+
+/* ===== INLINE SEARCH IN BASEMAP TOOLBAR ===== */
+.hlbBarSearchWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.hlbBarSearchForm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  padding: 4px 10px;
+  transition: border-color 0.15s;
+}
+
+.hlbBarSearchForm:focus-within {
+  border-color: #60a5fa;
+  background: rgba(255,255,255,0.12);
+}
+
+.hlbBarSearchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  width: 220px;
+}
+
+.hlbBarSearchInput::placeholder {
+  color: #64748b;
+}
+
+.hlbBarSearchBtn {
+  background: #1a73e8;
+  border: none;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  padding: 4px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  border: 1px solid #dadce0;
+  transition: background 0.15s;
+}
+
+.hlbBarSearchBtn:hover {
+  background: #1557b0;
 }
 
 .googleTypeBtn {
@@ -3496,13 +3646,14 @@ body .modalContent .modalClose:hover {
 /* Unified Top Left Floating Control Stack */
 .googleLeftFloatingPanel {
   position: absolute;
-  top: 16px;
+  top: 54px;
   left: 16px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 580px;
+  max-width: 520px;
+  width: calc(100% - 32px);
 }
 
 /* Floating Census Zone -> Ward -> HLB Block Filter Bar */
@@ -3626,9 +3777,409 @@ body .modalContent .modalClose:hover {
   }
 }
 
+/* ============================================================
+   PREMIUM HLB ANALYTICS DASHBOARD
+   ============================================================ */
 
+.hlbDashShell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0a0f1a;
+}
 
+/* ── KPI STAT CARDS ── */
+.hlbStatRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 20px 24px 0;
+  flex-shrink: 0;
+}
 
+.hlbStatCard {
+  position: relative;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 20px 20px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hlbStatCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.hlbStatBar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  border-radius: 4px 0 0 4px;
+}
+
+.hlbStatIcon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.hlbStatBody {
+  flex: 1;
+}
+
+.hlbStatValue {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hlbStatLabel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hlbStatSub {
+  font-size: 0.73rem;
+  color: #475569;
+  margin-top: 3px;
+}
+
+/* ── FILTER/SEARCH TOOLBAR ── */
+.hlbDashToolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.hlbDashSearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 7px 14px;
+  flex: 1;
+  min-width: 220px;
+  transition: border-color 0.15s;
+}
+
+.hlbDashSearch:focus-within {
+  border-color: #1a73e8;
+}
+
+.hlbDashSearch input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.hlbDashSearch input::placeholder {
+  color: #475569;
+}
+
+.hlbDashFilterRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hlbDashSelect {
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+}
+
+.hlbDashSelect:focus {
+  border-color: #1a73e8;
+}
+
+.hlbDashSelect option {
+  background: #1e293b;
+}
+
+.hlbDashClearBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #fca5a5;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.hlbDashClearBtn:hover {
+  background: rgba(239,68,68,0.25);
+}
+
+.hlbDashCount {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.hlbDashCount b {
+  color: #e2e8f0;
+}
+
+.hlbDashPageBadge {
+  background: rgba(26,115,232,0.15);
+  border: 1px solid rgba(26,115,232,0.3);
+  color: #60a5fa;
+  font-size: 0.73rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+/* ── DATA TABLE ── */
+.hlbTableWrap {
+  flex: 1;
+  overflow: auto;
+  margin: 0 24px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  background: #0b1120;
+}
+
+.hlbTableEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 20px;
+  color: #475569;
+}
+
+.hlbDataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+}
+
+.hlbDataTable thead tr {
+  background: #0f172a;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.hlbDataTable th {
+  padding: 12px 14px;
+  text-align: left;
+  color: #64748b;
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  white-space: nowrap;
+}
+
+.hlbThSort {
+  cursor: pointer;
+  user-select: none;
+  gap: 5px;
+}
+
+.hlbThSort:hover {
+  color: #94a3b8;
+}
+
+.hlbDataTable .hlbTableRow {
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.12s;
+}
+
+.hlbDataTable .hlbTableRow:hover {
+  background: rgba(26,115,232,0.07);
+}
+
+.hlbDataTable td {
+  padding: 9px 14px;
+  color: #cbd5e1;
+  vertical-align: middle;
+}
+
+.hlbTdMuted {
+  color: #334155 !important;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hlbBlockTag {
+  background: rgba(26,115,232,0.15);
+  color: #60a5fa;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+}
+
+.hlbZoneBadge {
+  background: rgba(239,68,68,0.15);
+  color: #fca5a5;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.hlbTdWard {
+  color: #94a3b8 !important;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.hlbBldgBar {
+  display: inline-block;
+  width: 55px;
+  height: 6px;
+  background: #1e293b;
+  border-radius: 3px;
+  overflow: hidden;
+  vertical-align: middle;
+  margin-right: 7px;
+}
+
+.hlbBldgFill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #1a73e8, #34d399);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.hlbBldgNum {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.hlbTdPop {
+  font-variant-numeric: tabular-nums;
+  color: #a3e635 !important;
+  font-weight: 600;
+}
+
+.hlbTdLandmark {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #94a3b8 !important;
+  font-size: 0.8rem;
+}
+
+.hlbTdCoords {
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  color: #475569 !important;
+}
+
+.hlbViewBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(26,115,232,0.15);
+  border: 1px solid rgba(26,115,232,0.3);
+  color: #60a5fa;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.hlbViewBtn:hover {
+  background: #1a73e8;
+  color: #ffffff;
+  border-color: #1a73e8;
+}
+
+/* ── PAGINATION ── */
+.hlbPagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 24px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.hlbPageBtn {
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 36px;
+}
+
+.hlbPageBtn:hover:not(:disabled) {
+  background: #1e293b;
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,0.15);
+}
+
+.hlbPageBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.hlbPageBtn.hlbPageActive {
+  background: #1a73e8;
+  border-color: #1a73e8;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .hlbStatRow { grid-template-columns: repeat(2, 1fr); }
+}
 
 
 
