@@ -4,7 +4,7 @@ import {
   Search, Filter, FilterX, CheckCircle, Clock, AlertCircle, RefreshCw, X, 
   Layers, Compass, Sliders, ChevronDown, Table, FileSpreadsheet, Image as ImageIcon,
   ZoomIn, ZoomOut, Maximize2, Building, Edit3, Save, Check, ExternalLink, HardDrive,
-  Home, Grid, Globe, Ruler, User, LogOut, HelpCircle, ArrowLeft, Sparkles, Settings, Navigation
+  Home, Grid, Globe, Ruler, User, LogOut, HelpCircle, ArrowLeft, Sparkles, Settings, Navigation, Printer
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -98,6 +98,8 @@ export default function CensusWorkTab({ creds }) {
   const gdbGeoJsonLayerRef = useRef(null);
   const [showGdbPolygons, setShowGdbPolygons] = useState(true);
   const [gdbSummaryData, setGdbSummaryData] = useState([]);
+  const [showBlockPrintModal, setShowBlockPrintModal] = useState(false);
+  const [blockToPrint, setBlockToPrint] = useState(null);
 
   // Extract gdbSummaryData dynamically from loaded GeoJSON
   useEffect(() => {
@@ -482,9 +484,19 @@ export default function CensusWorkTab({ creds }) {
               const props = feature.properties || {};
               const blockId = props.hlb_id || props.code_block || 'HLB-Block';
               const wardNo = props.ward_no || props.code_ward || '-';
+              const zNo = props.zone_no || props.code_st || '-';
               const buil = props.no_of_buil || 0;
               const pop = props.population || 0;
               const landmark = props.landmark || props.name_vt || 'Chennai Ward';
+
+              // Hover Tooltip (MouseOver details readout matching user request)
+              layer.bindTooltip(`
+                <div style="font-family:sans-serif; padding:2px 4px;">
+                  <b style="color:#60a5fa; font-size:0.85rem;">HLB Block #${blockId}</b><br/>
+                  <span style="font-size:0.75rem; color:#cbd5e1;">Ward ${wardNo} | Zone ${zNo}</span><br/>
+                  <span style="font-size:0.75rem; color:#94a3b8;">Bldgs: ${buil} | Pop: ${pop}</span>
+                </div>
+              `, { sticky: true, direction: 'top', className: 'gdbHoverTooltip' });
 
               layer.bindPopup(`
                 <div style="font-family:sans-serif; padding:6px; min-width:190px;">
@@ -1142,100 +1154,103 @@ export default function CensusWorkTab({ creds }) {
       {/* --- RENDER 1: OFFICIAL GOOGLE MAPS WEB PORTAL APPLICATION --- */}
       {appNavTab === 'MAP_APPLICATION' && (
         <div className="hlbMapPortalBody">
-          {/* Floating Google Maps Location Search Bar (Top Left) */}
-          <form onSubmit={handleGoogleSearch} className="googleMapsSearchBar">
-            <Search size={18} style={{ color: '#5f6368', flexShrink: 0 }} />
-            <input 
-              type="text" 
-              className="googleMapsSearchInput"
-              placeholder="Search Ward (e.g. Ward 7, Ward 12), Block (#0320, #0174), or Places (Maduravoyal, Porur)..."
-              value={locationQuery}
-              onChange={(e) => setLocationQuery(e.target.value)}
-            />
-            {locationQuery && (
-              <X size={16} style={{ color: '#70757a', cursor: 'pointer', flexShrink: 0 }} onClick={() => { setLocationQuery(''); setSuggestions([]); }} />
-            )}
-            <button type="submit" className="googleMapsSearchBtn" disabled={isSearching}>
-              {isSearching ? <RefreshCw size={14} className="spin" /> : <Search size={14} />} Search
-            </button>
-
-            {/* LIVE AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
-            {suggestions.length > 0 && (
-              <div className="googleSearchSuggestionsDropdown">
-                {suggestions.map((item, idx) => (
-                  <div 
-                    key={idx} 
-                    className="googleSearchSuggestionItem"
-                    onClick={() => selectPlaceItem(item)}
-                  >
-                    <MapPin size={18} color="#ea4335" style={{ flexShrink: 0 }} />
-                    <div style={{ overflow: 'hidden' }}>
-                      <p className="googleSearchSuggestionTitle">{item.title || (item.display_name ? item.display_name.split(',')[0] : 'Location')}</p>
-                      <p className="googleSearchSuggestionSubtitle">{item.subtitle || item.display_name || ''}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </form>
-
-          {/* FLOATING CENSUS ZONE -> WARD -> HLB BLOCK HIERARCHICAL FILTER BAR */}
-          <div className="googleFilterBarPill">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1a73e8', fontWeight: 800, fontSize: '0.84rem' }}>
-              <Filter size={16} /> <span>Census Filter:</span>
-            </div>
-
-            {/* 1. Zone Dropdown */}
-            <select 
-              className="googleFilterSelect"
-              value={selectedFilterZone}
-              onChange={(e) => {
-                setSelectedFilterZone(e.target.value);
-                setSelectedFilterWard('');
-                setSelectedFilterBlock('');
-              }}
-            >
-              <option value="">-- All Zones (1-15) --</option>
-              {availableZones.map(z => (
-                <option key={z} value={z}>Zone {z}</option>
-              ))}
-            </select>
-
-            {/* 2. Ward Dropdown */}
-            <select 
-              className="googleFilterSelect"
-              value={selectedFilterWard}
-              onChange={(e) => {
-                setSelectedFilterWard(e.target.value);
-                setSelectedFilterBlock('');
-              }}
-            >
-              <option value="">-- Select Ward --</option>
-              {availableWards.map(w => (
-                <option key={w} value={w}>Ward {w}</option>
-              ))}
-            </select>
-
-            {/* 3. HLB Block Number Dropdown */}
-            <select 
-              className="googleFilterSelect"
-              value={selectedFilterBlock}
-              onChange={(e) => handleSelectBlockFromFilter(e.target.value)}
-            >
-              <option value="">-- Select HLB Block --</option>
-              {availableBlocks.map(b => (
-                <option key={b.id} value={b.id}>
-                  Block #{b.blockNo} (Ward {b.wardNo} - {b.buildings} Bldgs)
-                </option>
-              ))}
-            </select>
-
-            {/* Reset Filters Button */}
-            {(selectedFilterZone || selectedFilterWard || selectedFilterBlock) && (
-              <button className="googleFilterResetBtn" onClick={handleResetFilters} title="Reset Census Filters">
-                <FilterX size={14} /> Reset
+          {/* UNIFIED TOP LEFT CONTROL PANEL (SEARCH + CENSUS FILTERS) */}
+          <div className="googleLeftFloatingPanel">
+            {/* Floating Google Maps Location Search Bar */}
+            <form onSubmit={handleGoogleSearch} className="googleMapsSearchBar">
+              <Search size={18} style={{ color: '#5f6368', flexShrink: 0 }} />
+              <input 
+                type="text" 
+                className="googleMapsSearchInput"
+                placeholder="Search Ward (e.g. Ward 7, Ward 12), Block (#0320, #0174), or Places..."
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+              />
+              {locationQuery && (
+                <X size={16} style={{ color: '#70757a', cursor: 'pointer', flexShrink: 0 }} onClick={() => { setLocationQuery(''); setSuggestions([]); }} />
+              )}
+              <button type="submit" className="googleMapsSearchBtn" disabled={isSearching}>
+                {isSearching ? <RefreshCw size={14} className="spin" /> : <Search size={14} />} Search
               </button>
-            )}
+
+              {/* LIVE AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
+              {suggestions.length > 0 && (
+                <div className="googleSearchSuggestionsDropdown">
+                  {suggestions.map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      className="googleSearchSuggestionItem"
+                      onClick={() => selectPlaceItem(item)}
+                    >
+                      <MapPin size={18} color="#ea4335" style={{ flexShrink: 0 }} />
+                      <div style={{ overflow: 'hidden' }}>
+                        <p className="googleSearchSuggestionTitle">{item.title || (item.display_name ? item.display_name.split(',')[0] : 'Location')}</p>
+                        <p className="googleSearchSuggestionSubtitle">{item.subtitle || item.display_name || ''}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </form>
+
+            {/* FLOATING CENSUS ZONE -> WARD -> HLB BLOCK HIERARCHICAL FILTER BAR */}
+            <div className="googleFilterBarPill">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1a73e8', fontWeight: 800, fontSize: '0.84rem' }}>
+                <Filter size={16} /> <span>Census Filter:</span>
+              </div>
+
+              {/* 1. Zone Dropdown */}
+              <select 
+                className="googleFilterSelect"
+                value={selectedFilterZone}
+                onChange={(e) => {
+                  setSelectedFilterZone(e.target.value);
+                  setSelectedFilterWard('');
+                  setSelectedFilterBlock('');
+                }}
+              >
+                <option value="">-- All Zones (1-15) --</option>
+                {availableZones.map(z => (
+                  <option key={z} value={z}>Zone {z}</option>
+                ))}
+              </select>
+
+              {/* 2. Ward Dropdown */}
+              <select 
+                className="googleFilterSelect"
+                value={selectedFilterWard}
+                onChange={(e) => {
+                  setSelectedFilterWard(e.target.value);
+                  setSelectedFilterBlock('');
+                }}
+              >
+                <option value="">-- Select Ward --</option>
+                {availableWards.map(w => (
+                  <option key={w} value={w}>Ward {w}</option>
+                ))}
+              </select>
+
+              {/* 3. HLB Block Number Dropdown */}
+              <select 
+                className="googleFilterSelect"
+                value={selectedFilterBlock}
+                onChange={(e) => handleSelectBlockFromFilter(e.target.value)}
+              >
+                <option value="">-- Select HLB Block --</option>
+                {availableBlocks.map(b => (
+                  <option key={b.id} value={b.id}>
+                    Block #{b.blockNo} (Ward {b.wardNo} - {b.buildings} Bldgs)
+                  </option>
+                ))}
+              </select>
+
+              {/* Reset Filters Button */}
+              {(selectedFilterZone || selectedFilterWard || selectedFilterBlock) && (
+                <button className="googleFilterResetBtn" onClick={handleResetFilters} title="Reset Census Filters">
+                  <FilterX size={14} /> Reset
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Map Type Selector (Top Right) */}
@@ -1350,6 +1365,33 @@ export default function CensusWorkTab({ creds }) {
                 <span><b>Lat:</b> {selectedPlaceDetails.lat}</span>
                 <span><b>Lng:</b> {selectedPlaceDetails.lng}</span>
               </div>
+
+              {/* Print Block Map Action Button */}
+              <button 
+                onClick={() => {
+                  setBlockToPrint(selectedPlaceDetails);
+                  setShowBlockPrintModal(true);
+                }}
+                style={{
+                  width: '100%',
+                  marginTop: '12px',
+                  background: 'linear-gradient(135deg, #1a73e8 0%, #1557b0 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '10px 16px',
+                  fontSize: '0.88rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(26, 115, 232, 0.35)'
+                }}
+              >
+                <Printer size={18} /> Print Block Map / Layout
+              </button>
             </div>
           )}
 
@@ -1671,6 +1713,81 @@ export default function CensusWorkTab({ creds }) {
                 >
                   <Navigation size={18} /> Locate My Device Position (GPS)
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* OFFICIAL CENSUS BLOCK PRINT LAYOUT MODAL */}
+      {showBlockPrintModal && blockToPrint && (
+        <div className="censusBlockPrintModalOverlay">
+          <div className="censusBlockPrintCard">
+            {/* Modal Header (No Print) */}
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a' }}>
+                <Printer size={22} color="#1a73e8" />
+                <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Census Block Layout Print Preview</h2>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={() => window.print()}
+                  style={{ background: '#1a73e8', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Printer size={16} /> Print / Export PDF
+                </button>
+                <button 
+                  onClick={() => setShowBlockPrintModal(false)}
+                  style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '8px 14px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            {/* Official Printable Layout Frame */}
+            <div style={{ border: '3px double #0f172a', padding: '20px', background: '#ffffff', color: '#0f172a', fontFamily: 'serif' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #0f172a', paddingBottom: '12px', marginBottom: '16px' }}>
+                <img src="/logo-icon.png" alt="Census Seal" style={{ width: '56px', height: '56px' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Census of India 2027</h1>
+                  <h3 style={{ margin: '4px 0 0 0', fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>House Listing Block (HLB) Layout Map</h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.78rem', fontFamily: 'sans-serif', color: '#64748b' }}>Office of the Registrar General and Census Commissioner of India</p>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: '0.8rem', fontFamily: 'monospace', fontWeight: 700 }}>
+                  <p style={{ margin: 0 }}><b>DISTRICT:</b> CHENNAI (34-02)</p>
+                  <p style={{ margin: '2px 0 0 0' }}><b>STATE:</b> TAMIL NADU (34)</p>
+                </div>
+              </div>
+
+              {/* Block Details Info Box */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', background: '#f8fafc', border: '1px solid #cbd5e1', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontFamily: 'sans-serif', fontSize: '0.85rem' }}>
+                <div><span style={{ color: '#64748b', fontSize: '0.75rem' }}>HLB BLOCK ID:</span><br/><b style={{ fontSize: '1.1rem', color: '#1a73e8' }}>{blockToPrint.title.replace('🏛️ HLB Census Block #', '')}</b></div>
+                <div><span style={{ color: '#64748b', fontSize: '0.75rem' }}>DETAILS:</span><br/><b>{blockToPrint.subtitle}</b></div>
+                <div><span style={{ color: '#64748b', fontSize: '0.75rem' }}>LATITUDE:</span><br/><b style={{ fontFamily: 'monospace' }}>{blockToPrint.lat}</b></div>
+                <div><span style={{ color: '#64748b', fontSize: '0.75rem' }}>LONGITUDE:</span><br/><b style={{ fontFamily: 'monospace' }}>{blockToPrint.lng}</b></div>
+              </div>
+
+              {/* High Resolution Block Map Image / Canvas Display */}
+              <div style={{ position: 'relative', width: '100%', height: '360px', borderRadius: '10px', overflow: 'hidden', border: '2px solid #0f172a', marginBottom: '16px' }}>
+                <img 
+                  src={`https://mt1.google.com/vt/lyrs=y&x=${Math.floor((parseFloat(blockToPrint.lng) + 180) / 360 * Math.pow(2, 17))}&y=${Math.floor((1 - Math.log(Math.tan(parseFloat(blockToPrint.lat) * Math.PI / 180) + 1 / Math.cos(parseFloat(blockToPrint.lat) * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, 17))}&z=17`} 
+                  alt="Block Map Snapshot" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '24px', height: '24px', background: '#ea4335', border: '3px solid #fff', borderRadius: '50%', boxShadow: '0 0 12px rgba(0,0,0,0.5)' }}></div>
+                <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.9)', padding: '6px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800, fontFamily: 'sans-serif' }}>🧭 NORTH ⬆</div>
+                <div style={{ position: 'absolute', bottom: '12px', left: '12px', background: 'rgba(255,255,255,0.9)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'monospace' }}>Scale: 1:2000 | WGS84</div>
+              </div>
+
+              {/* Signature Footer */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '24px', paddingTop: '16px', borderTop: '1px dashed #94a3b8', fontFamily: 'sans-serif', fontSize: '0.8rem' }}>
+                <div>
+                  <p style={{ margin: 0 }}><b>Prepared By:</b> Census Enumerator Officer</p>
+                  <p style={{ margin: '4px 0 0 0', color: '#64748b' }}>Date: {new Date().toLocaleDateString()}</p>
+                </div>
+                <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #0f172a', paddingTop: '4px' }}>
+                  <b>Supervisor Signature</b>
+                </div>
               </div>
             </div>
           </div>
