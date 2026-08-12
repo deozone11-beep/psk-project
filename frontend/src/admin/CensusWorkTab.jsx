@@ -489,15 +489,6 @@ export default function CensusWorkTab({ creds }) {
               const pop = props.population || 0;
               const landmark = props.landmark || props.name_vt || 'Chennai Ward';
 
-              // Hover Tooltip (MouseOver details readout matching user request)
-              layer.bindTooltip(`
-                <div style="font-family:sans-serif; padding:2px 4px;">
-                  <b style="color:#60a5fa; font-size:0.85rem;">HLB Block #${blockId}</b><br/>
-                  <span style="font-size:0.75rem; color:#cbd5e1;">Ward ${wardNo} | Zone ${zNo}</span><br/>
-                  <span style="font-size:0.75rem; color:#94a3b8;">Bldgs: ${buil} | Pop: ${pop}</span>
-                </div>
-              `, { sticky: true, direction: 'top', className: 'gdbHoverTooltip' });
-
               layer.bindPopup(`
                 <div style="font-family:sans-serif; padding:6px; min-width:190px;">
                   <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #1a73e8; padding-bottom:4px; margin-bottom:6px;">
