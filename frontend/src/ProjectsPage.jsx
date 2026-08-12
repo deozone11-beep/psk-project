@@ -200,7 +200,7 @@ export default function ProjectsPage() {
     };
   });
 
-  const allProjects = formattedDbProjects.length > 0 ? formattedDbProjects : PROJECTS_DATA;
+  const allProjects = formattedDbProjects;
 
   const filteredProjects = allProjects.filter((item) => {
     const matchesFilter = 

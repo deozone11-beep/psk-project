@@ -27,6 +27,18 @@ public class CensusBlock {
     private Integer totalHouseholds;
     private String status; // "PENDING_UPLOAD", "PDF_UPLOADED", "COMPLETED"
 
+    // GCC Building Census Fields (from GDB import)
+    private Integer buildingCount;
+    private Integer commercialCount;
+    private Double totalAreaSqft;
+    private Integer matchedCount;
+    private String corporationName;
+    private Double lat;  // Ward centroid latitude
+    private Double lng;  // Ward centroid longitude
+
+    @Column(columnDefinition = "TEXT")
+    private String areaNames; // JSON array of area names
+
     private String pdfUrl;
     private String pdfFileName;
 
@@ -116,6 +128,30 @@ public class CensusBlock {
 
     public String getMapDataJson() { return mapDataJson; }
     public void setMapDataJson(String mapDataJson) { this.mapDataJson = mapDataJson; }
+
+    public Integer getBuildingCount() { return buildingCount; }
+    public void setBuildingCount(Integer buildingCount) { this.buildingCount = buildingCount; }
+
+    public Integer getCommercialCount() { return commercialCount; }
+    public void setCommercialCount(Integer commercialCount) { this.commercialCount = commercialCount; }
+
+    public Double getTotalAreaSqft() { return totalAreaSqft; }
+    public void setTotalAreaSqft(Double totalAreaSqft) { this.totalAreaSqft = totalAreaSqft; }
+
+    public Integer getMatchedCount() { return matchedCount; }
+    public void setMatchedCount(Integer matchedCount) { this.matchedCount = matchedCount; }
+
+    public String getCorporationName() { return corporationName; }
+    public void setCorporationName(String corporationName) { this.corporationName = corporationName; }
+
+    public String getAreaNames() { return areaNames; }
+    public void setAreaNames(String areaNames) { this.areaNames = areaNames; }
+
+    public Double getLat() { return lat; }
+    public void setLat(Double lat) { this.lat = lat; }
+
+    public Double getLng() { return lng; }
+    public void setLng(Double lng) { this.lng = lng; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

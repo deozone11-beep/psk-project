@@ -2750,8 +2750,12 @@
 
 /* ===== HLB CREATOR WEB MAP PORTAL STYLES (EXACT MATCH FOR SCREENSHOT) ===== */
 .hlbApplicationShell {
-  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
   height: 100vh;
+  z-index: 99999;
   display: flex;
   flex-direction: column;
   background: #f8fafc;
@@ -3075,18 +3079,27 @@
 }
 
 .hlbBlockMapBadge {
-  color: #1d4ed8;
-  font-size: 0.92rem;
+  color: #4c1d95;
+  font-size: 1.05rem;
   font-weight: 900;
-  text-shadow: 0 0 3px #ffffff, 0 0 5px #ffffff, 0 0 8px #ffffff;
-  letter-spacing: 0.5px;
+  text-shadow: 0 0 3px #ffffff, 0 0 6px #ffffff, 0 0 10px #ffffff;
+  letter-spacing: 0.8px;
   text-align: center;
   transition: all 0.2s;
+  line-height: 1.1;
+}
+
+.hlbSubTextLabel {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #6b21a8;
+  text-shadow: 0 0 3px #ffffff, 0 0 6px #ffffff;
+  white-space: nowrap;
 }
 
 .hlbBlockMapBadge.selectedHlb {
   color: #dc2626;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   text-shadow: 0 0 4px #ffffff, 0 0 8px #fef08a;
   transform: scale(1.2);
 }
@@ -3100,9 +3113,109 @@
   animation: spin 0.8s linear infinite;
 }
 
-/* ==========================================
-   DARK THEME MODAL OVERRIDES FOR ADMIN PANEL
-   ========================================== */
+/* HLB Geo-tagging Right Side Drawer Panel (Exact match for Screenshot 2) */
+.hlbGeoTaggingDrawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.3);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid #cbd5e1;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow-y: auto;
+}
+
+.hlbGeoHeader {
+  background: #4c1d95;
+  color: #ffffff;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.hlbGeoHeader button {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.hlbGeoBody {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hlbBackBtn {
+  align-self: flex-start;
+  background: #1e293b;
+  color: #ffffff;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hlbSectionTitle {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-top: 4px;
+}
+
+.hlbFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hlbFieldGroup label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.hlbFieldGroup input, .hlbFieldGroup select, .hlbFieldGroup textarea {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  outline: none;
+}
+
+.hlbFieldGroup input:focus, .hlbFieldGroup select:focus, .hlbFieldGroup textarea:focus {
+  border-color: #4c1d95;
+  background: #ffffff;
+}
+
+.hlbReadonlyBox {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+}
 body .modalContent {
   background: #0d1322 !important;
   color: #ffffff !important;
@@ -3165,6 +3278,277 @@ body .modalContent .modalClose:hover {
   color: #ffffff !important;
   background: rgba(226, 38, 43, 0.3) !important;
 }
+
+/* ===== REAL GOOGLE MAPS PORTAL & FLOATING CONTROLS STYLES ===== */
+.googleMapsSearchBar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  padding: 6px 12px;
+  border-radius: 28px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+  border: 1px solid #dadce0;
+  max-width: 480px;
+  width: calc(100% - 32px);
+}
+
+.googleMapsSearchInput {
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  color: #202124;
+  width: 100%;
+  background: transparent;
+  padding: 6px 4px;
+}
+
+.googleMapsSearchBtn {
+  background: #1a73e8;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.googleMapsSearchBtn:hover {
+  background: #1557b0;
+  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.35);
+}
+
+.googleMapTypeSelector {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 4px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  border: 1px solid #dadce0;
+}
+
+.googleTypeBtn {
+  background: transparent;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #5f6368;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.googleTypeBtn:hover {
+  color: #1a73e8;
+  background: rgba(26, 115, 232, 0.08);
+}
+
+.googleTypeBtn.active {
+  background: #1a73e8;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.4);
+}
+
+.googleMapsFloatingTools {
+  position: absolute;
+  bottom: 30px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.googleToolCircleBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  color: #3c4043;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  transition: all 0.2s ease;
+}
+
+.googleToolCircleBtn:hover {
+  background: #f8f9fa;
+  color: #1a73e8;
+  transform: scale(1.06);
+}
+
+/* Settings Modal */
+.googleSettingsOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.googleSettingsDialog {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 520px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  color: #202124;
+}
+
+/* Google Maps Autocomplete Search Suggestions Dropdown */
+.googleSearchSuggestionsDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border: 1px solid #dadce0;
+  overflow: hidden;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 1005;
+}
+
+.googleSearchSuggestionItem {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f3f4;
+  transition: background 0.15s ease;
+}
+
+.googleSearchSuggestionItem:last-child {
+  border-bottom: none;
+}
+
+.googleSearchSuggestionItem:hover {
+  background: #f8f9fa;
+}
+
+.googleSearchSuggestionTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #202124;
+  margin: 0;
+}
+
+.googleSearchSuggestionSubtitle {
+  font-size: 0.78rem;
+  color: #5f6368;
+  margin: 2px 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Google Place Details Card (Bottom Left) */
+.googlePlaceDetailsCard {
+  position: absolute;
+  bottom: 30px;
+  left: 16px;
+  z-index: 1000;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28);
+  border: 1px solid #dadce0;
+  max-width: 420px;
+  width: calc(100% - 32px);
+  animation: slideUpPlaceCard 0.3s ease-out;
+}
+
+@keyframes slideUpPlaceCard {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Floating Census Zone -> Ward -> HLB Block Filter Bar */
+.googleFilterBarPill {
+  position: absolute;
+  top: 76px;
+  left: 16px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 8px 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+  border: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.googleFilterSelect {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.googleFilterSelect:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.googleFilterResetBtn {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s ease;
+}
+
+.googleFilterResetBtn:hover {
+  background: #fecaca;
+}
+
 
 
 

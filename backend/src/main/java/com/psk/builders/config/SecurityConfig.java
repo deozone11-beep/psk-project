@@ -88,7 +88,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/forgot-password", "/api/auth/temp-login").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/services/**", "/api/projects/**", "/api/testimonials/**", "/api/settings").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/services/**", "/api/projects/**", "/api/testimonials/**", "/api/settings", "/api/admin/census/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/enquiries", "/api/testimonials").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ENGINEER")

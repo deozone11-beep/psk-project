@@ -83,11 +83,8 @@ public class DataSeeder {
                     new Project(null, "Skyline Duplex Villa", "Thillai Nagar, Trichy", "Ongoing", "Villa", "3,600 Sq.Ft.", "10 Months", "Anand Kumar", "2025", "Duplex villa featuring double-height ceiling living hall, modern cantilevered staircase, master bedroom balconies, and exterior wood louvers.", List.of("https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=80", "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"))
                 );
 
-                List<Project> existingList = projects.findAll();
-                for (Project dp : defaultProjects) {
-                    if (existingList.stream().noneMatch(existing -> existing.getTitle().equalsIgnoreCase(dp.getTitle()))) {
-                        projects.save(dp);
-                    }
+                if (projects.count() == 0) {
+                    projects.saveAll(defaultProjects);
                 }
             } catch (Exception ex) { System.err.println("Projects seed error: " + ex.getMessage()); }
 

@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/census")
@@ -23,13 +24,26 @@ public class CensusController {
     public List<CensusBlock> getAllBlocks() {
         List<CensusBlock> blocks = censusBlockRepository.findAllByOrderByCreatedAtDesc();
         if (blocks.isEmpty()) {
-            // Seed 5 initial default cards
             List<CensusBlock> seedBlocks = Arrays.asList(
                 new CensusBlock("TAMIL NADU", "CHENNAI", "MADURAVOYAL", "GREATER CHENNAI", "0144", "0079", 220),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "MADURAVOYAL", "GREATER CHENNAI", "0145", "0080", 215),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "MADURAVOYAL", "GREATER CHENNAI", "0148", "0083", 195),
                 new CensusBlock("TAMIL NADU", "CHENNAI", "MADURAVOYAL", "GREATER CHENNAI", "0152", "0364", 185),
                 new CensusBlock("TAMIL NADU", "CHENNAI", "KOYAMBEDU", "GREATER CHENNAI", "0128", "0112", 190),
                 new CensusBlock("TAMIL NADU", "CHENNAI", "PORUR", "GREATER CHENNAI", "0156", "0045", 210),
-                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0135", "0088", 175)
+                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0135", "0088", 175),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0130", "0130", 245),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0131", "0131", 175),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0132", "0132", 200),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0133", "0133", 195),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0134", "0134", 220),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "ALAPAKKAM", "GREATER CHENNAI", "0215", "0215", 160),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "ALAPAKKAM", "GREATER CHENNAI", "0216", "0216", 180),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "KARAMBAKKAM", "GREATER CHENNAI", "0218", "0218", 170),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "KARAMBAKKAM", "GREATER CHENNAI", "0219", "0219", 205),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0220", "0220", 190),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0221", "0221", 215),
+                new CensusBlock("TAMIL NADU", "CHENNAI", "VIRUGAMBAKKAM", "GREATER CHENNAI", "0222", "0222", 180)
             );
             censusBlockRepository.saveAll(seedBlocks);
             return censusBlockRepository.findAllByOrderByCreatedAtDesc();
@@ -96,5 +110,66 @@ public class CensusController {
 
         CensusBlock saved = censusBlockRepository.save(block);
         return ResponseEntity.ok(saved);
+    }
+
+    // Bulk import from GDB extraction (ward_census_import.json)
+    @PostMapping("/blocks/bulk-import")
+    public ResponseEntity<Map<String, Object>> bulkImport(
+            @RequestBody List<Map<String, Object>> wardData,
+            @RequestParam(value = "clearExisting", defaultValue = "false") boolean clearExisting) {
+
+        if (clearExisting) {
+            censusBlockRepository.deleteAll();
+        }
+
+        List<CensusBlock> toSave = wardData.stream().map(w -> {
+            CensusBlock b = new CensusBlock();
+            b.setStateName(str(w, "stateName"));
+            b.setStateCode(str(w, "stateCode"));
+            b.setDistrictName(str(w, "districtName"));
+            b.setDistrictCode(str(w, "districtCode"));
+            b.setSubDistrictName(str(w, "subDistrictName"));
+            b.setTownVillage(str(w, "townVillage"));
+            b.setWardNo(str(w, "wardNo"));
+            b.setBlockNo(str(w, "blockNo"));
+            b.setStatus(str(w, "status") != null ? str(w, "status") : "PENDING_UPLOAD");
+            b.setDateOfMap(str(w, "dateOfMap") != null ? str(w, "dateOfMap") : "08-07-2026");
+            b.setLastUpdatedDate(str(w, "lastUpdatedDate") != null ? str(w, "lastUpdatedDate") : java.time.LocalDate.now().toString());
+            b.setCorporationName(str(w, "corporationName"));
+
+            if (w.get("totalHouseholds") instanceof Number)
+                b.setTotalHouseholds(((Number) w.get("totalHouseholds")).intValue());
+            if (w.get("buildingCount") instanceof Number)
+                b.setBuildingCount(((Number) w.get("buildingCount")).intValue());
+            if (w.get("commercialCount") instanceof Number)
+                b.setCommercialCount(((Number) w.get("commercialCount")).intValue());
+            if (w.get("totalAreaSqft") instanceof Number)
+                b.setTotalAreaSqft(((Number) w.get("totalAreaSqft")).doubleValue());
+            if (w.get("matchedCount") instanceof Number)
+                b.setMatchedCount(((Number) w.get("matchedCount")).intValue());
+
+            // Store areaNames list as JSON string
+            Object names = w.get("areaNames");
+            if (names instanceof List) {
+                b.setAreaNames(names.toString());
+            }
+            if (w.get("lat") instanceof Number)
+                b.setLat(((Number) w.get("lat")).doubleValue());
+            if (w.get("lng") instanceof Number)
+                b.setLng(((Number) w.get("lng")).doubleValue());
+            return b;
+        }).collect(Collectors.toList());
+
+        List<CensusBlock> saved = censusBlockRepository.saveAll(toSave);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("imported", saved.size());
+        result.put("message", "Successfully imported " + saved.size() + " ward census blocks from GCC GDB data");
+        return ResponseEntity.ok(result);
+    }
+
+    private String str(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v != null ? v.toString() : null;
     }
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogOut, Menu, X, Mail, Save, Image, Users, Calendar, Wallet, Camera, LayoutDashboard, FileText, Layers, Star } from 'lucide-react';
+import { LogOut, Menu, X, Mail, Save, Image, Users, Calendar, Wallet, Camera, LayoutDashboard, FileText, Layers, Star, MapPin } from 'lucide-react';
 import OverviewTab from './OverviewTab.jsx';
 import EnquiriesTab from './EnquiriesTab.jsx';
 import RateTab from './RateTab.jsx';
@@ -12,9 +12,11 @@ import UpdatesTab from './UpdatesTab.jsx';
 import InvoicesTab from './InvoicesTab.jsx';
 import SavedPlansTab from './SavedPlansTab.jsx';
 import TestimonialsTab from './TestimonialsTab.jsx';
+import CensusWorkTab from './CensusWorkTab.jsx';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'census', label: 'Census Work', icon: MapPin },
   { id: 'testimonials', label: 'Client Reviews', icon: Star },
   { id: 'plans', label: 'Customer 2D Plans', icon: Layers },
   { id: 'invoices', label: 'Bills & Invoices', icon: FileText },
@@ -31,7 +33,7 @@ const TABS = [
 export default function Dashboard({ creds, onLogout }) {
   const availableTabs = TABS.filter((t) => {
     if (creds.role === 'ENGINEER') {
-      return ['overview', 'plans', 'invoices', 'enquiries', 'customers', 'updates', 'attendance', 'payments', 'employees'].includes(t.id);
+      return ['overview', 'census', 'plans', 'invoices', 'enquiries', 'customers', 'updates', 'attendance', 'payments', 'employees'].includes(t.id);
     }
     return true;
   });
@@ -91,6 +93,7 @@ export default function Dashboard({ creds, onLogout }) {
           {tab === 'payments' && <PaymentsTab creds={creds} />}
           {tab === 'customers' && <CustomersTab creds={creds} />}
           {tab === 'updates' && <UpdatesTab creds={creds} />}
+          {tab === 'census' && <CensusWorkTab creds={creds} />}
         </div>
         <footer className="adminFooter">
           <span>© 2026 PSK Brothers Builders & Constructions</span>

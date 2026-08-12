@@ -16,7 +16,7 @@ export const INITIAL_TESTIMONIALS = [
 ];
 
 export default function ReviewsPage() {
-  const [testimonials, setTestimonials] = useState(INITIAL_TESTIMONIALS);
+  const [testimonials, setTestimonials] = useState([]);
   const [filterRating, setFilterRating] = useState(0); // 0 = All
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -37,7 +37,7 @@ export default function ReviewsPage() {
     fetch(`${API}/testimonials`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setTestimonials(data);
         }
       })
