@@ -221,13 +221,19 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     return { 'Content-Type':'application/json', ...(t ? { 'Authorization': `Bearer ${t}` } : {}) };
   };
 
-  // Try /admin/census/db2 first (since /admin/census is pre-mapped), fallback to /admin/db2
+  // Try /admin/db2 first (Db2Controller), fallback to /admin/census/db2
   async function db2Fetch(endpoint) {
-    let res = await fetch(`${API_BASE}/admin/census/db2${endpoint}`, { headers: hdr() });
-    if (!res.ok && res.status === 404) {
-      res = await fetch(`${API_BASE}/admin/db2${endpoint}`, { headers: hdr() });
+    try {
+      let res = await fetch(`${API_BASE}/admin/db2${endpoint}`, { headers: hdr() });
+      if (!res.ok) {
+        let res2 = await fetch(`${API_BASE}/admin/census/db2${endpoint}`, { headers: hdr() });
+        if (res2.ok) return res2;
+      }
+      return res;
+    } catch (e) {
+      console.warn('DB2 fetch failed:', e);
+      return { ok: false, status: 500, json: async () => ({}) };
     }
-    return res;
   }
 
   async function ping() {

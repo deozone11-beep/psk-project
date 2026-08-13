@@ -183,13 +183,11 @@ public class CensusController {
     private synchronized org.springframework.jdbc.core.JdbcTemplate getDb2() {
         if (db2 != null) return db2;
         try {
-            org.springframework.boot.jdbc.DataSourceBuilder<?> builder = org.springframework.boot.jdbc.DataSourceBuilder.create();
-            javax.sql.DataSource ds = builder
-                    .driverClassName("org.postgresql.Driver")
-                    .url("jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?prepareThreshold=0&preferQueryMode=simple&sslmode=require")
-                    .username("postgres.bvdkmygolyygkouwikto")
-                    .password("Preethakumar@9898")
-                    .build();
+            org.springframework.jdbc.datasource.DriverManagerDataSource ds = new org.springframework.jdbc.datasource.DriverManagerDataSource();
+            ds.setDriverClassName("org.postgresql.Driver");
+            ds.setUrl("jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?prepareThreshold=0&preferQueryMode=simple&sslmode=require");
+            ds.setUsername("postgres.bvdkmygolyygkouwikto");
+            ds.setPassword("Preethakumar@9898");
             db2 = new org.springframework.jdbc.core.JdbcTemplate(ds);
         } catch (Exception e) {
             e.printStackTrace();
