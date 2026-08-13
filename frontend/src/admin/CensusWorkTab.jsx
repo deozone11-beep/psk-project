@@ -9,6 +9,9 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import shp from 'shpjs';
+import CensusModule2 from './CensusModule2';
+import CensusModule3Hub from './CensusModule3Hub';
+
 
 const STORAGE_KEY = 'psk_census_blocks_v10';
 
@@ -62,7 +65,62 @@ const INITIAL_BLOCKS = HLB_BLOCK_POLYGONS.map((b, i) => ({
 }));
 
 export default function CensusWorkTab({ creds }) {
-  const [activeModule, setActiveModule] = useState('MODULE_SELECTION');
+  const [activeModule, setActiveModule] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const mod = params.get('module') || params.get('view') || params.get('tab_mod');
+      if (mod === '1' || mod === 'map') return 'MAP_APP';
+      if (mod === '2' || mod === 'module2') return 'MODULE_2';
+      if (mod === '3' || mod === 'module3' || mod === 'hub') return 'MODULE_3_HUB';
+      if (mod === '3_1' || mod === '3_errors' || mod === 'errors') return 'MODULE_3_ERROR_BASE';
+      if (mod === '3_2' || mod === '3_supervisor' || mod === 'supervisor') return 'MODULE_3_SUPERVISOR_BASE';
+      if (mod === '3_3' || mod === '3_custom') return 'MODULE_3_CUSTOM';
+      if (mod === '4' || mod === 'module4' || mod === 'supervisor_report') return 'MODULE_4_SUPERVISOR_HUB';
+    }
+    return 'MODULE_SELECTION';
+  });
+
+  const navigateModule = (modName) => {
+    setActiveModule(modName);
+    if (typeof window !== 'undefined' && window.history) {
+      const url = new URL(window.location.href);
+      if (modName === 'MODULE_SELECTION') {
+        url.searchParams.delete('module');
+        url.searchParams.delete('view');
+        url.searchParams.delete('tab_mod');
+      } else if (modName === 'MAP_APP') {
+        url.searchParams.set('module', '1');
+      } else if (modName === 'MODULE_2') {
+        url.searchParams.set('module', '2');
+      } else if (modName === 'MODULE_3_HUB') {
+        url.searchParams.set('module', '3');
+      } else if (modName === 'MODULE_3_ERROR_BASE') {
+        url.searchParams.set('module', '3_1');
+      } else if (modName === 'MODULE_3_SUPERVISOR_BASE') {
+        url.searchParams.set('module', '3_2');
+      } else if (modName === 'MODULE_3_CUSTOM') {
+        url.searchParams.set('module', '3_3');
+      } else if (modName === 'MODULE_4_SUPERVISOR_HUB') {
+        url.searchParams.set('module', '4');
+      }
+      window.history.pushState({}, '', url.toString());
+    }
+  };
+
+  const wrapFullWidth = (content) => (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      width: '100vw',
+      height: '100vh',
+      zIndex: 99999,
+      background: '#0a0d16',
+      overflowY: 'auto'
+    }}>
+      {content}
+    </div>
+  );
+
   const [blocks, setBlocks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -850,7 +908,7 @@ export default function CensusWorkTab({ creds }) {
           
           {/* CARD 1: CENSUS MAP APPLICATION */}
           <div 
-            onClick={() => setActiveModule('MAP_APP')}
+            onClick={() => navigateModule('MAP_APP')}
             style={{
               background: 'linear-gradient(145deg, rgba(20, 26, 42, 0.95) 0%, rgba(13, 19, 34, 0.98) 100%)',
               border: '1px solid rgba(59, 130, 246, 0.35)',
@@ -944,9 +1002,9 @@ export default function CensusWorkTab({ creds }) {
             </div>
           </div>
 
-          {/* CARD 2: CENSUS WORK MODULE 2 */}
+          {/* CARD 2: CENSUS RECORDS & HLB BLOCK EXPLORER */}
           <div 
-            onClick={() => setActiveModule('MODULE_2')}
+            onClick={() => navigateModule('MODULE_2')}
             style={{
               background: 'linear-gradient(145deg, rgba(28, 22, 44, 0.95) 0%, rgba(18, 14, 32, 0.98) 100%)',
               border: '1px solid rgba(168, 85, 247, 0.35)',
@@ -1006,10 +1064,10 @@ export default function CensusWorkTab({ creds }) {
               </div>
 
               <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
-                Census Work Module 2
+                Census Records &amp; HLB Block Explorer
               </h3>
               <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
-                Secondary Census Work Module. Click to open and tell me what features to configure here.
+                Explore full census house records, multi-tier numerical sorting (HLB Code &amp; Line No), horizontal block cards train filter, and CSV exports.
               </p>
             </div>
 
@@ -1018,7 +1076,7 @@ export default function CensusWorkTab({ creds }) {
               paddingTop: '20px',
               borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               display: 'flex',
-              justify: 'space-between',
+              justifyContent: 'space-between',
               alignItems: 'center'
             }}>
               <span style={{ color: '#c084fc', fontSize: '0.9rem', fontWeight: 700 }}>
@@ -1040,106 +1098,302 @@ export default function CensusWorkTab({ creds }) {
             </div>
           </div>
 
+          {/* CARD 3: CENSUS ERROR ANALYSIS & SUPERVISOR ABSTRACT HUB */}
+          <div 
+            onClick={() => navigateModule('MODULE_3_HUB')}
+            style={{
+              background: 'linear-gradient(145deg, rgba(38, 18, 30, 0.95) 0%, rgba(24, 12, 20, 0.98) 100%)',
+              border: '1px solid rgba(239, 68, 68, 0.38)',
+              borderRadius: '24px',
+              padding: '38px 32px',
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '330px'
+            }}
+            className="censusModuleCard"
+          >
+            <div style={{
+              position: 'absolute',
+              top: '-40px',
+              right: '-40px',
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(239, 68, 68, 0.25) 0%, transparent 70%)',
+              pointerEvents: 'none'
+            }} />
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div style={{
+                  width: '66px',
+                  height: '66px',
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.35) 100%)',
+                  border: '1px solid rgba(239, 68, 68, 0.45)',
+                  color: '#fca5a5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 8px 22px rgba(239, 68, 68, 0.25)'
+                }}>
+                  <AlertCircle size={36} />
+                </div>
+                <span style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  color: '#fca5a5',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <Sparkles size={13} /> Work Module 3
+                </span>
+              </div>
+
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
+                Census Error Analysis &amp; Abstract Hub
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
+                Contains 3 sub-modules: Error Base Report, Supervisor Base Report, and Reserved Custom Report 3.
+              </p>
+            </div>
+
+            <div style={{
+              marginTop: '32px',
+              paddingTop: '20px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span style={{ color: '#fca5a5', fontSize: '0.9rem', fontWeight: 700 }}>
+                Click to Open Error Module 3 →
+              </span>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.25)',
+                border: '1px solid rgba(239, 68, 68, 0.5)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ExternalLink size={18} />
+              </div>
+            </div>
+          </div>
+
+          {/* CARD 4: SUPERVISOR WISE ABSTRACT REPORT HUB */}
+          <div 
+            onClick={() => navigateModule('MODULE_4_SUPERVISOR_HUB')}
+            style={{
+              background: 'linear-gradient(145deg, rgba(20, 26, 42, 0.95) 0%, rgba(13, 19, 34, 0.98) 100%)',
+              border: '1px solid rgba(59, 130, 246, 0.38)',
+              borderRadius: '24px',
+              padding: '38px 32px',
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '330px'
+            }}
+            className="censusModuleCard"
+          >
+            <div style={{
+              position: 'absolute',
+              top: '-40px',
+              right: '-40px',
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)',
+              pointerEvents: 'none'
+            }} />
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div style={{
+                  width: '66px',
+                  height: '66px',
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.35) 100%)',
+                  border: '1px solid rgba(59, 130, 246, 0.45)',
+                  color: '#60a5fa',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 8px 22px rgba(59, 130, 246, 0.25)'
+                }}>
+                  <FileText size={36} />
+                </div>
+                <span style={{
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.4)',
+                  color: '#93c5fd',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <Sparkles size={13} /> Work Module 4
+                </span>
+              </div>
+
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
+                Supervisor Wise Abstract Report Hub
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
+                Hierarchical error abstract reports for 75 Supervisors (3 digits), 450 Enumerators &amp; 470 Allotted HLBs with isolated supervisor printing.
+              </p>
+            </div>
+
+            <div style={{
+              marginTop: '32px',
+              paddingTop: '20px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span style={{ color: '#60a5fa', fontSize: '0.9rem', fontWeight: 700 }}>
+                Open Supervisor Report Module 4 →
+              </span>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'rgba(59, 130, 246, 0.25)',
+                border: '1px solid rgba(59, 130, 246, 0.5)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ExternalLink size={18} />
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     );
   }
 
+  /* WORK MODULE 3 SUB-CARD SELECTION HUB */
+  if (activeModule === 'MODULE_3_HUB') {
+    return <CensusModule3Hub onBack={() => navigateModule('MODULE_SELECTION')} onSelectSubModule={(sub) => navigateModule(sub)} />;
+  }
+
   if (activeModule === 'MODULE_2') {
-    return (
-      <div style={{ padding: '36px 24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-        {/* TOP BAR WITH BACK BUTTON */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+    return wrapFullWidth(<CensusModule2 onBack={() => navigateModule('MODULE_SELECTION')} creds={creds} />);
+  }
+
+  if (activeModule === 'MODULE_3_ERROR_BASE') {
+    return wrapFullWidth(<CensusModule2 onBack={() => navigateModule('MODULE_3_HUB')} creds={creds} initialShowErrors={true} initialShowAbstract={false} moduleTitle="Error Base Report (6 Error Cards)" />);
+  }
+
+  if (activeModule === 'MODULE_3_SUPERVISOR_BASE') {
+    return wrapFullWidth(<CensusModule2 onBack={() => navigateModule('MODULE_3_HUB')} creds={creds} initialShowErrors={false} initialShowAbstract={true} moduleTitle="Supervisor Base Report" />);
+  }
+
+  if (activeModule === 'MODULE_4_SUPERVISOR_HUB') {
+    return wrapFullWidth(<CensusModule2 onBack={() => navigateModule('MODULE_SELECTION')} creds={creds} initialShowErrors={false} initialShowAbstract={true} moduleTitle="Supervisor Wise Abstract Report (Module 4)" />);
+  }
+
+  if (activeModule === 'MODULE_3_CUSTOM') {
+    return wrapFullWidth(
+      <div style={{
+        minHeight: '100vh',
+        background: '#0a0d16',
+        color: '#f8fafc',
+        padding: '30px 40px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button 
-            onClick={() => setActiveModule('MODULE_SELECTION')}
+            onClick={() => navigateModule('MODULE_3_HUB')}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              color: '#ffffff',
-              padding: '9px 20px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#f8fafc',
+              padding: '10px 18px',
               borderRadius: '12px',
-              fontSize: '0.88rem',
               fontWeight: 700,
+              fontSize: '0.88rem',
               cursor: 'pointer'
             }}
           >
-            <ArrowLeft size={16} /> Back to Census Modules
+            <ArrowLeft size={16} /> Back to Module 3 Hub
           </button>
-
-          <span style={{ background: 'rgba(168, 85, 247, 0.15)', border: '1px solid rgba(168, 85, 247, 0.35)', color: '#c084fc', padding: '6px 16px', borderRadius: '20px', fontSize: '0.82rem', fontWeight: 700 }}>
-            Census Work · Module 2
+          
+          <span style={{ fontSize: '0.8rem', color: '#c084fc', fontWeight: 800, background: 'rgba(168, 85, 247, 0.15)', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '6px 14px', borderRadius: 20 }}>
+            Option 3 — Custom Report 3
           </span>
         </div>
 
-        {/* MODULE 2 PLACEHOLDER CONTAINER */}
-        <div style={{
-          background: 'linear-gradient(145deg, rgba(20, 26, 42, 0.95) 0%, rgba(13, 19, 34, 0.98) 100%)',
-          border: '1px dashed rgba(168, 85, 247, 0.45)',
-          borderRadius: '24px',
-          padding: '70px 40px',
-          textAlign: 'center',
-          boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)'
-        }}>
-          <div style={{
-            width: '84px',
-            height: '84px',
-            borderRadius: '24px',
-            background: 'rgba(168, 85, 247, 0.15)',
-            border: '1px solid rgba(168, 85, 247, 0.35)',
-            color: '#c084fc',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 24px auto'
-          }}>
-            <Sparkles size={42} />
+        <div style={{ textAlign: 'center', maxWidth: '650px', margin: '40px auto 0 auto' }}>
+          <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(168, 85, 247, 0.15)', border: '1px solid rgba(168, 85, 247, 0.35)', color: '#c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto' }}>
+            <Sparkles size={32} />
           </div>
-
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
-            Census Work Module 2
+          <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#ffffff', margin: '0 0 12px 0' }}>
+            Custom Report 3 (Reserved)
           </h2>
-          <p style={{ color: '#94a3b8', fontSize: '1.08rem', maxWidth: '580px', margin: '0 auto 28px auto', lineHeight: '1.65' }}>
-            This is Module 2. Tell me what features, tables, forms, or data views you want here, and I will build it for you immediately!
+          <p style={{ color: '#94a3b8', fontSize: '1.02rem', lineHeight: '1.6' }}>
+            This 3rd sub-module is reserved for your upcoming 3rd custom report. As soon as you share the report details &amp; rules, we will immediately populate this page!
           </p>
-
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.35)', padding: '14px 28px', borderRadius: '30px', color: '#e9d5ff', fontSize: '0.92rem', fontWeight: 700 }}>
-            ✨ Ready for your next instructions!
-          </div>
         </div>
       </div>
     );
   }
 
-  // Default: Return original hlbApplicationShell DIRECTLY (Unmodified map layout!)
+  // Default: Return Map Application Shell (Full width)
   return (
     <div className="hlbApplicationShell">
-      {/* TOP NAVBAR HEADER (EXACT MATCH FOR SCREENSHOT) */}
-      <header className="hlbTopNavbar">
-        <button 
-          onClick={() => setActiveModule('MODULE_SELECTION')}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-            border: '1px solid #cbd5e1',
-            color: '#ffffff',
-            padding: '6px 12px',
-            borderRadius: '8px',
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            marginRight: '12px',
-            flexShrink: 0,
-            boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
-          }}
-          title="Back to Census Modules Selection"
-        >
-          <ArrowLeft size={15} /> Back to Modules
-        </button>
+        {/* TOP NAVBAR HEADER */}
+        <header className="hlbTopNavbar">
+          <button 
+            onClick={() => navigateModule('MODULE_SELECTION')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+              border: '1px solid #cbd5e1',
+              color: '#ffffff',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              marginRight: '12px',
+              flexShrink: 0,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+            }}
+            title="Back to Census Modules Selection"
+          >
+            <ArrowLeft size={16} /> Back to Modules
+          </button>
 
         <div className="hlbBrandSection">
           <img src="/logo-icon.png" alt="Census Seal" className="hlbSealIcon" />

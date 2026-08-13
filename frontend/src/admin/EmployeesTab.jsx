@@ -394,8 +394,8 @@ export default function EmployeesTab({ creds }) {
                     </div>
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#cbd5e1' }}>
-                    <Shield size={13} style={{ color: e.loginRole !== 'NONE' ? '#ff6b6b' : '#94a3b8' }} />
-                    <span>Access Level: <b style={{ color: e.loginRole !== 'NONE' ? '#ff6b6b' : '#94a3b8' }}>{e.loginRole || 'NONE'}</b></span>
+                    <Shield size={13} style={{ color: e.loginRole === 'CENSUS_USER' ? '#a855f7' : e.loginRole !== 'NONE' ? '#ff6b6b' : '#94a3b8' }} />
+                    <span>Access Level: <b style={{ color: e.loginRole === 'CENSUS_USER' ? '#a855f7' : e.loginRole !== 'NONE' ? '#ff6b6b' : '#94a3b8' }}>{e.loginRole === 'CENSUS_USER' ? '🗺️ Census Staff' : e.loginRole || 'NONE'}</b></span>
                   </div>
                 </div>
 
@@ -552,6 +552,9 @@ export default function EmployeesTab({ creds }) {
                     style={{ padding: '11px 14px', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '10px', fontSize: '0.88rem', background: '#0f172a', color: '#ffffff' }}
                   >
                     <option value="NONE" style={{ background: '#0f172a' }}>No Login Access (Field Labor / Subordinate Worker)</option>
+                    {creds.role === 'ADMIN' && (
+                      <option value="CENSUS_USER" style={{ background: '#0f172a' }}>🗺️ Census Staff (Census data view only)</option>
+                    )}
                     {creds.role === 'ADMIN' && (
                       <option value="ENGINEER" style={{ background: '#0f172a' }}>Site Engineer (Can track attendance, upload progress photos)</option>
                     )}

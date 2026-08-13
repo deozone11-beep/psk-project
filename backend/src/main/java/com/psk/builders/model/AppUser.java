@@ -39,5 +39,6 @@ public class AppUser {
         this.email = email;
     }
 
-    public enum Role { ADMIN, CUSTOMER, ENGINEER }
+    public enum Role { ADMIN, CUSTOMER, ENGINEER, CENSUS_USER }
+
 }

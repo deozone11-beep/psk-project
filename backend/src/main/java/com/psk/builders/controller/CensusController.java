@@ -172,4 +172,97 @@ public class CensusController {
         Object v = map.get(key);
         return v != null ? v.toString() : null;
     }
+
+    // ------------------------------------------------------------------ //
+    // Secondary Supabase DB2 proxy endpoints under /api/admin/census/db2/
+    // ------------------------------------------------------------------ //
+    @Autowired(required = false)
+    @org.springframework.beans.factory.annotation.Qualifier("db2JdbcTemplate")
+    private org.springframework.jdbc.core.JdbcTemplate db2;
+
+    private synchronized org.springframework.jdbc.core.JdbcTemplate getDb2() {
+        if (db2 != null) return db2;
+        try {
+            org.springframework.boot.jdbc.DataSourceBuilder<?> builder = org.springframework.boot.jdbc.DataSourceBuilder.create();
+            javax.sql.DataSource ds = builder
+                    .driverClassName("org.postgresql.Driver")
+                    .url("jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?prepareThreshold=0&preferQueryMode=simple&sslmode=require")
+                    .username("postgres.bvdkmygolyygkouwikto")
+                    .password("Preethakumar@9898")
+                    .build();
+            db2 = new org.springframework.jdbc.core.JdbcTemplate(ds);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return db2;
+    }
+
+    @GetMapping("/db2/ping")
+    public ResponseEntity<?> pingDb2() {
+        try {
+            org.springframework.jdbc.core.JdbcTemplate jt = getDb2();
+            if (jt == null) return ResponseEntity.ok(Map.of("status", "error", "error", "Could not initialize DB2 connection"));
+            Integer r = jt.queryForObject("SELECT 1", Integer.class);
+            return ResponseEntity.ok(Map.of("status", "ok", "result", r));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("status", "error", "error", e.getMessage() != null ? e.getMessage() : e.toString()));
+        }
+    }
+
+    @GetMapping("/db2/tables")
+    public ResponseEntity<?> listDb2Tables() {
+        try {
+            org.springframework.jdbc.core.JdbcTemplate jt = getDb2();
+            List<String> tables = jt.queryForList(
+                    "SELECT table_name FROM information_schema.tables " +
+                    "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' " +
+                    "ORDER BY table_name",
+                    String.class
+            );
+            return ResponseEntity.ok(Map.of("tables", tables));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/db2/table/{tableName}")
+    public ResponseEntity<?> getDb2TableData(
+            @PathVariable String tableName,
+            @RequestParam(defaultValue = "500") int limit,
+            @RequestParam(defaultValue = "0") int offset
+    ) {
+        if (!tableName.matches("[a-zA-Z0-9_]+")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid table name"));
+        }
+        try {
+            org.springframework.jdbc.core.JdbcTemplate jt = getDb2();
+            String countSql = "SELECT COUNT(*) FROM public.\"" + tableName + "\"";
+            long total = jt.queryForObject(countSql, Long.class);
+
+            String dataSql = "SELECT * FROM public.\"" + tableName + "\" LIMIT ? OFFSET ?";
+            List<Map<String, Object>> rows = jt.queryForList(dataSql, limit, offset);
+
+            List<String> columns;
+            if (!rows.isEmpty()) {
+                columns = new ArrayList<>(rows.get(0).keySet());
+            } else {
+                columns = jt.queryForList(
+                        "SELECT column_name FROM information_schema.columns " +
+                        "WHERE table_schema='public' AND table_name=? ORDER BY ordinal_position",
+                        String.class, tableName
+                );
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "table", tableName,
+                    "total", total,
+                    "limit", limit,
+                    "offset", offset,
+                    "columns", columns,
+                    "rows", rows
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("error", e.getMessage()));
+        }
+    }
 }
