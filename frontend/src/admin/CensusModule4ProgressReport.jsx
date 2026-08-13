@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle } from 'lucide-react';
+import hlbMapping from './hlbMapping.json';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -8,6 +9,8 @@ const API_BASE = import.meta.env.VITE_API_URL ||
 function getHlbBlockNo(codeStr) {
   if (!codeStr) return '0001';
   let s = String(codeStr).trim();
+
+  if (hlbMapping[s]) return hlbMapping[s];
 
   if (s.length >= 19 && /^\d+$/.test(s)) {
     const blkPart = s.substring(15, 19);
