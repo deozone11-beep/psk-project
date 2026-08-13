@@ -11,6 +11,8 @@ import 'leaflet/dist/leaflet.css';
 import shp from 'shpjs';
 import CensusModule2 from './CensusModule2';
 import CensusModule3Hub from './CensusModule3Hub';
+import CensusModule3ErrorAbstract from './CensusModule3ErrorAbstract';
+import CensusModule4ProgressReport from './CensusModule4ProgressReport';
 
 
 const STORAGE_KEY = 'psk_census_blocks_v10';
@@ -1256,10 +1258,10 @@ export default function CensusWorkTab({ creds }) {
               </div>
 
               <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
-                Supervisor Wise Abstract Report Hub
+                Census Progress Report (Supervisor Base)
               </h3>
               <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
-                Hierarchical error abstract reports for 75 Supervisors (3 digits), 450 Enumerators &amp; 470 Allotted HLBs with isolated supervisor printing.
+                Supervisor-wise overall progress tracking report displaying Expected Houses, Census Households, Supervisor Verification, Total Population &amp; Work Status for 75 Supervisors, 450 Enumerators &amp; 470 HLBs.
               </p>
             </div>
 
@@ -1272,7 +1274,7 @@ export default function CensusWorkTab({ creds }) {
               alignItems: 'center'
             }}>
               <span style={{ color: '#60a5fa', fontSize: '0.9rem', fontWeight: 700 }}>
-                Open Supervisor Report Module 4 →
+                Open Census Progress Report Module 4 →
               </span>
               <div style={{
                 width: '40px',
@@ -1305,15 +1307,15 @@ export default function CensusWorkTab({ creds }) {
   }
 
   if (activeModule === 'MODULE_3_ERROR_BASE') {
-    return wrapFullWidth(<CensusModule2 onBack={() => navigateModule('MODULE_3_HUB')} creds={creds} initialShowErrors={true} initialShowAbstract={false} moduleTitle="Error Base Report (6 Error Cards)" />);
+    return wrapFullWidth(<CensusModule2 onBack={() => navigateModule('MODULE_3_HUB')} creds={creds} initialShowErrors={true} initialShowAbstract={false} reportMode="ERROR_BASE" moduleTitle="Module 3 — Error Abstract Report (6 Error Cards)" />);
   }
 
   if (activeModule === 'MODULE_3_SUPERVISOR_BASE') {
-    return wrapFullWidth(<CensusModule2 onBack={() => navigateModule('MODULE_3_HUB')} creds={creds} initialShowErrors={false} initialShowAbstract={true} moduleTitle="Supervisor Base Report" />);
+    return wrapFullWidth(<CensusModule3ErrorAbstract onBack={() => navigateModule('MODULE_3_HUB')} creds={creds} />);
   }
 
   if (activeModule === 'MODULE_4_SUPERVISOR_HUB') {
-    return wrapFullWidth(<CensusModule2 onBack={() => navigateModule('MODULE_SELECTION')} creds={creds} initialShowErrors={false} initialShowAbstract={true} moduleTitle="Supervisor Wise Abstract Report (Module 4)" />);
+    return wrapFullWidth(<CensusModule4ProgressReport onBack={() => navigateModule('MODULE_SELECTION')} creds={creds} />);
   }
 
   if (activeModule === 'MODULE_3_CUSTOM') {
