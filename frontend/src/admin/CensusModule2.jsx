@@ -485,14 +485,20 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       .map(k => String(k || '').trim().toLowerCase())
       .filter(Boolean);
 
-    // Exclusion check: If row contains ANY excludeKeyword, it is a VALID record (NOT an error)!
-    const allVals = Object.values(r).map(v => String(v ?? '').toLowerCase());
+    // Exclusion check: Check excludeKeywords against column values OTHER than the ones matching positive search keywords
     const exList = (Array.isArray(errCard.excludeKeywords) ? errCard.excludeKeywords : [])
       .map(k => String(k || '').trim().toLowerCase())
       .filter(Boolean);
 
     if (exList.length > 0) {
-      const hasExclusion = exList.some(exKw => allVals.some(val => val.includes(exKw)));
+      const positiveKws = [...enList, ...taList].map(k => String(k || '').trim().toLowerCase()).filter(Boolean);
+
+      // Exclude values that match the positive search keyword itself so it doesn't self-exclude
+      const nonPositiveVals = Object.values(r)
+        .map(v => String(v ?? '').toLowerCase())
+        .filter(val => !positiveKws.some(pKw => pKw.length > 5 && val.includes(pKw)));
+
+      const hasExclusion = exList.some(exKw => nonPositiveVals.some(val => val.includes(exKw)));
       if (hasExclusion) return false;
     }
 
