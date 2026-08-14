@@ -1196,7 +1196,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
         </div>
 
         <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-          {(tables.length >= 1) && (
+          {(!creds || !creds.role || creds.role === 'ADMIN' || creds.role === 'OWNER') && (tables.length >= 1) && (
             <select value={table || 'hlb_records'} onChange={e => { setTable(e.target.value); fetchData(e.target.value); setHlbView(false); setHlb(null); setHlbCardSearch(''); }}
               style={{ background:'rgba(168, 85, 247, 0.25)', border:'1.5px solid #c084fc', color:'#ffffff', fontWeight:800, padding:'6px 12px', borderRadius:8, fontSize:'0.78rem', cursor:'pointer', outline:'none' }}>
               {(tables.length > 0 ? tables : ['hlb_records', 'charge_wise_report', 'hlb_allotted']).map(t => <option key={t} value={t} style={{ background:'#1b182b', color:'#ffffff' }}>{t}</option>)}
