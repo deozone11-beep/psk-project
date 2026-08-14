@@ -205,7 +205,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   const [sortD, setSortD]       = useState('asc');
   const [sel, setSel]           = useState(new Set());
   const [page, setPage]         = useState(0);
-  const [pageSize, setPageSize] = useState(100);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => { ping(); }, []);
 
@@ -468,7 +468,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   const errorFilteredRows = useMemo(() => {
     if (selectedErrorIds.size === 0) {
       if (initialShowErrors) return [];
-      return rows.filter(r => !isRecordDeleted(r));
+      return rows;
     }
     return rows.filter(r => {
       if (isRecordDeleted(r)) return false;
@@ -485,7 +485,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
   const src = useMemo(() => {
     if (hlbView) {
-      if (selectedErrorIds.size === 0) return hlbRows.filter(r => !isRecordDeleted(r));
+      if (selectedErrorIds.size === 0) return hlbRows;
       return hlbRows.filter(r => {
         if (isRecordDeleted(r)) return false;
         const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
