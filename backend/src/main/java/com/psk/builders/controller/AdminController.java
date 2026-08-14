@@ -365,10 +365,19 @@ public class AdminController {
     }
 
     @DeleteMapping("/employees/{id}")
+    @org.springframework.transaction.annotation.Transactional
     ResponseEntity<?> deleteEmployee(@PathVariable Long id) {
         return employees.findById(id).map(e -> {
             if (e.getUsername() != null) {
                 users.findByUsername(e.getUsername()).ifPresent(users::delete);
+            }
+            List<Attendance> attList = attendance.findByEmployee_IdOrderByDateDesc(id);
+            if (attList != null && !attList.isEmpty()) {
+                attendance.deleteAll(attList);
+            }
+            List<Payment> payList = payments.findByEmployee_IdOrderByDateDesc(id);
+            if (payList != null && !payList.isEmpty()) {
+                payments.deleteAll(payList);
             }
             employees.delete(e);
             return ResponseEntity.noContent().build();
