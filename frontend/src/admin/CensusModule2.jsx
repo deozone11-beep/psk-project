@@ -460,7 +460,22 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
   const recordMatchesErrorCard = useCallback((r, errCard) => {
     if (!r || isRecordDeleted(r)) return false;
-    const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
+
+    // Determine target values to search in
+    let vals = [];
+    if (errCard.targetColumn && errCard.targetColumn !== 'all') {
+      const colDef = COLS.find(c => c.k === errCard.targetColumn || c.alt === errCard.targetColumn);
+      const k1 = errCard.targetColumn;
+      const k2 = colDef?.alt || '';
+      const v1 = String(r[k1] ?? '');
+      const v2 = k2 ? String(r[k2] ?? '') : '';
+      vals = [v1.toLowerCase(), v2.toLowerCase()].filter(Boolean);
+    } else {
+      // Default: Search across all column values
+      vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
+    }
+
+    if (vals.length === 0) return false;
 
     const enList = (Array.isArray(errCard.enKeywords) ? errCard.enKeywords : [errCard.enText || ''])
       .map(k => String(k || '').trim().toLowerCase())
@@ -2373,6 +2388,39 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                     />
                     <span><strong>Combined Match All Keywords (AND):</strong> ஒரே வரியில் கொடுக்கப்பட்ட அனைத்து வார்த்தைகளும் இருக்க வேண்டும் (Multi-Column)</span>
                   </label>
+                </div>
+              </div>
+
+              {/* Target Table Column Selection */}
+              <div>
+                <label style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 900, display: 'block', marginBottom: 4 }}>
+                  Target Table Column (தேட வேண்டிய குறிப்பிட்ட Column)
+                </label>
+                <select
+                  value={editingErrCard.targetColumn || 'all'}
+                  onChange={e => setEditingErrCard(prev => ({ ...prev, targetColumn: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(56,189,248,0.4)',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    color: '#ffffff',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="all" style={{ background: '#1b182b', color: '#fff' }}>⚡ Search All Columns (அனைத்து Column-களிலும் தேடு)</option>
+                  {COLS.map(c => (
+                    <option key={c.k} value={c.k} style={{ background: '#1b182b', color: '#fff' }}>
+                      🎯 {c.h} ({c.k})
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '0.64rem', color: '#94a3b8', marginTop: 3 }}>
+                  * குறிப்பிட்ட Column-ஐத் தேர்ந்தெடுத்தால் அந்த Column-ல் மட்டுமே தேடப்படும் (எ.கா: Waste Water).
                 </div>
               </div>
 
