@@ -294,13 +294,17 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
 
       const houseVal = r.census_house_num ?? r.censusHouseNum ?? r.building_number ?? r.buildingNumber;
 
+      const seIdVal = String(r.self_enumeration_id ?? r.selfEnumerationId ?? r.se_id ?? r.self_enum_id ?? r.total_se_id_used ?? '').trim();
+      const hasSeId = seIdVal && seIdVal !== 'null' && seIdVal !== 'undefined' && seIdVal !== 'N/A' && seIdVal !== '0' && seIdVal !== '-';
+
       keys.forEach(k => {
         if (!map.has(k)) {
           map.set(k, {
             totalRows: 0,
             housesSet: new Set(),
             verifiedCount: 0,
-            totalPop: 0
+            totalPop: 0,
+            seIdCount: 0
           });
         }
         const item = map.get(k);
@@ -308,6 +312,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         if (houseVal != null && houseVal !== '') item.housesSet.add(String(houseVal));
         if (isVer) item.verifiedCount++;
         item.totalPop += popVal;
+        if (hasSeId) item.seIdCount++;
       });
     });
 
@@ -329,13 +334,14 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         const hh = parseInt(c.total_households || c.total_census_households || c.census_households || 0);
         const ver = parseInt(c.total_household_verified_by_supervisor || c.verified_by_supervisor || c.verified_households || 0);
         const pop = parseInt(c.total_population || c.population || c.tot_population || 0);
+        const seUsed = parseInt(c.total_se_id_used || c.total_se_used || c.se_id_used || c.total_self_enum || c.se_used || 0);
 
         const stVal = String(c.status ?? c.completed ?? c.work_status ?? c.is_completed ?? '').trim().toLowerCase();
         const isComp = stVal === '1' || stVal === 'completed' || stVal === 'true';
 
-        chargeMetricsMap.set(blkKey, { exp, houses, hh, ver, pop, isComp });
-        chargeMetricsMap.set(String(parseInt(blkKey, 10)), { exp, houses, hh, ver, pop, isComp });
-        chargeMetricsMap.set(blkKey.padStart(4, '0'), { exp, houses, hh, ver, pop, isComp });
+        chargeMetricsMap.set(blkKey, { exp, houses, hh, ver, pop, isComp, seUsed });
+        chargeMetricsMap.set(String(parseInt(blkKey, 10)), { exp, houses, hh, ver, pop, isComp, seUsed });
+        chargeMetricsMap.set(blkKey.padStart(4, '0'), { exp, houses, hh, ver, pop, isComp, seUsed });
       });
     }
 
@@ -396,6 +402,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           let popCount = 0;
           let expHouses = 0;
           let isComp = false;
+          let seIdUsed = 0;
 
           if (liveData && liveData.totalRows > 0) {
             hhCount = liveData.totalRows;
@@ -404,6 +411,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
             popCount = liveData.totalPop > 0 ? liveData.totalPop : hhCount * 4;
             expHouses = (cData && cData.exp > 0) ? cData.exp : (parseInt(a?.total_expected_census_houses || 0) || Math.max(housesCount, hhCount));
             isComp = verCount >= hhCount && hhCount > 0;
+            seIdUsed = liveData.seIdCount;
           } else if (cData && (cData.hh > 0 || cData.exp > 0)) {
             expHouses = cData.exp;
             housesCount = cData.houses;
@@ -411,6 +419,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
             verCount = cData.ver;
             popCount = cData.pop;
             isComp = cData.isComp;
+            seIdUsed = cData.seUsed || 0;
           } else if (a) {
             expHouses = parseInt(a.total_expected_census_houses || 0);
             housesCount = parseInt(a.total_census_houses || 0);
@@ -419,6 +428,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
             popCount = parseInt(a.total_population || 0);
             const stVal = String(a.status ?? a.completed ?? '').toLowerCase();
             isComp = stVal === '1' || stVal === 'completed' || stVal === 'true';
+            seIdUsed = parseInt(a.total_se_id_used || a.total_se_used || a.se_id_used || 0);
           }
 
           return {
@@ -430,6 +440,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
             censusHouses: housesCount,
             households: hhCount,
             verifiedBySup: verCount,
+            seIdUsed: seIdUsed,
             totalPopulation: popCount,
             errorCount: errCount,
             isCompleted: isComp,
@@ -598,6 +609,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                   <th>Total Number of Census Houses</th>
                   <th>Total Number of Census Households</th>
                   <th>Households Verified By Supervisor</th>
+                  <th>Total SE ID Used</th>
                   <th>Total Population</th>
                   <th>No. of Errors</th>
                   <th>Status</th>
@@ -616,6 +628,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                     <td style="font-weight:700;">${e.censusHouses}</td>
                     <td style="font-weight:800;">${e.households}</td>
                     <td style="font-weight:800; color:#0284c7;">${e.verifiedBySup}</td>
+                    <td style="font-weight:800; color:#7c3aed;">${e.seIdUsed || 0}</td>
                     <td style="font-weight:800; color:#15803d;">${e.totalPopulation}</td>
                     <td>
                       <span class="err-badge ${e.errorCount > 0 ? 'has-err' : 'no-err'}">
@@ -639,6 +652,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                   <td style="font-weight:800;">${c.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0)}</td>
                   <td style="font-weight:900;">${c.enumerators.reduce((s, e) => s + (e.households || 0), 0)}</td>
                   <td style="font-weight:900; color:#0284c7;">${c.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0)}</td>
+                  <td style="font-weight:900; color:#7c3aed;">${c.enumerators.reduce((s, e) => s + (e.seIdUsed || 0), 0)}</td>
                   <td style="font-weight:900; color:#15803d;">${c.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0)}</td>
                   <td>
                     <span class="err-badge ${c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0) > 0 ? 'has-err' : 'no-err'}">
@@ -912,6 +926,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Total Number of Census Houses</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Total Number of Census Households</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Households Verified By Supervisor</th>
+                      <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 130, lineHeight: 1.3 }}>Total SE ID Used</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 95 }}>Total Population</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>No. of Errors</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 110 }}>Status</th>
@@ -941,6 +956,9 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'center', color: '#38bdf8', fontWeight: 800 }}>
                           {enumItem.verifiedBySup.toLocaleString()}
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#c084fc', fontWeight: 800 }}>
+                          {(enumItem.seIdUsed || 0).toLocaleString()}
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'center', color: '#a7f3d0', fontWeight: 800 }}>
                           {enumItem.totalPopulation.toLocaleString()}
@@ -999,6 +1017,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                       const sumCen = circle.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0);
                       const sumHH  = circle.enumerators.reduce((s, e) => s + (e.households || 0), 0);
                       const sumVer = circle.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0);
+                      const sumSe  = circle.enumerators.reduce((s, e) => s + (e.seIdUsed || 0), 0);
                       const sumPop = circle.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0);
                       const sumErr = circle.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
                       const sumComp = circle.enumerators.filter(e => e.isCompleted).length;
@@ -1023,6 +1042,9 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center', color: '#38bdf8', fontSize: '0.86rem', fontWeight: 900 }}>
                             {sumVer.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#c084fc', fontSize: '0.86rem', fontWeight: 900 }}>
+                            {sumSe.toLocaleString()}
                           </td>
                           <td style={{ padding: '10px 12px', textAlign: 'center', color: '#4ade80', fontSize: '0.86rem', fontWeight: 900 }}>
                             {sumPop.toLocaleString()}
