@@ -516,7 +516,8 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
     // Exclusion check: If row contains ANY excludeKeyword in any cell OTHER than the kitchen connection cell, it is VALID (NOT an error)!
     const exList = (Array.isArray(errCard.excludeKeywords) ? errCard.excludeKeywords : [])
-      .map(k => String(k || '').trim().toLowerCase())
+      .flatMap(k => String(k || '').split(/[\|,]/))
+      .map(k => k.trim().toLowerCase())
       .filter(Boolean);
 
     if (exList.length > 0) {
@@ -2613,7 +2614,10 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                     if (err.id === editingErrCard.id) {
                       const cleanEn = (editingErrCard.enKeywords || []).filter(k => k.trim().length > 0);
                       const cleanTa = (editingErrCard.taKeywords || []).filter(k => k.trim().length > 0);
-                      const cleanEx = (editingErrCard.excludeKeywords || []).filter(k => k.trim().length > 0);
+                      const cleanEx = (editingErrCard.excludeKeywords || [])
+                        .flatMap(k => String(k || '').split(/[\|,]/))
+                        .map(k => k.trim())
+                        .filter(Boolean);
                       return {
                         ...editingErrCard,
                         enKeywords: cleanEn.length > 0 ? cleanEn : [editingErrCard.name || ''],
