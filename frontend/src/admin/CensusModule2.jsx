@@ -84,24 +84,12 @@ const DEFAULT_ERRORS = [
     id: 'err3',
     name: 'LPG Kitchen Fuel Mismatch',
     nameTa: 'LPG சமையலறை முரண்பாடு',
-    matchMode: 'AND',
-    targetColumn: 'all',
-    enKeywords: [
-      'Cooking in kitchen: Has LPG/ PNG Connection',
-      'Firewood | Kerosene | Coal | Charcoal | Lignite | Crop residue | Cowdung cake'
-    ],
-    taKeywords: [
-      'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
-      'விறகு | நிலக்கரி | பழுப்பு நிலக்கரி | எரித்த கரி | மண்ணெண்ணை | பயிர் கழிவு | சாணம்'
-    ],
-    excludeKeywords: [
-      'lpg/ png',
-      'electricity',
-      'biogas',
-      'சமையல் எரிவாயு',
-      'மின்சாரம்',
-      'பயோகேஸ்'
-    ],
+    col1Name: 'avail_kitchen_lpgname',
+    col1EnText: 'Cooking in kitchen: Has LPG/ PNG Connection',
+    col1TaText: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
+    col2Name: 'cooking_fuel_name',
+    col2EnText: 'Firewood, Kerosene, Coal, Charcoal, Lignite, Crop residue, Cowdung cake',
+    col2TaText: 'விறகு, மண்ணெண்ணை, நிலக்கரி, பழுப்பு நிலக்கரி, எரித்த கரி, பயிர் கழிவு, சாணம்',
     enText: 'Cooking in kitchen: Has LPG/ PNG Connection',
     taText: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
     color: '#eab308',
@@ -451,11 +439,14 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
               const merged = parsed.map(err => {
                 if (err.id === 'err3') {
                   return {
+                    ...defaultErr3,
                     ...err,
-                    matchMode: 'AND',
-                    enKeywords: defaultErr3.enKeywords,
-                    taKeywords: defaultErr3.taKeywords,
-                    excludeKeywords: defaultErr3.excludeKeywords
+                    col1Name: err.col1Name || defaultErr3.col1Name,
+                    col1EnText: err.col1EnText || defaultErr3.col1EnText,
+                    col1TaText: err.col1TaText || defaultErr3.col1TaText,
+                    col2Name: err.col2Name || defaultErr3.col2Name,
+                    col2EnText: err.col2EnText || defaultErr3.col2EnText,
+                    col2TaText: err.col2TaText || defaultErr3.col2TaText,
                   };
                 }
                 return err;
@@ -490,7 +481,52 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   const recordMatchesErrorCard = useCallback((r, errCard) => {
     if (!r || isRecordDeleted(r)) return false;
 
-    // Determine target values to search in
+    // Helper: Get text value for a specific column key in row r
+    const getColText = (colKey) => {
+      if (!colKey || colKey === 'all') {
+        return Object.values(r).map(v => String(v ?? '').toLowerCase()).join(' ');
+      }
+      const colDef = COLS.find(c => c.k === colKey || c.alt === colKey);
+      const k1 = colKey;
+      const k2 = colDef?.alt || '';
+      const v1 = String(r[k1] ?? '');
+      const v2 = k2 ? String(r[k2] ?? '') : '';
+      return (v1 + ' ' + v2).toLowerCase();
+    };
+
+    // Helper: Check if column text matches keywords (supports comma or pipe OR options)
+    const checkMatch = (text, kwInput) => {
+      if (!kwInput) return true;
+      const arr = Array.isArray(kwInput) ? kwInput : [kwInput];
+      const opts = arr
+        .flatMap(k => String(k || '').split(/[\|,]/))
+        .map(s => s.trim().toLowerCase())
+        .filter(Boolean);
+      if (opts.length === 0) return true;
+      return opts.some(opt => text.includes(opt));
+    };
+
+    // --- MODE 1: Direct Two-Column Rule (if col1Name or col2Name configured) ---
+    if (errCard.col1Name || errCard.col2Name) {
+      const col1Text = getColText(errCard.col1Name || 'all');
+      const col1PassEn = checkMatch(col1Text, errCard.col1EnText);
+      const col1PassTa = checkMatch(col1Text, errCard.col1TaText);
+      if (errCard.col1EnText || errCard.col1TaText) {
+        if (!col1PassEn && !col1PassTa) return false;
+      }
+
+      if (errCard.col2Name && errCard.col2Name !== 'none') {
+        const col2Text = getColText(errCard.col2Name);
+        const col2PassEn = checkMatch(col2Text, errCard.col2EnText);
+        const col2PassTa = checkMatch(col2Text, errCard.col2TaText);
+        if (errCard.col2EnText || errCard.col2TaText) {
+          if (!col2PassEn && !col2PassTa) return false;
+        }
+      }
+      return true;
+    }
+
+    // --- MODE 2: Keyword Line Matching (Default & Backward Compatible) ---
     let vals = [];
     if (errCard.targetColumn && errCard.targetColumn !== 'all') {
       const colDef = COLS.find(c => c.k === errCard.targetColumn || c.alt === errCard.targetColumn);
@@ -500,7 +536,6 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       const v2 = k2 ? String(r[k2] ?? '') : '';
       vals = [v1.toLowerCase(), v2.toLowerCase()].filter(Boolean);
     } else {
-      // Default: Search across all column values
       vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
     }
 
@@ -514,7 +549,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       .map(k => String(k || '').trim().toLowerCase())
       .filter(Boolean);
 
-    // Exclusion check: If row contains ANY excludeKeyword in any cell OTHER than the kitchen connection cell, it is VALID (NOT an error)!
+    // Exclusion check
     const exList = (Array.isArray(errCard.excludeKeywords) ? errCard.excludeKeywords : [])
       .flatMap(k => String(k || '').split(/[\|,]/))
       .map(k => k.trim().toLowerCase())
@@ -523,7 +558,6 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     if (exList.length > 0) {
       const hasExclusion = Object.entries(r).some(([key, val]) => {
         const keyLower = key.toLowerCase();
-        // Skip kitchen connection column itself so kitchen text like "Has LPG/ PNG Connection" doesn't self-exclude
         if (keyLower.includes('kitchen') || keyLower.includes('avail_kitchen') || keyLower.includes('lpgname')) return false;
 
         const strVal = String(val ?? '').toLowerCase();
@@ -531,7 +565,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
         return exList.some(exKw => strVal.includes(exKw));
       });
 
-      if (hasExclusion) return false; // Exclude valid record!
+      if (hasExclusion) return false;
     }
 
     const isAndMode = errCard.matchMode === 'AND' || errCard.matchMode === 'COMBINED';
@@ -548,7 +582,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       return enMatch || taMatch;
     }
 
-    // Default OR Mode (matches if ANY keyword line is found)
+    // Default OR Mode
     const allKw = [...enList, ...taList];
     if (allKw.length === 0) return false;
     return allKw.some(kwLine => lineMatches(kwLine));
@@ -2419,189 +2453,87 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                 />
               </div>
 
-              {/* Match Mode Selection: OR vs AND (Combined Multi-Column) */}
-              <div style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.25)', borderRadius: 10, padding: '10px 14px' }}>
-                <label style={{ fontSize: '0.74rem', color: '#c084fc', fontWeight: 900, display: 'block', marginBottom: 6 }}>
-                  Matching Mode (தேடல் பொருத்தம் வகை)
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#ffffff', cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="matchMode"
-                      checked={editingErrCard.matchMode !== 'AND'}
-                      onChange={() => setEditingErrCard(prev => ({ ...prev, matchMode: 'OR' }))}
-                    />
-                    <span><strong>Match Any Keyword (OR):</strong> ஏதேனும் ஒரு வார்த்தை இருந்தால் பொருந்தும்</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#fbbf24', fontWeight: 800, cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="matchMode"
-                      checked={editingErrCard.matchMode === 'AND'}
-                      onChange={() => setEditingErrCard(prev => ({ ...prev, matchMode: 'AND' }))}
-                    />
-                    <span><strong>Combined Match All Keywords (AND):</strong> ஒரே வரியில் கொடுக்கப்பட்ட அனைத்து வார்த்தைகளும் இருக்க வேண்டும் (Multi-Column)</span>
-                  </label>
+              {/* COLUMN 1 RULE */}
+              <div style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.3)', borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 900, color: '#38bdf8', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  📌 Column 1 Rule (முதல் Column &amp; பிழை சொல்)
                 </div>
-              </div>
-
-              {/* Target Table Column Selection */}
-              <div>
-                <label style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 900, display: 'block', marginBottom: 4 }}>
-                  Target Table Column (தேட வேண்டிய குறிப்பிட்ட Column)
-                </label>
-                <select
-                  value={editingErrCard.targetColumn || 'all'}
-                  onChange={e => setEditingErrCard(prev => ({ ...prev, targetColumn: e.target.value }))}
-                  style={{
-                    width: '100%',
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(56,189,248,0.4)',
-                    borderRadius: 8,
-                    padding: '8px 12px',
-                    color: '#ffffff',
-                    fontSize: '0.82rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    outline: 'none'
-                  }}
-                >
-                  <option value="all" style={{ background: '#1b182b', color: '#fff' }}>⚡ Search All Columns (அனைத்து Column-களிலும் தேடு)</option>
-                  {COLS.map(c => (
-                    <option key={c.k} value={c.k} style={{ background: '#1b182b', color: '#fff' }}>
-                      🎯 {c.h} ({c.k})
-                    </option>
-                  ))}
-                </select>
-                <div style={{ fontSize: '0.64rem', color: '#94a3b8', marginTop: 3 }}>
-                  * குறிப்பிட்ட Column-ஐத் தேர்ந்தெடுத்தால் அந்த Column-ல் மட்டுமே தேடப்படும் (எ.கா: Waste Water).
-                </div>
-              </div>
-
-              {/* English Keywords */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <label style={{ fontSize: '0.74rem', color: '#60a5fa', fontWeight: 800 }}>English Search Keywords (Multiple Criteria)</label>
-                  <button
-                    type="button"
-                    onClick={() => setEditingErrCard(prev => ({ ...prev, enKeywords: [...(prev.enKeywords || []), ''] }))}
-                    style={{ background: 'rgba(59,130,246,0.2)', border: '1px solid #3b82f6', color: '#60a5fa', borderRadius: 6, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                  >
-                    <Plus size={12}/> Add English Text
-                  </button>
-                </div>
-                {(editingErrCard.enKeywords || ['']).map((kw, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <input
-                      type="text"
-                      placeholder={`English Keyword #${i + 1}`}
-                      value={kw}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setEditingErrCard(prev => {
-                          const next = [...(prev.enKeywords || [])];
-                          next[i] = val;
-                          return { ...prev, enKeywords: next };
-                        });
-                      }}
-                      style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: '0.8rem' }}
-                    />
-                    {(editingErrCard.enKeywords || []).length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => setEditingErrCard(prev => ({ ...prev, enKeywords: prev.enKeywords.filter((_, idx) => idx !== i) }))}
-                        style={{ background: 'rgba(239,68,68,0.2)', border: 'none', color: '#fca5a5', borderRadius: 6, padding: 6, cursor: 'pointer' }}
-                      >
-                        <Trash2 size={13}/>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Tamil Keywords */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <label style={{ fontSize: '0.74rem', color: '#f59e0b', fontWeight: 800 }}>Tamil Search Keywords (தமிழ் சொற்கள்)</label>
-                  <button
-                    type="button"
-                    onClick={() => setEditingErrCard(prev => ({ ...prev, taKeywords: [...(prev.taKeywords || []), ''] }))}
-                    style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid #f59e0b', color: '#fbbf24', borderRadius: 6, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                  >
-                    <Plus size={12}/> Add Tamil Text
-                  </button>
-                </div>
-                {(editingErrCard.taKeywords || ['']).map((kw, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <input
-                      type="text"
-                      placeholder={`Tamil Keyword #${i + 1}`}
-                      value={kw}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setEditingErrCard(prev => {
-                          const next = [...(prev.taKeywords || [])];
-                          next[i] = val;
-                          return { ...prev, taKeywords: next };
-                        });
-                      }}
-                      style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: '0.8rem' }}
-                    />
-                    {(editingErrCard.taKeywords || []).length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => setEditingErrCard(prev => ({ ...prev, taKeywords: prev.taKeywords.filter((_, idx) => idx !== i) }))}
-                        style={{ background: 'rgba(239,68,68,0.2)', border: 'none', color: '#fca5a5', borderRadius: 6, padding: 6, cursor: 'pointer' }}
-                      >
-                        <Trash2 size={13}/>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Exclude / NOT Keywords (Valid combinations to ignore) */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <label style={{ fontSize: '0.74rem', color: '#ef4444', fontWeight: 800 }}>
-                    Exclude / NOT Keywords (தவிர்க்க வேண்டிய சரியான வார்த்தைகள்)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setEditingErrCard(prev => ({ ...prev, excludeKeywords: [...(prev.excludeKeywords || []), ''] }))}
-                    style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', color: '#fca5a5', borderRadius: 6, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                  >
-                    <Plus size={12}/> Add Exclude Text
-                  </button>
-                </div>
-                {(editingErrCard.excludeKeywords || []).map((kw, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <input
-                      type="text"
-                      placeholder={`e.g. LPG/ PNG or சமையல் எரிவாயு (Exclude Keyword #${i + 1})`}
-                      value={kw}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setEditingErrCard(prev => {
-                          const next = [...(prev.excludeKeywords || [])];
-                          next[i] = val;
-                          return { ...prev, excludeKeywords: next };
-                        });
-                      }}
-                      style={{ flex: 1, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: '0.8rem' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setEditingErrCard(prev => ({ ...prev, excludeKeywords: prev.excludeKeywords.filter((_, idx) => idx !== i) }))}
-                      style={{ background: 'rgba(239,68,68,0.2)', border: 'none', color: '#fca5a5', borderRadius: 6, padding: 6, cursor: 'pointer' }}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 700, display: 'block', marginBottom: 4 }}>Select Column 1 (முதல் Column பெயர்)</label>
+                    <select
+                      value={editingErrCard.col1Name || 'all'}
+                      onChange={e => setEditingErrCard(prev => ({ ...prev, col1Name: e.target.value }))}
+                      style={{ width: '100%', background: '#1b182b', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '7px 10px', color: '#fff', fontSize: '0.8rem' }}
                     >
-                      <Trash2 size={13}/>
-                    </button>
+                      <option value="all">⚡ Search All Columns (அனைத்து Column-களிலும் தேடு)</option>
+                      {COLS.map(c => <option key={c.k} value={c.k}>🎯 {c.h} ({c.k})</option>)}
+                    </select>
                   </div>
-                ))}
-                <div style={{ fontSize: '0.64rem', color: '#94a3b8', marginTop: 2 }}>
-                  * இந்த வார்த்தைகள் இருக்கும் வரிகள் சரியானவை (Valid) எனக் கொள்ளப்பட்டு பிழையாகக் காட்டப்படாது.
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 700, display: 'block', marginBottom: 4 }}>Column 1 English Text (English பிழை சொல்)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Cooking in kitchen: Has LPG/ PNG Connection"
+                      value={editingErrCard.col1EnText ?? ''}
+                      onChange={e => setEditingErrCard(prev => ({ ...prev, col1EnText: e.target.value }))}
+                      style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '7px 10px', color: '#fff', fontSize: '0.8rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 700, display: 'block', marginBottom: 4 }}>Column 1 Tamil Text (தமிழ் பிழை சொல்)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது"
+                      value={editingErrCard.col1TaText ?? ''}
+                      onChange={e => setEditingErrCard(prev => ({ ...prev, col1TaText: e.target.value }))}
+                      style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '7px 10px', color: '#fff', fontSize: '0.8rem' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* COMBINED COLUMN 2 RULE */}
+              <div style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 900, color: '#facc15', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  🔗 Combined Column 2 Rule (இரண்டாவது Column பிழை சொல் - Optional)
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 700, display: 'block', marginBottom: 4 }}>Select Column 2 (இரண்டாவது Column பெயர்)</label>
+                    <select
+                      value={editingErrCard.col2Name || 'none'}
+                      onChange={e => setEditingErrCard(prev => ({ ...prev, col2Name: e.target.value }))}
+                      style={{ width: '100%', background: '#1b182b', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '7px 10px', color: '#fff', fontSize: '0.8rem' }}
+                    >
+                      <option value="none">🚫 No Second Column (இரண்டாவது Column தேவை இல்லை)</option>
+                      {COLS.map(c => <option key={c.k} value={c.k}>🎯 {c.h} ({c.k})</option>)}
+                    </select>
+                  </div>
+                  {editingErrCard.col2Name && editingErrCard.col2Name !== 'none' && (
+                    <>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 700, display: 'block', marginBottom: 4 }}>Column 2 English Text (English பிழை சொற்கள் - காமா போட்டு எழுதலாம்)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Kerosene, Firewood, Coal"
+                          value={editingErrCard.col2EnText ?? ''}
+                          onChange={e => setEditingErrCard(prev => ({ ...prev, col2EnText: e.target.value }))}
+                          style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '7px 10px', color: '#fff', fontSize: '0.8rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 700, display: 'block', marginBottom: 4 }}>Column 2 Tamil Text (தமிழ் பிழை சொற்கள் - காமா போட்டு எழுதலாம்)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. விறகு, மண்ணெண்ணை, நிலக்கரி"
+                          value={editingErrCard.col2TaText ?? ''}
+                          onChange={e => setEditingErrCard(prev => ({ ...prev, col2TaText: e.target.value }))}
+                          style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '7px 10px', color: '#fff', fontSize: '0.8rem' }}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
