@@ -3,7 +3,8 @@ import {
   ArrowLeft, RefreshCw, Download, Search, X,
   CheckSquare, Square, Database, AlertCircle,
   ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, FilterX, Table2, Maximize2, Minimize2, ExternalLink, Copy, Check,
-  User, Phone, ShieldCheck, FileText, AlertTriangle, Sparkles, Printer
+  User, Phone, ShieldCheck, FileText, AlertTriangle, Sparkles, Printer,
+  Edit2, Plus, Trash2, Save
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -61,6 +62,8 @@ const DEFAULT_ERRORS = [
     id: 'err1',
     name: 'Service Latrine',
     nameTa: 'சேவை கழிவு',
+    enKeywords: ['Service latrine:  Night soil removed by human', 'Night soil removed by human', 'service latrine'],
+    taKeywords: ['சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை', 'சேவை கழிவு'],
     enText: 'Service latrine:  Night soil removed by human',
     taText: 'சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை',
     color: '#ef4444',
@@ -70,6 +73,8 @@ const DEFAULT_ERRORS = [
     id: 'err2',
     name: 'Landline Only',
     nameTa: 'தொலைபேசி மட்டும்',
+    enKeywords: ['Landline only', 'landline'],
+    taKeywords: ['தொலைபேசி மட்டும்'],
     enText: 'Landline only',
     taText: 'தொலைபேசி மட்டும்',
     color: '#f97316',
@@ -79,6 +84,8 @@ const DEFAULT_ERRORS = [
     id: 'err3',
     name: 'Error 3 (Placeholder)',
     nameTa: 'பிழை 3',
+    enKeywords: ['Error 3'],
+    taKeywords: ['பிழை 3'],
     enText: 'Error 3',
     taText: 'பிழை 3',
     color: '#eab308',
@@ -88,6 +95,8 @@ const DEFAULT_ERRORS = [
     id: 'err4',
     name: 'Error 4 (Placeholder)',
     nameTa: 'பிழை 4',
+    enKeywords: ['Error 4'],
+    taKeywords: ['பிழை 4'],
     enText: 'Error 4',
     taText: 'பிழை 4',
     color: '#3b82f6',
@@ -97,6 +106,8 @@ const DEFAULT_ERRORS = [
     id: 'err5',
     name: 'Error 5 (Placeholder)',
     nameTa: 'பிழை 5',
+    enKeywords: ['Error 5'],
+    taKeywords: ['பிழை 5'],
     enText: 'Error 5',
     taText: 'பிழை 5',
     color: '#a855f7',
@@ -106,9 +117,11 @@ const DEFAULT_ERRORS = [
     id: 'err6',
     name: 'Error 6 (Placeholder)',
     nameTa: 'பிழை 6',
+    enKeywords: ['Error 6'],
+    taKeywords: ['பிழை 6'],
     enText: 'Error 6',
     taText: 'பிழை 6',
-    color: '#ec4899',
+    color: '#14b8a6',
     icon: '⚠️'
   }
 ];
@@ -397,6 +410,96 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     return false;
   }, []);
 
+  const [errorFilters, setErrorFilters] = useState(() => {
+    try {
+      const saved = localStorage.getItem('psk_custom_error_filters');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return DEFAULT_ERRORS;
+  });
+
+  const [editingErrCard, setEditingErrCard] = useState(null);
+
+  useEffect(() => {
+    async function loadDbSettings() {
+      try {
+        const res = await db2Fetch('/table/settings');
+        const json = await res.json().catch(() => ({}));
+        if (json.rows?.length) {
+          const row = json.rows[0];
+          const raw = row.custom_error_filters || row.error_filters || row.customErrorFilters;
+          if (raw) {
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setErrorFilters(parsed);
+              localStorage.setItem('psk_custom_error_filters', JSON.stringify(parsed));
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    loadDbSettings();
+  }, []);
+
+  const saveErrorFiltersToDB = async (newFilters) => {
+    setErrorFilters(newFilters);
+    localStorage.setItem('psk_custom_error_filters', JSON.stringify(newFilters));
+    try {
+      await db2Fetch('/table/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 1,
+          custom_error_filters: JSON.stringify(newFilters)
+        })
+      });
+    } catch (e) {
+      console.warn('DB settings save fallback:', e);
+    }
+  };
+
+  const recordMatchesErrorCard = useCallback((r, errCard) => {
+    if (!r || isRecordDeleted(r)) return false;
+    const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
+
+    const enList = (Array.isArray(errCard.enKeywords) ? errCard.enKeywords : [errCard.enText || ''])
+      .map(k => String(k || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    const taList = (Array.isArray(errCard.taKeywords) ? errCard.taKeywords : [errCard.taText || ''])
+      .map(k => String(k || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    const isAndMode = errCard.matchMode === 'AND' || errCard.matchMode === 'COMBINED';
+
+    if (isAndMode) {
+      const enMatch = enList.length > 0 && enList.every(kw => vals.some(val => val.includes(kw)));
+      const taMatch = taList.length > 0 && taList.every(kw => vals.some(val => val.includes(kw)));
+      return enMatch || taMatch;
+    }
+
+    // Default OR Mode (matches if ANY keyword is found)
+    const allKw = [...enList, ...taList];
+    if (allKw.length === 0) return false;
+    return allKw.some(kw => vals.some(val => val.includes(kw)));
+  }, [isRecordDeleted]);
+
+  const hlbErrorCountsMap = useMemo(() => {
+    const map = new Map();
+    rows.forEach(r => {
+      if (isRecordDeleted(r)) return;
+      const hasError = errorFilters.some(errCard => recordMatchesErrorCard(r, errCard));
+      if (hasError) {
+        const code = r.hlb_code ?? r.hlbCode ?? r.hlb_no ?? r.hlbNo ?? '';
+        const blk = getHlbBlockNo(code);
+        if (blk) {
+          map.set(blk, (map.get(blk) || 0) + 1);
+        }
+      }
+    });
+    return map;
+  }, [rows, isRecordDeleted, errorFilters, recordMatchesErrorCard]);
+
   const uniqueHlbs = useMemo(() => {
     const map = new Map();
     rows.forEach(r => {
@@ -416,14 +519,34 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   }, [rows, isRecordDeleted]);
 
   const filteredHlbs = useMemo(() => {
-    if (!hlbCardSearch.trim()) return uniqueHlbs;
+    // In Error Mode (initialShowErrors is true or when error filters selected): ONLY show HLB cards that have errors (> 0 error count)!
+    if (initialShowErrors || selectedErrorIds.size > 0) {
+      const errorBlksList = Array.from(hlbErrorCountsMap.entries())
+        .map(([blk, errCount]) => {
+          const totRecCount = uniqueHlbs.find(u => u.blk === blk)?.count || 0;
+          return { blk, count: totRecCount, errCount };
+        })
+        .filter(item => item.errCount > 0)
+        .sort((a, b) => a.blk.localeCompare(b.blk));
+
+      if (!hlbCardSearch.trim()) return errorBlksList;
+      const q = hlbCardSearch.trim().toLowerCase();
+      return errorBlksList.filter(item => 
+        String(item.blk).toLowerCase().includes(q) || 
+        `hlb ${item.blk}`.toLowerCase().includes(q) ||
+        `hlb${item.blk}`.toLowerCase().includes(q)
+      );
+    }
+
+    const allList = uniqueHlbs.map(u => ({ ...u, errCount: hlbErrorCountsMap.get(u.blk) || 0 }));
+    if (!hlbCardSearch.trim()) return allList;
     const q = hlbCardSearch.trim().toLowerCase();
-    return uniqueHlbs.filter(item => 
+    return allList.filter(item => 
       String(item.blk).toLowerCase().includes(q) || 
       `hlb ${item.blk}`.toLowerCase().includes(q) ||
       `hlb${item.blk}`.toLowerCase().includes(q)
     );
-  }, [uniqueHlbs, hlbCardSearch]);
+  }, [uniqueHlbs, hlbErrorCountsMap, hlbCardSearch, initialShowErrors, selectedErrorIds]);
 
   function clickHlb(blkNo) {
     setHlb(blkNo);
@@ -442,19 +565,17 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
   const errorCounts = useMemo(() => {
     const counts = {};
-    DEFAULT_ERRORS.forEach(err => { counts[err.id] = 0; });
+    errorFilters.forEach(err => { counts[err.id] = 0; });
     rows.forEach(r => {
       if (isRecordDeleted(r)) return;
-      const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
-      DEFAULT_ERRORS.forEach(err => {
-        const en = err.enText.toLowerCase().trim();
-        const ta = err.taText.toLowerCase().trim();
-        if (en && vals.some(val => val.includes(en))) counts[err.id]++;
-        else if (ta && vals.some(val => val.includes(ta))) counts[err.id]++;
+      errorFilters.forEach(err => {
+        if (recordMatchesErrorCard(r, err)) {
+          counts[err.id]++;
+        }
       });
     });
     return counts;
-  }, [rows, isRecordDeleted]);
+  }, [rows, isRecordDeleted, errorFilters, recordMatchesErrorCard]);
 
   function toggleErrorFilter(errId) {
     setSelectedErrorIds(prev => {
@@ -473,34 +594,28 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     }
     return rows.filter(r => {
       if (isRecordDeleted(r)) return false;
-      const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
       return Array.from(selectedErrorIds).some(errId => {
-        const err = DEFAULT_ERRORS.find(e => e.id === errId);
-        if (!err) return false;
-        const en = err.enText.toLowerCase().trim();
-        const ta = err.taText.toLowerCase().trim();
-        return (en && vals.some(val => val.includes(en))) || (ta && vals.some(val => val.includes(ta)));
+        const errCard = errorFilters.find(e => e.id === errId);
+        if (!errCard) return false;
+        return recordMatchesErrorCard(r, errCard);
       });
     });
-  }, [rows, selectedErrorIds, initialShowErrors, isRecordDeleted]);
+  }, [rows, selectedErrorIds, initialShowErrors, isRecordDeleted, errorFilters, recordMatchesErrorCard]);
 
   const src = useMemo(() => {
     if (hlbView) {
       if (selectedErrorIds.size === 0) return hlbRows;
       return hlbRows.filter(r => {
         if (isRecordDeleted(r)) return false;
-        const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
         return Array.from(selectedErrorIds).some(errId => {
-          const err = DEFAULT_ERRORS.find(e => e.id === errId);
-          if (!err) return false;
-          const en = err.enText.toLowerCase().trim();
-          const ta = err.taText.toLowerCase().trim();
-          return (en && vals.some(val => val.includes(en))) || (ta && vals.some(val => val.includes(ta)));
+          const errCard = errorFilters.find(e => e.id === errId);
+          if (!errCard) return false;
+          return recordMatchesErrorCard(r, errCard);
         });
       });
     }
     return errorFilteredRows;
-  }, [hlbView, hlbRows, errorFilteredRows, selectedErrorIds, isRecordDeleted]);
+  }, [hlbView, hlbRows, errorFilteredRows, selectedErrorIds, isRecordDeleted, errorFilters, recordMatchesErrorCard]);
 
   const abstractReport = useMemo(() => {
     const hlbErrorMap = new Map();
@@ -531,12 +646,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       const popVal = parseInt(rawPop) || (rawPop === 0 ? 0 : 4);
       hlbPopulationMap.set(blk, (hlbPopulationMap.get(blk) || 0) + popVal);
 
-      const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
-      const matchedErrors = DEFAULT_ERRORS.filter(err => {
-        const en = err.enText.toLowerCase().trim();
-        const ta = err.taText.toLowerCase().trim();
-        return (en && vals.some(val => val.includes(en))) || (ta && vals.some(val => val.includes(ta)));
-      });
+      const matchedErrors = errorFilters.filter(err => recordMatchesErrorCard(r, err));
 
       if (matchedErrors.length > 0) {
         hlbErrorMap.set(blk, (hlbErrorMap.get(blk) || 0) + 1);
@@ -1272,14 +1382,14 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>
-              {DEFAULT_ERRORS.map(err => {
+              {errorFilters.map(err => {
                 const isSel = selectedErrorIds.has(err.id);
                 const count = errorCounts[err.id] || 0;
                 return (
                   <div
                     key={err.id}
                     onClick={() => toggleErrorFilter(err.id)}
-                    title={`Click to toggle filter for: ${err.enText} / ${err.taText}`}
+                    title={`Click to toggle filter for: ${err.enText || err.name} / ${err.taText || err.nameTa}`}
                     style={{
                       position: 'relative',
                       background: isSel 
@@ -1299,20 +1409,52 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                       userSelect: 'none'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
                       <span style={{ fontSize: '0.76rem', fontWeight: 800, color: isSel ? '#ffffff' : '#f1f5f9', display: 'flex', alignItems: 'center', gap: 5 }}>
                         <span>{err.icon}</span> {err.name}
                       </span>
-                      <span style={{
-                        fontSize: '0.6rem',
-                        fontWeight: 900,
-                        padding: '1px 6px',
-                        borderRadius: 8,
-                        background: isSel ? err.color : count > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)',
-                        color: isSel ? '#ffffff' : count > 0 ? '#fca5a5' : '#94a3b8'
-                      }}>
-                        {count} rec
-                      </span>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {(!creds || !creds.role || creds.role === 'ADMIN' || creds.role === 'OWNER') && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingErrCard({
+                                ...err,
+                                enKeywords: Array.isArray(err.enKeywords) && err.enKeywords.length > 0 ? [...err.enKeywords] : [err.enText || err.name || ''],
+                                taKeywords: Array.isArray(err.taKeywords) && err.taKeywords.length > 0 ? [...err.taKeywords] : [err.taText || err.nameTa || '']
+                              });
+                            }}
+                            title="Edit Error Card (Admin Only)"
+                            style={{
+                              background: 'rgba(255,255,255,0.12)',
+                              border: '1px solid rgba(255,255,255,0.25)',
+                              color: '#ffffff',
+                              borderRadius: '50%',
+                              width: 20,
+                              height: 20,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              padding: 0
+                            }}
+                          >
+                            <Edit2 size={10} />
+                          </button>
+                        )}
+                        <span style={{
+                          fontSize: '0.6rem',
+                          fontWeight: 900,
+                          padding: '1px 6px',
+                          borderRadius: 8,
+                          background: isSel ? err.color : count > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)',
+                          color: isSel ? '#ffffff' : count > 0 ? '#fca5a5' : '#94a3b8'
+                        }}>
+                          {count} rec
+                        </span>
+                      </div>
                     </div>
 
                     <div style={{ fontSize: '0.64rem', color: isSel ? '#fca5a5' : '#94a3b8', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1320,7 +1462,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                     </div>
 
                     <div style={{ fontSize: '0.58rem', color: isSel ? '#e2e8f0' : '#64748b', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {err.enText}
+                      {err.enText || (err.enKeywords && err.enKeywords[0]) || ''}
                     </div>
                   </div>
                 );
@@ -1451,17 +1593,20 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                 </button>
               </div>
             ) : (
-              filteredHlbs.map(({ blk, count }, idx) => {
+              filteredHlbs.map(({ blk, count, errCount }, idx) => {
               const act = hlb === blk && hlbView;
               const isHovered = hoveredBlk === blk;
               const col = HLB_COLORS[idx % HLB_COLORS.length];
+              const isErrMode = initialShowErrors || selectedErrorIds.size > 0;
+              const badgeVal = isErrMode ? (errCount || 0) : count;
+              const badgeLabel = isErrMode ? 'err' : 'rec';
               return (
                 <button 
                   key={blk} 
                   onClick={() => clickHlb(blk)} 
                   onMouseEnter={() => setHoveredBlk(blk)}
                   onMouseLeave={() => setHoveredBlk(null)}
-                  title={`Filter by HLB Block ${blk} (${count} records)`} 
+                  title={`Filter by HLB Block ${blk} (${badgeVal} ${badgeLabel})`} 
                   style={{ 
                     position: 'relative',
                     display: 'flex', 
@@ -1535,23 +1680,27 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                     HLB {blk}
                   </span>
 
-                  {count > 0 && (
+                  {badgeVal > 0 && (
                     <span style={{ 
                       fontSize: '0.58rem', 
-                      fontWeight: 800,
+                      fontWeight: 900,
                       marginTop: 3,
                       padding: '1px 6px',
                       borderRadius: 8,
-                      background: act 
-                        ? 'rgba(255,255,255,0.25)' 
-                        : isHovered 
-                          ? `${col}44` 
-                          : 'rgba(255,255,255,0.06)',
-                      border: isHovered ? `1px solid ${col}66` : '1px solid transparent',
-                      color: act ? '#ffffff' : isHovered ? '#ffffff' : '#94a3b8',
+                      background: isErrMode
+                        ? 'rgba(239, 68, 68, 0.25)'
+                        : act 
+                          ? 'rgba(255,255,255,0.25)' 
+                          : isHovered 
+                            ? `${col}44` 
+                            : 'rgba(255,255,255,0.06)',
+                      border: isErrMode
+                        ? '1px solid rgba(239, 68, 68, 0.5)'
+                        : isHovered ? `1px solid ${col}66` : '1px solid transparent',
+                      color: isErrMode ? '#fca5a5' : act ? '#ffffff' : isHovered ? '#ffffff' : '#94a3b8',
                       transition: 'all 0.2s ease'
                     }}>
-                      {count} rec
+                      {badgeVal} {badgeLabel}
                     </span>
                   )}
                 </button>
@@ -2153,6 +2302,187 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                 }}
               >
                 ✕ Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN EDIT ERROR CARD MODAL */}
+      {editingErrCard && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
+        }}>
+          <div style={{
+            background: '#131722', border: '1px solid rgba(168,85,247,0.4)',
+            borderRadius: 16, width: '100%', maxWidth: 540, maxHeight: '90vh',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+          }}>
+            <div style={{ padding: '14px 18px', background: 'rgba(168,85,247,0.15)', borderBottom: '1px solid rgba(168,85,247,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Edit2 size={16} color="#c084fc"/> Edit Error Card Criteria (Admin)
+              </span>
+              <button onClick={() => setEditingErrCard(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={18}/></button>
+            </div>
+
+            <div style={{ padding: 18, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: '0.74rem', color: '#c084fc', fontWeight: 800, display: 'block', marginBottom: 4 }}>English Card Title</label>
+                <input
+                  type="text"
+                  value={editingErrCard.name || ''}
+                  onChange={e => setEditingErrCard(prev => ({ ...prev, name: e.target.value }))}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: '0.84rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.74rem', color: '#c084fc', fontWeight: 800, display: 'block', marginBottom: 4 }}>Tamil Card Title (தமிழ் தலைப்பு)</label>
+                <input
+                  type="text"
+                  value={editingErrCard.nameTa || ''}
+                  onChange={e => setEditingErrCard(prev => ({ ...prev, nameTa: e.target.value }))}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: '0.84rem' }}
+                />
+              </div>
+
+              {/* Match Mode Selection: OR vs AND (Combined Multi-Column) */}
+              <div style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.25)', borderRadius: 10, padding: '10px 14px' }}>
+                <label style={{ fontSize: '0.74rem', color: '#c084fc', fontWeight: 900, display: 'block', marginBottom: 6 }}>
+                  Matching Mode (தேடல் பொருத்தம் வகை)
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#ffffff', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="matchMode"
+                      checked={editingErrCard.matchMode !== 'AND'}
+                      onChange={() => setEditingErrCard(prev => ({ ...prev, matchMode: 'OR' }))}
+                    />
+                    <span><strong>Match Any Keyword (OR):</strong> ஏதேனும் ஒரு வார்த்தை இருந்தால் பொருந்தும்</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#fbbf24', fontWeight: 800, cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="matchMode"
+                      checked={editingErrCard.matchMode === 'AND'}
+                      onChange={() => setEditingErrCard(prev => ({ ...prev, matchMode: 'AND' }))}
+                    />
+                    <span><strong>Combined Match All Keywords (AND):</strong> ஒரே வரியில் கொடுக்கப்பட்ட அனைத்து வார்த்தைகளும் இருக்க வேண்டும் (Multi-Column)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* English Keywords */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: '0.74rem', color: '#60a5fa', fontWeight: 800 }}>English Search Keywords (Multiple Criteria)</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditingErrCard(prev => ({ ...prev, enKeywords: [...(prev.enKeywords || []), ''] }))}
+                    style={{ background: 'rgba(59,130,246,0.2)', border: '1px solid #3b82f6', color: '#60a5fa', borderRadius: 6, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Plus size={12}/> Add English Text
+                  </button>
+                </div>
+                {(editingErrCard.enKeywords || ['']).map((kw, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <input
+                      type="text"
+                      placeholder={`English Keyword #${i + 1}`}
+                      value={kw}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEditingErrCard(prev => {
+                          const next = [...(prev.enKeywords || [])];
+                          next[i] = val;
+                          return { ...prev, enKeywords: next };
+                        });
+                      }}
+                      style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: '0.8rem' }}
+                    />
+                    {(editingErrCard.enKeywords || []).length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingErrCard(prev => ({ ...prev, enKeywords: prev.enKeywords.filter((_, idx) => idx !== i) }))}
+                        style={{ background: 'rgba(239,68,68,0.2)', border: 'none', color: '#fca5a5', borderRadius: 6, padding: 6, cursor: 'pointer' }}
+                      >
+                        <Trash2 size={13}/>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Tamil Keywords */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: '0.74rem', color: '#f59e0b', fontWeight: 800 }}>Tamil Search Keywords (தமிழ் சொற்கள்)</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditingErrCard(prev => ({ ...prev, taKeywords: [...(prev.taKeywords || []), ''] }))}
+                    style={{ background: 'rgba(245,158,11,0.2)', border: '1px solid #f59e0b', color: '#fbbf24', borderRadius: 6, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Plus size={12}/> Add Tamil Text
+                  </button>
+                </div>
+                {(editingErrCard.taKeywords || ['']).map((kw, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <input
+                      type="text"
+                      placeholder={`Tamil Keyword #${i + 1}`}
+                      value={kw}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEditingErrCard(prev => {
+                          const next = [...(prev.taKeywords || [])];
+                          next[i] = val;
+                          return { ...prev, taKeywords: next };
+                        });
+                      }}
+                      style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: '0.8rem' }}
+                    />
+                    {(editingErrCard.taKeywords || []).length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingErrCard(prev => ({ ...prev, taKeywords: prev.taKeywords.filter((_, idx) => idx !== i) }))}
+                        style={{ background: 'rgba(239,68,68,0.2)', border: 'none', color: '#fca5a5', borderRadius: 6, padding: 6, cursor: 'pointer' }}
+                      >
+                        <Trash2 size={13}/>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ padding: '12px 18px', background: 'rgba(0,0,0,0.3)', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button onClick={() => setEditingErrCard(null)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#cbd5e1', padding: '8px 16px', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+              <button
+                onClick={() => {
+                  const updated = errorFilters.map(err => {
+                    if (err.id === editingErrCard.id) {
+                      const cleanEn = (editingErrCard.enKeywords || []).filter(k => k.trim().length > 0);
+                      const cleanTa = (editingErrCard.taKeywords || []).filter(k => k.trim().length > 0);
+                      return {
+                        ...editingErrCard,
+                        enKeywords: cleanEn.length > 0 ? cleanEn : [editingErrCard.name || ''],
+                        taKeywords: cleanTa.length > 0 ? cleanTa : [editingErrCard.nameTa || ''],
+                        enText: cleanEn[0] || editingErrCard.name || '',
+                        taText: cleanTa[0] || editingErrCard.nameTa || ''
+                      };
+                    }
+                    return err;
+                  });
+                  saveErrorFiltersToDB(updated);
+                  setEditingErrCard(null);
+                }}
+                style={{ background: 'linear-gradient(135deg, #a855f7, #7c3aed)', border: 'none', color: '#ffffff', padding: '8px 18px', borderRadius: 8, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Save size={14}/> Save to DB &amp; Apply
               </button>
             </div>
           </div>
