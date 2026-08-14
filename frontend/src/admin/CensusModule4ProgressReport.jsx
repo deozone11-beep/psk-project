@@ -179,20 +179,53 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     const errRecsMap = new Map();
 
     rows.forEach(r => {
-      const code = String(r.hlb_code || r.hlbCode || r.block_no || r.blockNo || r.blk_no || r.hlb_no || r.hlb_number || '').trim();
-      const blk = getHlbBlockNo(code) || code;
+      const rawCode = String(
+        r.hlb_code || r.hlbCode || r.full_hlb || r.fullHlb ||
+        r.hlb_block_no || r.hlb_block_number || r.hlb_no || r.hlb_number ||
+        r.block_no || r.block_number || r.blk_no || r.area_code || r.hlb || ''
+      ).trim();
+
+      const blk = getHlbBlockNo(rawCode) || rawCode;
       if (!blk) return;
 
       const unpadded = String(parseInt(blk, 10) || blk);
       const padded = blk.padStart(4, '0');
 
-      const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
-      const isNightSoil = vals.some(v => v.includes('night soil') || v.includes('service latrine') || v.includes('human') || v.includes('இரவு கழினீர்') || v.includes('சேவை கழிப்பறை'));
-      const isLandlineOnly = vals.some(v => v.includes('landline only') || v.includes('landline') || v.includes('லேண்ட்லைன்'));
-      const isRecordStatusErr = vals.some(v => v.includes('error') || v.includes('fail') || v.includes('invalid') || v.includes('பிழை'));
+      // 2. Error Count: Exclude deleted error records
+      const isDeleted = r.is_deleted === true || r.is_deleted === 'true' || r.is_deleted === 1 || String(r.status || '').toUpperCase() === 'DELETED' || String(r.record_status || '').toUpperCase() === 'DELETED';
+      if (isDeleted) return;
 
-      if (isNightSoil || isLandlineOnly || isRecordStatusErr) {
-        const errDesc = isNightSoil ? 'Service Latrine (Night Soil)' : isLandlineOnly ? 'Landline Only' : 'Validation Error';
+      // Concatenate ALL latrine columns together so latrine_type_name is NEVER skipped!
+      const latrineText = (
+        String(r.latrine_acc_src_name || '') + ' ' +
+        String(r.latrine_type_name || '') + ' ' +
+        String(r.latrineAccSrcName || '') + ' ' +
+        String(r.latrineTypeName || '') + ' ' +
+        String(r.latrine_acc || '') + ' ' +
+        String(r.latrine || '')
+      ).toLowerCase();
+
+      // Concatenate ALL phone columns together
+      const phoneText = (
+        String(r.phone_smartphone_name || '') + ' ' +
+        String(r.phoneSmartphoneName || '') + ' ' +
+        String(r.phone || '') + ' ' +
+        String(r.net_device_name || '')
+      ).toLowerCase();
+
+      // Concatenate ALL status columns together
+      const statusText = (
+        String(r.status || '') + ' ' +
+        String(r.record_status || '') + ' ' +
+        String(r.RECORD_STATUS || '')
+      ).toLowerCase();
+
+      const hasErr1 = latrineText.includes('service latrine') || latrineText.includes('night soil removed by human') || latrineText.includes('சேவை கழிவு');
+      const hasErr2 = phoneText.includes('landline only') || phoneText.includes('தொலைபேசி மட்டும்');
+      const hasErr3 = statusText.includes('error') || statusText.includes('fail') || statusText.includes('invalid') || statusText.includes('பிழை');
+
+      if (hasErr1 || hasErr2 || hasErr3) {
+        const errDesc = hasErr1 ? 'Service Latrine (Night Soil Removed by Human)' : hasErr2 ? 'Landline Only' : 'Validation Error';
         const recItem = {
           lineNo: r.line_number || r.lineNumber || r.sl_no || '-',
           buildingNo: r.building_number || r.buildingNumber || r.bld_no || '-',
