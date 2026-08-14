@@ -392,6 +392,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   const uniqueHlbs = useMemo(() => {
     const map = new Map();
     rows.forEach(r => {
+      if (isRecordDeleted(r)) return;
       const code = r.hlb_code ?? r.hlbCode ?? r.hlb_no ?? r.hlbNo ?? '';
       const blk = getHlbBlockNo(code);
       if (blk) {
@@ -404,7 +405,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     return Array.from(map.entries())
       .map(([blk, count]) => ({ blk, count }))
       .sort((a, b) => a.blk.localeCompare(b.blk));
-  }, [rows]);
+  }, [rows, isRecordDeleted]);
 
   const filteredHlbs = useMemo(() => {
     if (!hlbCardSearch.trim()) return uniqueHlbs;

@@ -474,6 +474,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     let errCount = 0;
     let compCount = 0;
     let totHlbs = 0;
+    let seIdCount = 0;
     const allUniqueEnums = new Set();
 
     abstractReport.forEach(c => {
@@ -482,8 +483,14 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         if (e.enumId || e.enumName) allUniqueEnums.add(e.enumId || e.enumName);
         errCount += (e.errorCount || 0);
         if (e.isCompleted) compCount++;
+        seIdCount += (e.seIdUsed || 0);
       });
     });
+
+    // Calculate total errors from hlbErrorMap if errCount is 0
+    if (errCount === 0 && hlbErrorMap.size > 0) {
+      hlbErrorMap.forEach(cnt => { errCount += cnt; });
+    }
 
     // 1. Check if charge_wise_report has a summary row where area_name == 'Total'
     const totalRow = chargeRows.find(c => {
@@ -497,17 +504,29 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       hhCount = parseInt(totalRow.total_households || totalRow.total_census_households || totalRow.census_households || 0);
       verCount = parseInt(totalRow.total_household_verified_by_supervisor || totalRow.verified_by_supervisor || totalRow.verified_households || 0);
       popCount = parseInt(totalRow.total_population || totalRow.population || totalRow.tot_population || 0);
+      const totalRowSe = parseInt(totalRow.total_se_id_used || totalRow.total_se_used || totalRow.se_id_used || 0);
+      if (totalRowSe > 0) seIdCount = totalRowSe;
     } else if (chargeRows.length > 0) {
       // 2. Sum up rows from charge_wise_report table directly
+      let cExp = 0, cCen = 0, cHH = 0, cVer = 0, cPop = 0, cSe = 0;
       chargeRows.forEach(c => {
         const areaName = String(c.area_name || '').toLowerCase();
         if (areaName === 'total') return;
-        expHouses += parseInt(c.total_expected_census_houses || c.expected_census_houses || c.expected_houses || 0) || 0;
-        cenHouses += parseInt(c.total_census_houses || c.census_houses || c.total_houses || 0) || 0;
-        hhCount += parseInt(c.total_households || c.total_census_households || c.census_households || 0) || 0;
-        verCount += parseInt(c.total_household_verified_by_supervisor || c.verified_by_supervisor || c.verified_households || 0) || 0;
-        popCount += parseInt(c.total_population || c.population || c.tot_population || 0) || 0;
+        cExp += parseInt(c.total_expected_census_houses || c.expected_census_houses || c.expected_houses || 0) || 0;
+        cCen += parseInt(c.total_census_houses || c.census_houses || c.total_houses || 0) || 0;
+        cHH  += parseInt(c.total_households || c.total_census_households || c.census_households || 0) || 0;
+        cVer += parseInt(c.total_household_verified_by_supervisor || c.verified_by_supervisor || c.verified_households || 0) || 0;
+        cPop += parseInt(c.total_population || c.population || c.tot_population || 0) || 0;
+        cSe  += parseInt(c.total_se_id_used || c.total_se_used || c.se_id_used || 0) || 0;
       });
+      if (cExp > 0 || cCen > 0) {
+        expHouses = cExp;
+        cenHouses = cCen;
+        hhCount = cHH;
+        verCount = cVer;
+        popCount = cPop;
+        if (cSe > 0) seIdCount = cSe;
+      }
     }
 
     // 3. Fallback to abstractReport calculation if charge_wise_report table is empty
@@ -531,11 +550,12 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       censusHouses: cenHouses,
       households: hhCount,
       verifiedBySup: verCount,
+      totalSeIdUsed: seIdCount,
       totalPopulation: popCount,
       errorCount: errCount,
       completedCount: compCount
     };
-  }, [abstractReport, chargeRows]);
+  }, [abstractReport, chargeRows, hlbErrorMap]);
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
@@ -841,6 +861,27 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           </div>
           <div style={{ fontSize: '0.72rem', color: '#7dd3fc' }}>
             Supervisor Verified
+          </div>
+        </div>
+
+        {/* CARD 7: TOTAL SE ID USED */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.18) 0%, rgba(124, 58, 237, 0.1) 100%)',
+          border: '1px solid rgba(168, 85, 247, 0.4)',
+          borderRadius: '16px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#c084fc', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Total SE ID Used
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#c084fc' }}>
+            {(overallStats.totalSeIdUsed || 0).toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#e9d5ff' }}>
+            Self Enum. Mapped
           </div>
         </div>
 
