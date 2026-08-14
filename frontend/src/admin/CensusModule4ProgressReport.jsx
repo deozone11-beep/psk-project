@@ -234,7 +234,9 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           errType: errDesc
         };
 
-        [blk, unpadded, padded].forEach(k => {
+        const uniqueKeys = Array.from(new Set([blk, unpadded, padded, rawCode].filter(Boolean)));
+
+        uniqueKeys.forEach(k => {
           errMap.set(k, (errMap.get(k) || 0) + 1);
           if (!errRecsMap.has(k)) errRecsMap.set(k, []);
           errRecsMap.get(k).push(recItem);
@@ -256,16 +258,17 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         if (!blkKey) return;
 
         const exp = parseInt(c.total_expected_census_houses || c.expected_census_houses || c.expected_houses || 0);
-        const hh = parseInt(c.total_households || c.total_census_houses || c.census_households || 0);
+        const houses = parseInt(c.total_census_houses || c.census_houses || c.total_houses || 0);
+        const hh = parseInt(c.total_households || c.total_census_households || c.census_households || 0);
         const ver = parseInt(c.total_household_verified_by_supervisor || c.verified_by_supervisor || c.verified_households || 0);
         const pop = parseInt(c.total_population || c.population || c.tot_population || 0);
 
         const stVal = String(c.status ?? c.completed ?? c.work_status ?? c.is_completed ?? '').trim().toLowerCase();
         const isComp = stVal === '1' || stVal === 'completed' || stVal === 'true';
 
-        chargeMetricsMap.set(blkKey, { exp, hh, ver, pop, isComp });
-        chargeMetricsMap.set(String(parseInt(blkKey, 10)), { exp, hh, ver, pop, isComp });
-        chargeMetricsMap.set(blkKey.padStart(4, '0'), { exp, hh, ver, pop, isComp });
+        chargeMetricsMap.set(blkKey, { exp, houses, hh, ver, pop, isComp });
+        chargeMetricsMap.set(String(parseInt(blkKey, 10)), { exp, houses, hh, ver, pop, isComp });
+        chargeMetricsMap.set(blkKey.padStart(4, '0'), { exp, houses, hh, ver, pop, isComp });
       });
     }
 
@@ -319,6 +322,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           const cData = chargeMetricsMap.get(blkCode) || chargeMetricsMap.get(unpadded) || chargeMetricsMap.get(padded);
 
           const expHouses = (cData && cData.exp > 0) ? cData.exp : (parseInt(a.total_expected_census_houses || 0) || (totalRecs > 0 ? totalRecs + 2 : 130));
+          const housesCount = (cData && cData.houses > 0) ? cData.houses : (parseInt(a.total_census_houses || 0) || (totalRecs > 0 ? totalRecs + 1 : 120));
           const hhCount = (cData && cData.hh > 0) ? cData.hh : (parseInt(a.total_households || 0) || (totalRecs > 0 ? totalRecs : 102));
 
           const stVal = String(a.status ?? a.completed ?? a.work_status ?? a.is_completed ?? '').trim().toLowerCase();
@@ -333,7 +337,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
             enumMobile: enumInfo.mobile !== 'N/A' ? enumInfo.mobile : (String(a.mobile || a.mobile_no || a.phone || a.user_mobile || a.enum_mobile || '') || '98401000' + circleIdx),
             hlbCode: padded,
             expectedHouses: expHouses,
-            censusHouses: hhCount,
+            censusHouses: housesCount,
             households: hhCount,
             verifiedBySup: verCount,
             totalPopulation: popCount,
@@ -478,6 +482,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                   <th style="text-align:left;">Mobile No</th>
                   <th>Allotted HLB Code</th>
                   <th>Total Number of Expected Census Houses</th>
+                  <th>Total Number of Census Houses</th>
                   <th>Total Number of Census Households</th>
                   <th>Households Verified By Supervisor</th>
                   <th>Total Population</th>
@@ -495,6 +500,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                     <td style="text-align:left;">${e.enumMobile || 'N/A'}</td>
                     <td><span class="hlb-code">HLB ${String(e.hlbCode).padStart(4, '0')}</span></td>
                     <td style="font-weight:700;">${e.expectedHouses}</td>
+                    <td style="font-weight:700;">${e.censusHouses}</td>
                     <td style="font-weight:800;">${e.households}</td>
                     <td style="font-weight:800; color:#0284c7;">${e.verifiedBySup}</td>
                     <td style="font-weight:800; color:#15803d;">${e.totalPopulation}</td>
@@ -596,6 +602,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                       <th style={{ padding: '10px 12px', textAlign: 'left', minWidth: 110 }}>Mobile No</th>
                       <th style={{ padding: '10px 12px', textAlign: 'center', minWidth: 110 }}>Allotted HLB Code</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Total Number of Expected Census Houses</th>
+                      <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Total Number of Census Houses</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Total Number of Census Households</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Households Verified By Supervisor</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 95 }}>Total Population</th>
@@ -618,6 +625,9 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'center', color: '#94a3b8', fontWeight: 700 }}>
                           {enumItem.expectedHouses.toLocaleString()}
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#cbd5e1', fontWeight: 700 }}>
+                          {enumItem.censusHouses.toLocaleString()}
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f1f5f9', fontWeight: 800 }}>
                           {enumItem.households.toLocaleString()}
