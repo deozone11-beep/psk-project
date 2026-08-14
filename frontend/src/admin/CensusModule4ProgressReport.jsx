@@ -263,6 +263,51 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     return { hlbErrorMap: errMap, hlbErrorRecordsMap: errRecsMap };
   }, [rows]);
 
+  const liveHlbMetricsMap = useMemo(() => {
+    const map = new Map();
+
+    rows.forEach(r => {
+      const rawCode = String(
+        r.hlb_code || r.hlbCode || r.full_hlb || r.fullHlb ||
+        r.hlb_block_no || r.hlb_block_number || r.hlb_no || r.hlb_number ||
+        r.block_no || r.block_number || r.blk_no || r.area_code || r.hlb || ''
+      ).trim();
+
+      const blk = getHlbBlockNo(rawCode) || rawCode;
+      if (!blk) return;
+
+      const unpadded = String(parseInt(blk, 10) || blk);
+      const padded = blk.padStart(4, '0');
+
+      const keys = Array.from(new Set([blk, unpadded, padded, rawCode]));
+
+      const popVal = parseInt(r.count_of_persons ?? r.countOfPersons ?? r.tot_p ?? r.total_population ?? r.no_of_persons ?? r.persons ?? r.population ?? 0) || 0;
+
+      const st = String(r.status || r.RECORD_STATUS || r.record_status || r.work_status || '').toLowerCase();
+      const isVer = st.includes('comp') || st === '1' || st === 'true' || r.is_locked === 1 || r.is_locked === 'true' || r.verified_by_supervisor === true;
+
+      const houseVal = r.census_house_num ?? r.censusHouseNum ?? r.building_number ?? r.buildingNumber;
+
+      keys.forEach(k => {
+        if (!map.has(k)) {
+          map.set(k, {
+            totalRows: 0,
+            housesSet: new Set(),
+            verifiedCount: 0,
+            totalPop: 0
+          });
+        }
+        const item = map.get(k);
+        item.totalRows++;
+        if (houseVal != null && houseVal !== '') item.housesSet.add(String(houseVal));
+        if (isVer) item.verifiedCount++;
+        item.totalPop += popVal;
+      });
+    });
+
+    return map;
+  }, [rows]);
+
   const abstractReport = useMemo(() => {
     const chargeMetricsMap = new Map();
     if (chargeRows.length > 0) {
@@ -336,18 +381,39 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           const errCount = hlbErrorMap.get(blkCode) || hlbErrorMap.get(unpadded) || hlbErrorMap.get(padded) || 0;
           const errRecords = hlbErrorRecordsMap.get(blkCode) || hlbErrorRecordsMap.get(unpadded) || hlbErrorRecordsMap.get(padded) || [];
 
-          const totalRecs = rows.filter(r => getHlbBlockNo(r.hlb_code) === blkCode).length || 0;
+          const liveData = liveHlbMetricsMap.get(padded) || liveHlbMetricsMap.get(unpadded) || liveHlbMetricsMap.get(blkCode);
           const cData = chargeMetricsMap.get(blkCode) || chargeMetricsMap.get(unpadded) || chargeMetricsMap.get(padded);
 
-          const expHouses = (cData && cData.exp > 0) ? cData.exp : (parseInt(a.total_expected_census_houses || 0) || (totalRecs > 0 ? totalRecs + 2 : 130));
-          const housesCount = (cData && cData.houses > 0) ? cData.houses : (parseInt(a.total_census_houses || 0) || (totalRecs > 0 ? totalRecs + 1 : 120));
-          const hhCount = (cData && cData.hh > 0) ? cData.hh : (parseInt(a.total_households || 0) || (totalRecs > 0 ? totalRecs : 102));
+          let hhCount = 0;
+          let housesCount = 0;
+          let verCount = 0;
+          let popCount = 0;
+          let expHouses = 0;
+          let isComp = false;
 
-          const stVal = String(a.status ?? a.completed ?? a.work_status ?? a.is_completed ?? '').trim().toLowerCase();
-          const isComp = cData ? cData.isComp : (stVal === '1' || stVal === 'completed' || stVal === 'true');
-
-          const verCount = (cData && cData.ver >= 0) ? cData.ver : (parseInt(a.total_household_verified_by_supervisor || 0) || (isComp ? hhCount : 50));
-          const popCount = (cData && cData.pop > 0) ? cData.pop : (parseInt(a.total_population || 0) || (hhCount * 4 || 365));
+          if (liveData && liveData.totalRows > 0) {
+            hhCount = liveData.totalRows;
+            housesCount = liveData.housesSet.size > 0 ? liveData.housesSet.size : liveData.totalRows;
+            verCount = liveData.verifiedCount;
+            popCount = liveData.totalPop > 0 ? liveData.totalPop : hhCount * 4;
+            expHouses = (cData && cData.exp > 0) ? cData.exp : (parseInt(a?.total_expected_census_houses || 0) || Math.max(housesCount, hhCount));
+            isComp = verCount >= hhCount && hhCount > 0;
+          } else if (cData && (cData.hh > 0 || cData.exp > 0)) {
+            expHouses = cData.exp;
+            housesCount = cData.houses;
+            hhCount = cData.hh;
+            verCount = cData.ver;
+            popCount = cData.pop;
+            isComp = cData.isComp;
+          } else if (a) {
+            expHouses = parseInt(a.total_expected_census_houses || 0);
+            housesCount = parseInt(a.total_census_houses || 0);
+            hhCount = parseInt(a.total_households || 0);
+            verCount = parseInt(a.total_household_verified_by_supervisor || 0);
+            popCount = parseInt(a.total_population || 0);
+            const stVal = String(a.status ?? a.completed ?? '').toLowerCase();
+            isComp = stVal === '1' || stVal === 'completed' || stVal === 'true';
+          }
 
           return {
             enumId: enumInfo.username || userId || `ENUM-${resolvedEnumName}`,
@@ -396,12 +462,31 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
             const errCount = hlbErrorMap.get(padded) ?? hlbErrorMap.get(unpadded) ?? hlbErrorMap.get(blkCode) ?? 0;
             const errRecords = hlbErrorRecordsMap.get(padded) || hlbErrorRecordsMap.get(unpadded) || hlbErrorRecordsMap.get(blkCode) || [];
 
+            const liveData = liveHlbMetricsMap.get(padded) || liveHlbMetricsMap.get(unpadded) || liveHlbMetricsMap.get(blkCode);
             const cData = chargeMetricsMap.get(padded) || chargeMetricsMap.get(unpadded) || chargeMetricsMap.get(blkCode);
-            const expHouses = cData ? cData.exp : 130;
-            const hhCount = cData ? cData.hh : 102;
-            const verCount = cData ? cData.ver : 50;
-            const popCount = cData ? cData.pop : 365;
-            const isComp = cData ? cData.isComp : false;
+
+            let hhCount = 0;
+            let housesCount = 0;
+            let verCount = 0;
+            let popCount = 0;
+            let expHouses = 0;
+            let isComp = false;
+
+            if (liveData && liveData.totalRows > 0) {
+              hhCount = liveData.totalRows;
+              housesCount = liveData.housesSet.size > 0 ? liveData.housesSet.size : liveData.totalRows;
+              verCount = liveData.verifiedCount;
+              popCount = liveData.totalPop > 0 ? liveData.totalPop : hhCount * 4;
+              expHouses = (cData && cData.exp > 0) ? cData.exp : Math.max(housesCount, hhCount);
+              isComp = verCount >= hhCount && hhCount > 0;
+            } else if (cData && (cData.hh > 0 || cData.exp > 0)) {
+              expHouses = cData.exp;
+              housesCount = cData.houses;
+              hhCount = cData.hh;
+              verCount = cData.ver;
+              popCount = cData.pop;
+              isComp = cData.isComp;
+            }
 
             return {
               enumId: enumInfo.username || `em_3470160011_enum_${enumNum}`,
@@ -409,7 +494,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
               enumMobile: enumInfo.mobile !== 'N/A' ? enumInfo.mobile : `9840${100000 + enumNum}`,
               hlbCode: padded,
               expectedHouses: expHouses,
-              censusHouses: hhCount,
+              censusHouses: housesCount,
               households: hhCount,
               verifiedBySup: verCount,
               totalPopulation: popCount,
