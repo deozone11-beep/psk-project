@@ -463,15 +463,48 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       c.enumerators.forEach(e => {
         totHlbs++;
         if (e.enumId || e.enumName) allUniqueEnums.add(e.enumId || e.enumName);
-        expHouses += (e.expectedHouses || 0);
-        cenHouses += (e.censusHouses || 0);
-        hhCount += (e.households || 0);
-        verCount += (e.verifiedBySup || 0);
-        popCount += (e.totalPopulation || 0);
         errCount += (e.errorCount || 0);
         if (e.isCompleted) compCount++;
       });
     });
+
+    // 1. Check if charge_wise_report has a summary row where area_name == 'Total'
+    const totalRow = chargeRows.find(c => {
+      const name = String(c.area_name || c.area_code || '').trim().toLowerCase();
+      return name === 'total';
+    });
+
+    if (totalRow) {
+      expHouses = parseInt(totalRow.total_expected_census_houses || totalRow.expected_census_houses || totalRow.expected_houses || 0);
+      cenHouses = parseInt(totalRow.total_census_houses || totalRow.census_houses || totalRow.total_houses || 0);
+      hhCount = parseInt(totalRow.total_households || totalRow.total_census_households || totalRow.census_households || 0);
+      verCount = parseInt(totalRow.total_household_verified_by_supervisor || totalRow.verified_by_supervisor || totalRow.verified_households || 0);
+      popCount = parseInt(totalRow.total_population || totalRow.population || totalRow.tot_population || 0);
+    } else if (chargeRows.length > 0) {
+      // 2. Sum up rows from charge_wise_report table directly
+      chargeRows.forEach(c => {
+        const areaName = String(c.area_name || '').toLowerCase();
+        if (areaName === 'total') return;
+        expHouses += parseInt(c.total_expected_census_houses || c.expected_census_houses || c.expected_houses || 0) || 0;
+        cenHouses += parseInt(c.total_census_houses || c.census_houses || c.total_houses || 0) || 0;
+        hhCount += parseInt(c.total_households || c.total_census_households || c.census_households || 0) || 0;
+        verCount += parseInt(c.total_household_verified_by_supervisor || c.verified_by_supervisor || c.verified_households || 0) || 0;
+        popCount += parseInt(c.total_population || c.population || c.tot_population || 0) || 0;
+      });
+    }
+
+    // 3. Fallback to abstractReport calculation if charge_wise_report table is empty
+    if (expHouses === 0 && cenHouses === 0 && hhCount === 0) {
+      abstractReport.forEach(c => {
+        c.enumerators.forEach(e => {
+          expHouses += (e.expectedHouses || 0);
+          cenHouses += (e.censusHouses || 0);
+          hhCount += (e.households || 0);
+          verCount += (e.verifiedBySup || 0);
+          popCount += (e.totalPopulation || 0);
+        });
+      });
+    }
 
     return {
       totalCircles: Math.min(abstractReport.length || 75, 75),
@@ -485,7 +518,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       errorCount: errCount,
       completedCount: compCount
     };
-  }, [abstractReport]);
+  }, [abstractReport, chargeRows]);
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
