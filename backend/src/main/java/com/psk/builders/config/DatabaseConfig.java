@@ -2,20 +2,23 @@ package com.psk.builders.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import javax.sql.DataSource;
 import java.net.URI;
 
 @Configuration
-@ConditionalOnProperty(name = "DATABASE_URL")
 public class DatabaseConfig {
 
     @Bean
+    @Primary
     public DataSource dataSource() {
         String databaseUrl = System.getenv("DATABASE_URL");
         if (databaseUrl == null || databaseUrl.isBlank()) {
             databaseUrl = System.getProperty("DATABASE_URL");
+        }
+        if (databaseUrl == null || databaseUrl.isBlank()) {
+            databaseUrl = "jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:6543/postgres?prepareThreshold=0&preferQueryMode=simple&sslmode=require";
         }
         try {
             if (databaseUrl.startsWith("jdbc:postgresql://")) {
