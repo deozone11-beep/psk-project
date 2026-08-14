@@ -485,21 +485,23 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       .map(k => String(k || '').trim().toLowerCase())
       .filter(Boolean);
 
-    // Exclusion check: Check excludeKeywords against column values OTHER than the ones matching positive search keywords
+    // Exclusion check: If row contains ANY excludeKeyword in any cell OTHER than the kitchen connection cell, it is VALID (NOT an error)!
     const exList = (Array.isArray(errCard.excludeKeywords) ? errCard.excludeKeywords : [])
       .map(k => String(k || '').trim().toLowerCase())
       .filter(Boolean);
 
     if (exList.length > 0) {
-      const positiveKws = [...enList, ...taList].map(k => String(k || '').trim().toLowerCase()).filter(Boolean);
+      const hasExclusion = Object.entries(r).some(([key, val]) => {
+        const keyLower = key.toLowerCase();
+        // Skip kitchen connection column itself so kitchen text like "Has LPG/ PNG Connection" doesn't self-exclude
+        if (keyLower.includes('kitchen') || keyLower.includes('avail_kitchen')) return false;
 
-      // Exclude values that match the positive search keyword itself so it doesn't self-exclude
-      const nonPositiveVals = Object.values(r)
-        .map(v => String(v ?? '').toLowerCase())
-        .filter(val => !positiveKws.some(pKw => pKw.length > 5 && val.includes(pKw)));
+        const strVal = String(val ?? '').toLowerCase();
+        if (!strVal) return false;
+        return exList.some(exKw => strVal.includes(exKw));
+      });
 
-      const hasExclusion = exList.some(exKw => nonPositiveVals.some(val => val.includes(exKw)));
-      if (hasExclusion) return false;
+      if (hasExclusion) return false; // Exclude valid record!
     }
 
     const isAndMode = errCard.matchMode === 'AND' || errCard.matchMode === 'COMBINED';
