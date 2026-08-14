@@ -77,19 +77,19 @@ function CensusPortal({ creds, onLogout }) {
 
 
 export default function Dashboard({ creds, onLogout }) {
-  // Census users get a dedicated portal — no sidebar, census data only
-  if (creds.role === 'CENSUS_USER') {
-    return <CensusPortal creds={creds} onLogout={onLogout} />;
-  }
+  const isCensusUser = creds?.role === 'CENSUS_USER' || creds?.role === 'CENSUS_STAFF' || creds?.role === 'STAFF' || creds?.role === 'EMPLOYEE' || creds?.role === 'WORKER' || (creds?.role && creds.role !== 'ADMIN' && creds.role !== 'OWNER' && creds.role !== 'ENGINEER');
 
   const availableTabs = TABS.filter((t) => {
-    if (creds.role === 'ENGINEER') {
+    if (isCensusUser) {
+      return t.id === 'census';
+    }
+    if (creds?.role === 'ENGINEER') {
       return ['overview', 'census', 'plans', 'invoices', 'enquiries', 'customers', 'updates', 'attendance', 'payments', 'employees'].includes(t.id);
     }
     return true;
   });
 
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState(() => isCensusUser ? 'census' : 'overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const activeTabMeta = TABS.find((t) => t.id === tab);
 

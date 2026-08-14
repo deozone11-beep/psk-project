@@ -1196,19 +1196,21 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
         </div>
 
         <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-          {tables.length > 1 && (
-            <select value={table} onChange={e => { setTable(e.target.value); fetchData(e.target.value); setHlbView(false); setHlb(null); setHlbCardSearch(''); }}
-              style={{ background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)', color:'#e9d5ff', padding:'5px 10px', borderRadius:7, fontSize:'0.75rem', cursor:'pointer' }}>
-              {tables.map(t => <option key={t} value={t} style={{ background:'#1e1b2e' }}>{t}</option>)}
+          {(tables.length >= 1) && (
+            <select value={table || 'hlb_records'} onChange={e => { setTable(e.target.value); fetchData(e.target.value); setHlbView(false); setHlb(null); setHlbCardSearch(''); }}
+              style={{ background:'rgba(168, 85, 247, 0.25)', border:'1.5px solid #c084fc', color:'#ffffff', fontWeight:800, padding:'6px 12px', borderRadius:8, fontSize:'0.78rem', cursor:'pointer', outline:'none' }}>
+              {(tables.length > 0 ? tables : ['hlb_records', 'charge_wise_report', 'hlb_allotted']).map(t => <option key={t} value={t} style={{ background:'#1b182b', color:'#ffffff' }}>{t}</option>)}
             </select>
           )}
           <button onClick={() => table ? fetchData(table) : ping()} style={bs('purple')} disabled={loading}>
             <RefreshCw size={13} style={{ animation:loading?'spin 1s linear infinite':'none' }}/> Refresh
           </button>
-          <button onClick={downloadCSV} disabled={filtered.length===0} style={bs('green')}>
-            <Download size={13}/>
-            {sel.size > 0 ? `Download (${sel.size})` : 'Download CSV'}
-          </button>
+          {(!creds || !creds.role || creds.role === 'ADMIN' || creds.role === 'OWNER') && (
+            <button onClick={downloadCSV} disabled={filtered.length===0} style={bs('green')}>
+              <Download size={13}/>
+              {sel.size > 0 ? `Download (${sel.size})` : 'Download CSV'}
+            </button>
+          )}
         </div>
       </div>
       )}

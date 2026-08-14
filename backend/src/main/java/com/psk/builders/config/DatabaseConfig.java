@@ -27,11 +27,11 @@ public class DatabaseConfig {
                 }
                 String username = System.getenv("SPRING_DATASOURCE_USERNAME");
                 if (username == null || username.isBlank()) username = System.getenv("DB_USERNAME");
-                if (username == null || username.isBlank()) username = "postgres.jlebdbvbakvxaivjnhgj";
+                if (username == null || username.isBlank()) username = "postgres.bvdkmygolyygkouwikto";
 
                 String password = System.getenv("SPRING_DATASOURCE_PASSWORD");
                 if (password == null || password.isBlank()) password = System.getenv("DB_PASSWORD");
-                if (password == null || password.isBlank()) password = "Meeerakumar@9898";
+                if (password == null || password.isBlank()) password = "Preethakumar@9898";
 
                 return DataSourceBuilder.create()
                         .driverClassName("org.postgresql.Driver")

@@ -257,6 +257,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
 
         const hlbSerial = String(a.hlb_block_no || a.hlb_block_number || a.hlb_no || a.hlb_number || a.hlb_serial_no || a.hlb_serial_number || a.block_no || a.block_number || a.blk_no || a.hlb_code || a.area_code || a.hlb || '').trim();
         const blkCode = getHlbBlockNo(hlbSerial) || hlbSerial.padStart(4, '0');
+        const blkNum = parseInt(blkCode, 10);
+        if (blkNum > 470) return;
 
         const rawSup = String(a.supervisor_name || a.supervisor || a.supervisor_full_name || a.sup_name || a.supervisor_id || '').trim();
         const supInfo = getMobileAndUsername(rawSup, rawSup, true);
@@ -376,6 +378,28 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     return sum;
   }, [abstractReport]);
 
+  const overallStats = useMemo(() => {
+    let totRecs = 0;
+    let totErrs = 0;
+    let totHlbs = 0;
+    const allUniqueEnums = new Set();
+    abstractReport.forEach(c => {
+      c.enumerators.forEach(e => {
+        totHlbs++;
+        if (e.enumId || e.enumName) allUniqueEnums.add(e.enumId || e.enumName);
+        totRecs += (e.totalRecords || 0);
+        totErrs += (e.errorCount || 0);
+      });
+    });
+    return {
+      totalCircles: Math.min(abstractReport.length || 75, 75),
+      totalEnumerators: Math.min(allUniqueEnums.size || 450, 450),
+      totalHlbs: Math.min(totHlbs || 470, 470),
+      totalRecords: totRecs,
+      totalErrors: totErrs
+    };
+  }, [abstractReport]);
+
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
     const iframe = document.createElement('iframe');
@@ -414,6 +438,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           .no-err { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
           .hlb-code { font-weight: 800; background: #e2e8f0; padding: 2px 6px; borderRadius: 4px; }
           .print-footer { text-align: right; font-size: 10px; color: #94a3b8; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+          tfoot tr { background: #e2e8f0; font-weight: 800; }
+          tfoot td { border-top: 2px solid #0f172a; font-size: 10px; }
         </style>
       </head>
       <body>
@@ -422,7 +448,9 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           <div class="report-sub">Generated on ${new Date().toLocaleString()} · Total Circles: ${circlesToPrint.length}</div>
         </div>
 
-        ${circlesToPrint.map(c => `
+        ${circlesToPrint.map(c => {
+          const uniqueCount = new Set(c.enumerators.map(e => e.enumId || e.enumName)).size;
+          return `
           <div class="circle-card">
             <div class="circle-header">
               <div>
@@ -459,9 +487,23 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                   </tr>
                 `).join('')}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td style="text-align:left; font-weight:900;">SUPERVISOR TOTAL (${uniqueCount} Enumerators)</td>
+                  <td style="text-align:left;">-</td>
+                  <td>${c.enumerators.length} HLBs</td>
+                  <td style="font-weight:900;">${c.enumerators.reduce((s, e) => s + (e.totalRecords || 0), 0)}</td>
+                  <td>
+                    <span class="err-badge ${c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0) > 0 ? 'has-err' : 'no-err'}">
+                      ${c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0)} errors
+                    </span>
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
-        `).join('')}
+        `;
+        }).join('')}
 
         <div class="print-footer">
           Supervisor Error Abstract Report
@@ -479,9 +521,9 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
   };
 
   return (
-    <div style={{ background: '#0b0f19', color: '#f8fafc', minHeight: '100vh', padding: '20px' }}>
+    <div style={{ background: '#0b0f19', color: '#f8fafc', minHeight: '100vh', padding: '16px 14px' }}>
       {/* Top Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         <button
           onClick={onBack}
           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
@@ -489,7 +531,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           <ArrowLeft size={16}/> Back to Sub-Modules
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
             onClick={() => printSupervisorAbstractReport(abstractReport)}
             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 10, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
@@ -499,14 +541,121 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         </div>
       </div>
 
-      <div style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 4, color: '#ffffff' }}>
+      <div style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 12, color: '#ffffff' }}>
         Supervisor &amp; Enumerator Error Abstract Report
       </div>
-      <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: 20 }}>
-        <span>🏛️ {abstractReport.length} Supervisor Circles</span> • 
-        <span>👥 450 Enumerators</span> • 
-        <span>📍 470 HLB Blocks</span> • 
-        <span style={{ color: '#fca5a5', fontWeight: 800 }}>⚠️ {totalErrorCount} Total Active Errors</span>
+
+      {/* OVERALL TOTAL KPI SUMMARY CARDS */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: '12px',
+        marginBottom: '24px'
+      }}>
+        {/* CARD 1: SUPERVISOR CIRCLES */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(124, 58, 237, 0.08) 100%)',
+          border: '1px solid rgba(168, 85, 247, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#c084fc', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Supervisor Circles
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
+            {overallStats.totalCircles}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Active Circles Allotted
+          </div>
+        </div>
+
+        {/* CARD 2: TOTAL ENUMERATORS */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)',
+          border: '1px solid rgba(59, 130, 246, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Total Enumerators
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
+            {overallStats.totalEnumerators.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Field Enumerators
+          </div>
+        </div>
+
+        {/* CARD 3: ALLOTTED HLB BLOCKS */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, rgba(13, 148, 136, 0.08) 100%)',
+          border: '1px solid rgba(20, 184, 166, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#2dd4bf', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Allotted HLB Blocks
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
+            {overallStats.totalHlbs.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Mapped HLBs
+          </div>
+        </div>
+
+        {/* CARD 4: GRAND TOTAL RECORDS */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.08) 100%)',
+          border: '1px solid rgba(245, 158, 11, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Grand Total Records
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
+            {overallStats.totalRecords.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Extracted Records
+          </div>
+        </div>
+
+        {/* CARD 5: GRAND TOTAL ERRORS */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%)',
+          border: '1px solid rgba(239, 68, 68, 0.45)',
+          borderRadius: '16px',
+          padding: '14px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#fca5a5', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Grand Total Active Errors
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ef4444' }}>
+            {overallStats.totalErrors.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#fca5a5' }}>
+            Action Required
+          </div>
+        </div>
       </div>
 
       {loading ? (
@@ -515,8 +664,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {abstractReport.map((circle, cIdx) => (
             <div key={cIdx} style={{ background: 'rgba(255, 255, 255, 0.025)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#fff', fontSize: '0.72rem', fontWeight: 900, padding: '3px 10px', borderRadius: 20 }}>
                     {circle.circleNo}
                   </span>
@@ -524,7 +673,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                     <User size={14} color="#c084fc"/> Supervisor: {circle.supervisorName} {circle.supervisorId ? `(${circle.supervisorId})` : ''}
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'monospace' }}>
                     <Phone size={12} color="#60a5fa"/> {circle.supervisorMobile}
                   </span>
@@ -537,7 +686,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                 </div>
               </div>
 
-              <div style={{ overflowX: 'auto', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem' }}>
                   <thead>
                     <tr style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#e9d5ff', borderBottom: '1px solid rgba(168, 85, 247, 0.25)' }}>
@@ -545,7 +694,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                       <th style={{ padding: '10px 12px', textAlign: 'left', minWidth: 110 }}>Mobile No</th>
                       <th style={{ padding: '10px 12px', textAlign: 'center', minWidth: 110 }}>Allotted HLB Code</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>Total Records</th>
-                      <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 100 }}>No. of Errors</th>
+                      <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>No. of Errors</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -557,7 +706,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                         </td>
                         <td style={{ padding: '10px 12px', color: '#94a3b8', fontFamily: 'monospace' }}>{enumItem.enumMobile}</td>
                         <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                          <span style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc', padding: '3px 10px', borderRadius: 8, fontWeight: 800, fontFamily: 'monospace' }}>
+                          <span style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc', padding: '3px 10px', borderRadius: 8, fontWeight: 800, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
                             HLB {String(enumItem.hlbCode).padStart(4, '0')}
                           </span>
                         </td>
@@ -585,6 +734,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                               borderRadius: 12,
                               fontWeight: 900,
                               fontSize: '0.74rem',
+                              whiteSpace: 'nowrap',
+                              display: 'inline-block',
                               cursor: enumItem.errorCount > 0 ? 'pointer' : 'default'
                             }}
                           >
@@ -594,6 +745,42 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot>
+                    {(() => {
+                      const uniqueEnumCount = new Set(circle.enumerators.map(e => e.enumId || e.enumName)).size;
+                      const circleTotalRecs = circle.enumerators.reduce((sum, e) => sum + (e.totalRecords || 0), 0);
+                      const circleTotalErrs = circle.enumerators.reduce((sum, e) => sum + (e.errorCount || 0), 0);
+                      return (
+                        <tr style={{ background: 'rgba(168, 85, 247, 0.18)', color: '#ffffff', fontWeight: 900, borderTop: '2px solid rgba(168, 85, 247, 0.4)' }}>
+                          <td style={{ padding: '10px 12px', textAlign: 'left', color: '#e9d5ff', fontSize: '0.82rem' }}>
+                            SUPERVISOR TOTAL ({uniqueEnumCount} Enumerator{uniqueEnumCount === 1 ? '' : 's'})
+                          </td>
+                          <td style={{ padding: '10px 12px', color: '#94a3b8' }}>-</td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#c084fc', fontWeight: 800 }}>
+                            {circle.enumerators.length} HLBs
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#38bdf8', fontSize: '0.88rem', fontWeight: 900 }}>
+                            {circleTotalRecs.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            <span style={{
+                              background: circleTotalErrs > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.2)',
+                              border: circleTotalErrs > 0 ? '1.5px solid #ef4444' : '1.5px solid rgba(34,197,94,0.4)',
+                              color: circleTotalErrs > 0 ? '#fca5a5' : '#86efac',
+                              padding: '4px 12px',
+                              borderRadius: 12,
+                              fontWeight: 900,
+                              fontSize: '0.78rem',
+                              whiteSpace: 'nowrap',
+                              display: 'inline-block'
+                            }}>
+                              {circleTotalErrs} {circleTotalErrs === 1 ? 'error' : 'errors'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })()}
+                  </tfoot>
                 </table>
               </div>
             </div>

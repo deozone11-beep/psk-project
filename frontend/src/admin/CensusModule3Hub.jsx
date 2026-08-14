@@ -1,7 +1,9 @@
 import React from 'react';
 import { ArrowLeft, AlertCircle, FileText, Sparkles, ExternalLink } from 'lucide-react';
 
-export default function CensusModule3Hub({ onBack, onSelectSubModule }) {
+export default function CensusModule3Hub({ onBack, onSelectSubModule, creds }) {
+  const isAdmin = !creds || !creds.role || creds.role === 'ADMIN' || creds.role === 'OWNER';
+
   return (
     <div style={{
       position: 'fixed',
@@ -11,14 +13,14 @@ export default function CensusModule3Hub({ onBack, onSelectSubModule }) {
       zIndex: 99999,
       background: '#0a0d16',
       color: '#f8fafc',
-      padding: '30px 40px',
+      padding: '20px 16px',
       display: 'flex',
       flexDirection: 'column',
-      gap: '24px',
+      gap: '20px',
       overflowY: 'auto'
     }}>
       {/* Back Button to main module selection */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
         <button 
           onClick={onBack}
           style={{
@@ -46,16 +48,16 @@ export default function CensusModule3Hub({ onBack, onSelectSubModule }) {
 
       {/* Header */}
       <div style={{ textAlign: 'center', maxWidth: '750px', margin: '10px auto 20px auto' }}>
-        <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#ffffff', margin: '0 0 10px 0', fontFamily: 'serif' }}>
+        <h2 style={{ fontSize: 'clamp(1.5rem, 5vw, 2.2rem)', fontWeight: 900, color: '#ffffff', margin: '0 0 10px 0', fontFamily: 'serif' }}>
           Work Module 3 — Select Sub-Module
         </h2>
-        <p style={{ color: '#94a3b8', fontSize: '1.02rem', lineHeight: '1.6' }}>
-          Select one of the 3 error &amp; abstract report sub-modules below to open its dedicated view.
+        <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.6' }}>
+          {isAdmin ? 'Select one of the 3 error & abstract report sub-modules below to open its dedicated view.' : 'Open Option 1 Error Base Report view below.'}
         </p>
       </div>
 
       {/* 3 SUB-MODULE CARDS GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '26px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         
         {/* SUB-CARD 1: ERROR BASE REPORT */}
         <div 
@@ -71,7 +73,7 @@ export default function CensusModule3Hub({ onBack, onSelectSubModule }) {
             boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
             display: 'flex',
             flexDirection: 'column',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             minHeight: '280px'
           }}
           className="censusModuleCard"
@@ -87,7 +89,7 @@ export default function CensusModule3Hub({ onBack, onSelectSubModule }) {
                 color: '#fca5a5',
                 display: 'flex',
                 alignItems: 'center',
-                justify: 'center'
+                justifyContent: 'center'
               }}>
                 <AlertCircle size={30} />
               </div>
@@ -108,106 +110,109 @@ export default function CensusModule3Hub({ onBack, onSelectSubModule }) {
           </div>
         </div>
 
-        {/* SUB-CARD 2: SUPERVISOR BASE REPORT */}
-        <div 
-          onClick={() => onSelectSubModule('MODULE_3_SUPERVISOR_BASE')}
-          style={{
-            background: 'linear-gradient(145deg, rgba(20, 26, 42, 0.95) 0%, rgba(13, 19, 34, 0.98) 100%)',
-            border: '1px solid rgba(59, 130, 246, 0.38)',
-            borderRadius: '24px',
-            padding: '34px 28px',
-            cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
-            boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
-            display: 'flex',
-            flexDirection: 'column',
-            justify: 'space-between',
-            minHeight: '280px'
-          }}
-          className="censusModuleCard"
-        >
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '16px',
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.35) 100%)',
-                border: '1px solid rgba(59, 130, 246, 0.45)',
-                color: '#60a5fa',
-                display: 'flex',
-                alignItems: 'center',
-                justify: 'center'
-              }}>
-                <FileText size={30} />
+        {/* SUB-CARD 2: SUPERVISOR BASE REPORT (ADMIN ONLY) */}
+        {isAdmin && (
+          <div 
+            onClick={() => onSelectSubModule('MODULE_3_SUPERVISOR_BASE')}
+            style={{
+              background: 'linear-gradient(145deg, rgba(20, 26, 42, 0.95) 0%, rgba(13, 19, 34, 0.98) 100%)',
+              border: '1px solid rgba(59, 130, 246, 0.38)',
+              borderRadius: '24px',
+              padding: '34px 28px',
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '280px'
+            }}
+            className="censusModuleCard"
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.35) 100%)',
+                  border: '1px solid rgba(59, 130, 246, 0.45)',
+                  color: '#60a5fa',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <FileText size={30} />
+                </div>
+                <span style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', padding: '4px 12px', borderRadius: '16px', fontSize: '0.74rem', fontWeight: 800 }}>
+                  Option 2
+                </span>
               </div>
-              <span style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', padding: '4px 12px', borderRadius: '16px', fontSize: '0.74rem', fontWeight: 800 }}>
-                Option 2
-              </span>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', margin: '0 0 10px 0' }}>
+                Supervisor Base Report
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                View hierarchical error abstract report for 75 Supervisor Circles (3 digits), 450 Enumerators, and 470 Allotted HLBs.
+              </p>
             </div>
-            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', margin: '0 0 10px 0' }}>
-              Supervisor Base Report
-            </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
-              View hierarchical error abstract report for 75 Supervisor Circles (3 digits), 450 Enumerators, and 470 Allotted HLBs.
-            </p>
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: '#60a5fa', fontSize: '0.88rem', fontWeight: 700 }}>Open Supervisor Report →</span>
+              <ExternalLink size={16} color="#60a5fa" />
+            </div>
           </div>
-          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#60a5fa', fontSize: '0.88rem', fontWeight: 700 }}>Open Supervisor Report →</span>
-            <ExternalLink size={16} color="#60a5fa" />
-          </div>
-        </div>
+        )}
 
-        {/* SUB-CARD 3: CUSTOM REPORT 3 (RESERVED) */}
-        <div 
-          style={{
-            background: 'rgba(28, 22, 44, 0.4)',
-            border: '1.5px dashed rgba(168, 85, 247, 0.35)',
-            borderRadius: '24px',
-            padding: '34px 28px',
-            cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
-            boxShadow: '0 14px 40px rgba(0, 0, 0, 0.2)',
-            display: 'flex',
-            flexDirection: 'column',
-            justify: 'space-between',
-            minHeight: '280px',
-            opacity: 0.85
-          }}
-          className="censusModuleCard"
-        >
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '16px',
-                background: 'rgba(168, 85, 247, 0.15)',
-                border: '1px solid rgba(168, 85, 247, 0.35)',
-                color: '#c084fc',
-                display: 'flex',
-                alignItems: 'center',
-                justify: 'center'
-              }}>
-                <Sparkles size={30} />
+        {/* SUB-CARD 3: CUSTOM REPORT 3 (RESERVED - ADMIN ONLY) */}
+        {isAdmin && (
+          <div 
+            onClick={() => onSelectSubModule('MODULE_3_CUSTOM')}
+            style={{
+              background: 'rgba(28, 22, 44, 0.4)',
+              border: '1.5px dashed rgba(168, 85, 247, 0.35)',
+              borderRadius: '24px',
+              padding: '34px 28px',
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '280px'
+            }}
+            className="censusModuleCard"
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '16px',
+                  background: 'rgba(168, 85, 247, 0.15)',
+                  border: '1px solid rgba(168, 85, 247, 0.35)',
+                  color: '#c084fc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Sparkles size={30} />
+                </div>
+                <span style={{ background: 'rgba(168, 85, 247, 0.18)', color: '#c084fc', padding: '4px 12px', borderRadius: '16px', fontSize: '0.74rem', fontWeight: 800 }}>
+                  Option 3
+                </span>
               </div>
-              <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', padding: '4px 12px', borderRadius: '16px', fontSize: '0.74rem', fontWeight: 800 }}>
-                Option 3
-              </span>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', margin: '0 0 10px 0' }}>
+                Custom Report 3 (Reserved)
+              </h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                Reserved for 3rd custom report. Will be populated as soon as details are shared!
+              </p>
             </div>
-            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#e2e8f0', margin: '0 0 10px 0' }}>
-              Custom Report 3 (Reserved)
-            </h3>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: '1.6' }}>
-              Reserved for 3rd custom report. Will be populated as soon as details are shared!
-            </p>
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: 700 }}>⏳ Coming Soon</span>
+            </div>
           </div>
-          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#c084fc', fontSize: '0.88rem', fontWeight: 700 }}>⏳ Coming Soon</span>
-          </div>
-        </div>
+        )}
 
       </div>
     </div>

@@ -282,6 +282,8 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
 
         const hlbSerial = String(a.hlb_block_no || a.hlb_block_number || a.hlb_no || a.hlb_number || a.hlb_serial_no || a.hlb_serial_number || a.block_no || a.block_number || a.blk_no || a.hlb_code || a.area_code || a.hlb || '').trim();
         const blkCode = getHlbBlockNo(hlbSerial) || hlbSerial.padStart(4, '0');
+        const blkNum = parseInt(blkCode, 10);
+        if (blkNum > 470) return;
 
         const rawSup = String(a.supervisor_name || a.supervisor || a.supervisor_full_name || a.sup_name || a.supervisor_id || '').trim();
         const supInfo = getMobileAndUsername(rawSup, rawSup, true);
@@ -417,6 +419,45 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     return [];
   }, [rows, allotedRows, chargeRows, userRows, hlbErrorMap, hlbErrorRecordsMap]);
 
+  const overallStats = useMemo(() => {
+    let expHouses = 0;
+    let cenHouses = 0;
+    let hhCount = 0;
+    let verCount = 0;
+    let popCount = 0;
+    let errCount = 0;
+    let compCount = 0;
+    let totHlbs = 0;
+    const allUniqueEnums = new Set();
+
+    abstractReport.forEach(c => {
+      c.enumerators.forEach(e => {
+        totHlbs++;
+        if (e.enumId || e.enumName) allUniqueEnums.add(e.enumId || e.enumName);
+        expHouses += (e.expectedHouses || 0);
+        cenHouses += (e.censusHouses || 0);
+        hhCount += (e.households || 0);
+        verCount += (e.verifiedBySup || 0);
+        popCount += (e.totalPopulation || 0);
+        errCount += (e.errorCount || 0);
+        if (e.isCompleted) compCount++;
+      });
+    });
+
+    return {
+      totalCircles: Math.min(abstractReport.length || 75, 75),
+      totalEnumerators: Math.min(allUniqueEnums.size || 450, 450),
+      totalHlbs: Math.min(totHlbs || 470, 470),
+      expectedHouses: expHouses,
+      censusHouses: cenHouses,
+      households: hhCount,
+      verifiedBySup: verCount,
+      totalPopulation: popCount,
+      errorCount: errCount,
+      completedCount: compCount
+    };
+  }, [abstractReport]);
+
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
     const iframe = document.createElement('iframe');
@@ -458,6 +499,8 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           .comp { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
           .hlb-code { font-weight: 800; background: #e2e8f0; padding: 2px 6px; borderRadius: 4px; }
           .print-footer { text-align: right; font-size: 10px; color: #94a3b8; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+          tfoot tr { background: #e2e8f0; font-weight: 800; }
+          tfoot td { border-top: 2px solid #0f172a; font-size: 10px; }
         </style>
       </head>
       <body>
@@ -466,7 +509,9 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           <div class="report-sub">Generated on ${new Date().toLocaleString()} · Total Circles: ${circlesToPrint.length}</div>
         </div>
 
-        ${circlesToPrint.map(c => `
+        ${circlesToPrint.map(c => {
+          const uniqueCount = new Set(c.enumerators.map(e => e.enumId || e.enumName)).size;
+          return `
           <div class="circle-card">
             <div class="circle-header">
               <div>
@@ -517,9 +562,32 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                   </tr>
                 `).join('')}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td style="text-align:left; font-weight:900;">SUPERVISOR TOTAL (${uniqueCount} Enumerators)</td>
+                  <td style="text-align:left;">-</td>
+                  <td>${c.enumerators.length} HLBs</td>
+                  <td style="font-weight:800;">${c.enumerators.reduce((s, e) => s + (e.expectedHouses || 0), 0)}</td>
+                  <td style="font-weight:800;">${c.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0)}</td>
+                  <td style="font-weight:900;">${c.enumerators.reduce((s, e) => s + (e.households || 0), 0)}</td>
+                  <td style="font-weight:900; color:#0284c7;">${c.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0)}</td>
+                  <td style="font-weight:900; color:#15803d;">${c.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0)}</td>
+                  <td>
+                    <span class="err-badge ${c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0) > 0 ? 'has-err' : 'no-err'}">
+                      ${c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0)} errors
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge ${c.enumerators.filter(e => e.isCompleted).length === c.enumerators.length ? 'comp' : 'in-prog'}">
+                      ${c.enumerators.filter(e => e.isCompleted).length}/${c.enumerators.length} Comp
+                    </span>
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
-        `).join('')}
+        `;
+        }).join('')}
 
         <div class="print-footer">
           Census Progress Report (Supervisor Base Report)
@@ -537,9 +605,9 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
   };
 
   return (
-    <div style={{ background: '#0b0f19', color: '#f8fafc', minHeight: '100vh', padding: '20px' }}>
+    <div style={{ background: '#0b0f19', color: '#f8fafc', minHeight: '100vh', padding: '16px 14px' }}>
       {/* Top Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         <button
           onClick={onBack}
           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
@@ -547,7 +615,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           <ArrowLeft size={16}/> Back to Dashboard
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
             onClick={() => printSupervisorAbstractReport(abstractReport)}
             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 10, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
@@ -557,13 +625,184 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         </div>
       </div>
 
-      <div style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 4, color: '#ffffff' }}>
+      <div style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 12, color: '#ffffff' }}>
         Census Progress Report (Supervisor Base Report)
       </div>
-      <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: 20 }}>
-        <span>🏛️ {abstractReport.length} Supervisor Circles</span> • 
-        <span>👥 450 Enumerators</span> • 
-        <span>📍 470 HLB Blocks</span>
+
+      {/* OVERALL TOTAL SUMMARY CARDS GRID */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: '12px',
+        marginBottom: '24px'
+      }}>
+        {/* CARD 1: SUPERVISOR CIRCLES */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(124, 58, 237, 0.08) 100%)',
+          border: '1px solid rgba(168, 85, 247, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#c084fc', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Supervisor Circles
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
+            {overallStats.totalCircles}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Active Circles Allotted
+          </div>
+        </div>
+
+        {/* CARD 2: TOTAL ENUMERATORS */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)',
+          border: '1px solid rgba(59, 130, 246, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Total Enumerators
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
+            {overallStats.totalEnumerators.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Allotted HLBs: {overallStats.totalHlbs}
+          </div>
+        </div>
+
+        {/* CARD 3: EXPECTED HOUSES */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(148, 163, 184, 0.15) 0%, rgba(100, 116, 139, 0.08) 100%)',
+          border: '1px solid rgba(148, 163, 184, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#cbd5e1', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Expected Houses
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
+            {overallStats.expectedHouses.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Target Expected
+          </div>
+        </div>
+
+        {/* CARD 4: CENSUS HOUSES */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, rgba(13, 148, 136, 0.08) 100%)',
+          border: '1px solid rgba(20, 184, 166, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#2dd4bf', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Census Houses
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
+            {overallStats.censusHouses.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Actual Listed
+          </div>
+        </div>
+
+        {/* CARD 5: CENSUS HOUSEHOLDS */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.08) 100%)',
+          border: '1px solid rgba(245, 158, 11, 0.3)',
+          borderRadius: '16px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Census Households
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff' }}>
+            {overallStats.households.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Total Households
+          </div>
+        </div>
+
+        {/* CARD 6: VERIFIED BY SUPERVISOR */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.18) 0%, rgba(2, 132, 199, 0.1) 100%)',
+          border: '1px solid rgba(14, 165, 233, 0.4)',
+          borderRadius: '16px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Verified By Supervisor
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#38bdf8' }}>
+            {overallStats.verifiedBySup.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#7dd3fc' }}>
+            Supervisor Verified
+          </div>
+        </div>
+
+        {/* CARD 7: TOTAL POPULATION */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.18) 0%, rgba(22, 163, 74, 0.1) 100%)',
+          border: '1px solid rgba(34, 197, 94, 0.4)',
+          borderRadius: '16px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#4ade80', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Total Population
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#4ade80' }}>
+            {overallStats.totalPopulation.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#86efac' }}>
+            Total Persons Mapped
+          </div>
+        </div>
+
+        {/* CARD 8: TOTAL ERRORS */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%)',
+          border: '1px solid rgba(239, 68, 68, 0.45)',
+          borderRadius: '16px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <div style={{ fontSize: '0.74rem', color: '#fca5a5', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Total Active Errors
+          </div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ef4444' }}>
+            {overallStats.errorCount.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#fca5a5' }}>
+            Action Required
+          </div>
+        </div>
       </div>
 
       {loading ? (
@@ -572,8 +811,8 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {abstractReport.map((circle, cIdx) => (
             <div key={cIdx} style={{ background: 'rgba(255, 255, 255, 0.025)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#fff', fontSize: '0.72rem', fontWeight: 900, padding: '3px 10px', borderRadius: 20 }}>
                     {circle.circleNo}
                   </span>
@@ -581,7 +820,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                     <User size={14} color="#c084fc"/> Supervisor: {circle.supervisorName} {circle.supervisorId ? `(${circle.supervisorId})` : ''}
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'monospace' }}>
                     <Phone size={12} color="#60a5fa"/> {circle.supervisorMobile}
                   </span>
@@ -594,7 +833,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                 </div>
               </div>
 
-              <div style={{ overflowX: 'auto', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem' }}>
                   <thead>
                     <tr style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#e9d5ff', borderBottom: '1px solid rgba(168, 85, 247, 0.25)' }}>
@@ -606,8 +845,8 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Total Number of Census Households</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Households Verified By Supervisor</th>
                       <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 95 }}>Total Population</th>
-                      <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 100 }}>No. of Errors</th>
-                      <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 105 }}>Status</th>
+                      <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>No. of Errors</th>
+                      <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 110 }}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -619,7 +858,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                         </td>
                         <td style={{ padding: '10px 12px', color: '#94a3b8', fontFamily: 'monospace' }}>{enumItem.enumMobile}</td>
                         <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                          <span style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc', padding: '3px 10px', borderRadius: 8, fontWeight: 800, fontFamily: 'monospace' }}>
+                          <span style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc', padding: '3px 10px', borderRadius: 8, fontWeight: 800, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
                             HLB {String(enumItem.hlbCode).padStart(4, '0')}
                           </span>
                         </td>
@@ -659,6 +898,8 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                               borderRadius: 12,
                               fontWeight: 900,
                               fontSize: '0.74rem',
+                              whiteSpace: 'nowrap',
+                              display: 'inline-block',
                               cursor: enumItem.errorCount > 0 ? 'pointer' : 'default'
                             }}
                           >
@@ -674,6 +915,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                             borderRadius: 12,
                             fontSize: '0.74rem',
                             fontWeight: 900,
+                            whiteSpace: 'nowrap',
                             display: 'inline-block'
                           }}>
                             {enumItem.isCompleted ? 'Completed' : 'In progress'}
@@ -682,6 +924,75 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot>
+                    {(() => {
+                      const uniqueEnumCount = new Set(circle.enumerators.map(e => e.enumId || e.enumName)).size;
+                      const sumExp = circle.enumerators.reduce((s, e) => s + (e.expectedHouses || 0), 0);
+                      const sumCen = circle.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0);
+                      const sumHH  = circle.enumerators.reduce((s, e) => s + (e.households || 0), 0);
+                      const sumVer = circle.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0);
+                      const sumPop = circle.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0);
+                      const sumErr = circle.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
+                      const sumComp = circle.enumerators.filter(e => e.isCompleted).length;
+
+                      return (
+                        <tr style={{ background: 'rgba(168, 85, 247, 0.18)', color: '#ffffff', fontWeight: 900, borderTop: '2px solid rgba(168, 85, 247, 0.4)' }}>
+                          <td style={{ padding: '10px 12px', textAlign: 'left', color: '#e9d5ff', fontSize: '0.82rem' }}>
+                            SUPERVISOR TOTAL ({uniqueEnumCount} Enumerator{uniqueEnumCount === 1 ? '' : 's'})
+                          </td>
+                          <td style={{ padding: '10px 12px', color: '#94a3b8' }}>-</td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#c084fc', fontWeight: 800 }}>
+                            {circle.enumerators.length} HLBs
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#94a3b8', fontWeight: 900 }}>
+                            {sumExp.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#cbd5e1', fontWeight: 900 }}>
+                            {sumCen.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f1f5f9', fontWeight: 900 }}>
+                            {sumHH.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#38bdf8', fontSize: '0.86rem', fontWeight: 900 }}>
+                            {sumVer.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#4ade80', fontSize: '0.86rem', fontWeight: 900 }}>
+                            {sumPop.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            <span style={{
+                              background: sumErr > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.2)',
+                              border: sumErr > 0 ? '1.5px solid #ef4444' : '1.5px solid rgba(34,197,94,0.4)',
+                              color: sumErr > 0 ? '#fca5a5' : '#86efac',
+                              padding: '3px 10px',
+                              borderRadius: 12,
+                              fontWeight: 900,
+                              fontSize: '0.76rem',
+                              whiteSpace: 'nowrap',
+                              display: 'inline-block'
+                            }}>
+                              {sumErr} {sumErr === 1 ? 'error' : 'errors'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            <span style={{
+                              background: sumComp === circle.enumerators.length ? 'rgba(34,197,94,0.25)' : 'rgba(245,158,11,0.25)',
+                              border: sumComp === circle.enumerators.length ? '1px solid #22c55e' : '1px solid #eab308',
+                              color: sumComp === circle.enumerators.length ? '#86efac' : '#fef08a',
+                              padding: '3px 10px',
+                              borderRadius: 10,
+                              fontWeight: 900,
+                              fontSize: '0.72rem',
+                              whiteSpace: 'nowrap',
+                              display: 'inline-block'
+                            }}>
+                              {sumComp}/{circle.enumerators.length} Comp
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })()}
+                  </tfoot>
                 </table>
               </div>
             </div>

@@ -876,17 +876,28 @@ export default function CensusWorkTab({ creds }) {
     setDashPage(0);
   }
 
+  const isAdmin = !creds || !creds.role || creds.role === 'ADMIN' || creds.role === 'OWNER';
+
+  /* ── WORK MODULE CARDS SELECTION DASHBOARD ── */
   if (activeModule === 'MODULE_SELECTION') {
     return (
-      <div style={{ padding: '36px 24px', maxWidth: '1300px', margin: '0 auto', width: '100%' }}>
-        {/* HEADER BANNER */}
-        <div style={{ marginBottom: '40px', textAlign: 'center' }}>
+      <div style={{
+        minHeight: '100vh',
+        background: '#0a0d16',
+        color: '#ffffff',
+        padding: '50px 40px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}>
+        {/* Top Header */}
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
           <div style={{ 
             display: 'inline-flex', 
             alignItems: 'center', 
             gap: '8px', 
-            background: 'rgba(226, 38, 43, 0.15)', 
-            border: '1px solid rgba(226, 38, 43, 0.3)', 
+            background: 'rgba(239, 68, 68, 0.12)', 
+            border: '1px solid rgba(239, 68, 68, 0.3)', 
             color: '#ff6b6b', 
             padding: '6px 16px', 
             borderRadius: '20px', 
@@ -901,110 +912,112 @@ export default function CensusWorkTab({ creds }) {
             Select Census Work Module
           </h1>
           <p style={{ color: '#94a3b8', fontSize: '1.02rem', maxWidth: '620px', margin: '0 auto', lineHeight: '1.6' }}>
-            Choose one of the work modules below to open the Map Application or launch Module 2.
+            Choose one of the work modules below to open your census tools.
           </p>
         </div>
 
-        {/* 2 CARDS GRID */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '30px' }}>
+        {/* CARDS GRID */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '30px', maxWidth: '1200px', width: '100%' }}>
           
-          {/* CARD 1: CENSUS MAP APPLICATION */}
-          <div 
-            onClick={() => navigateModule('MAP_APP')}
-            style={{
-              background: 'linear-gradient(145deg, rgba(20, 26, 42, 0.95) 0%, rgba(13, 19, 34, 0.98) 100%)',
-              border: '1px solid rgba(59, 130, 246, 0.35)',
-              borderRadius: '24px',
-              padding: '38px 32px',
-              cursor: 'pointer',
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '330px'
-            }}
-            className="censusModuleCard"
-          >
-            <div style={{
-              position: 'absolute',
-              top: '-40px',
-              right: '-40px',
-              width: '200px',
-              height: '200px',
-              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)',
-              pointerEvents: 'none'
-            }} />
-
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <div style={{
-                  width: '66px',
-                  height: '66px',
-                  borderRadius: '20px',
-                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.35) 100%)',
-                  border: '1px solid rgba(59, 130, 246, 0.45)',
-                  color: '#60a5fa',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 8px 22px rgba(59, 130, 246, 0.25)'
-                }}>
-                  <Globe size={36} />
-                </div>
-                <span style={{
-                  background: 'rgba(34, 197, 94, 0.15)',
-                  border: '1px solid rgba(34, 197, 94, 0.4)',
-                  color: '#4ade80',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  <CheckCircle size={13} /> Map Application
-                </span>
-              </div>
-
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
-                Census Map Application
-              </h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
-                Open the official Census of India 2027 Interactive Map, GIS HLB Creator, Ward Boundaries, Household Mapping &amp; Layout Manager.
-              </p>
-            </div>
-
-            <div style={{
-              marginTop: '32px',
-              paddingTop: '20px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              justify: 'space-between',
-              alignItems: 'center'
-            }}>
-              <span style={{ color: '#38bdf8', fontSize: '0.9rem', fontWeight: 700 }}>
-                Click to Open Map Page →
-              </span>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: 'rgba(59, 130, 246, 0.25)',
-                border: '1px solid rgba(59, 130, 246, 0.5)',
-                color: '#ffffff',
+          {/* CARD 1: CENSUS MAP APPLICATION (ADMIN ONLY) */}
+          {isAdmin && (
+            <div 
+              onClick={() => navigateModule('MAP_APP')}
+              style={{
+                background: 'linear-gradient(145deg, rgba(20, 26, 42, 0.95) 0%, rgba(13, 19, 34, 0.98) 100%)',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+                borderRadius: '24px',
+                padding: '38px 32px',
+                cursor: 'pointer',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                minHeight: '330px'
+              }}
+              className="censusModuleCard"
+            >
+              <div style={{
+                position: 'absolute',
+                top: '-40px',
+                right: '-40px',
+                width: '200px',
+                height: '200px',
+                background: 'radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)',
+                pointerEvents: 'none'
+              }} />
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <div style={{
+                    width: '66px',
+                    height: '66px',
+                    borderRadius: '20px',
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.35) 100%)',
+                    border: '1px solid rgba(59, 130, 246, 0.45)',
+                    color: '#60a5fa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 22px rgba(59, 130, 246, 0.25)'
+                  }}>
+                    <MapPin size={36} />
+                  </div>
+                  <span style={{
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                    color: '#93c5fd',
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <Sparkles size={13} /> Map Application
+                  </span>
+                </div>
+
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
+                  Census Map Application
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
+                  Open the official Census of India 2027 Interactive Map, GIS HLB Creator, Ward Boundaries, Household Mapping &amp; Layout Manager.
+                </p>
+              </div>
+
+              <div style={{
+                marginTop: '32px',
+                paddingTop: '20px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
               }}>
-                <ExternalLink size={18} />
+                <span style={{ color: '#38bdf8', fontSize: '0.9rem', fontWeight: 700 }}>
+                  Click to Open Map Page →
+                </span>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'rgba(59, 130, 246, 0.25)',
+                  border: '1px solid rgba(59, 130, 246, 0.5)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ExternalLink size={18} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* CARD 2: CENSUS RECORDS & HLB BLOCK EXPLORER */}
+          {/* CARD 2: CENSUS RECORDS & HLB BLOCK EXPLORER (WORK MODULE 2) */}
           <div 
             onClick={() => navigateModule('MODULE_2')}
             style={{
@@ -1069,7 +1082,7 @@ export default function CensusWorkTab({ creds }) {
                 Census Records &amp; HLB Block Explorer
               </h3>
               <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
-                Explore full census house records, multi-tier numerical sorting (HLB Code &amp; Line No), horizontal block cards train filter, and CSV exports.
+                Explore full census house records, multi-tier numerical sorting (HLB Code &amp; Line No), horizontal block cards train filter.
               </p>
             </div>
 
@@ -1100,7 +1113,7 @@ export default function CensusWorkTab({ creds }) {
             </div>
           </div>
 
-          {/* CARD 3: CENSUS ERROR ANALYSIS & SUPERVISOR ABSTRACT HUB */}
+          {/* CARD 3: CENSUS ERROR ANALYSIS & SUPERVISOR ABSTRACT HUB (WORK MODULE 3) */}
           <div 
             onClick={() => navigateModule('MODULE_3_HUB')}
             style={{
@@ -1165,7 +1178,7 @@ export default function CensusWorkTab({ creds }) {
                 Census Error Analysis &amp; Abstract Hub
               </h3>
               <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
-                Contains 3 sub-modules: Error Base Report, Supervisor Base Report, and Reserved Custom Report 3.
+                {isAdmin ? 'Contains 3 sub-modules: Error Base Report, Supervisor Base Report, and Reserved Custom Report 3.' : 'View Error Base Report filter using 6 Default Error cards.'}
               </p>
             </div>
 
@@ -1196,101 +1209,103 @@ export default function CensusWorkTab({ creds }) {
             </div>
           </div>
 
-          {/* CARD 4: SUPERVISOR WISE ABSTRACT REPORT HUB */}
-          <div 
-            onClick={() => navigateModule('MODULE_4_SUPERVISOR_HUB')}
-            style={{
-              background: 'linear-gradient(145deg, rgba(20, 26, 42, 0.95) 0%, rgba(13, 19, 34, 0.98) 100%)',
-              border: '1px solid rgba(59, 130, 246, 0.38)',
-              borderRadius: '24px',
-              padding: '38px 32px',
-              cursor: 'pointer',
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '330px'
-            }}
-            className="censusModuleCard"
-          >
-            <div style={{
-              position: 'absolute',
-              top: '-40px',
-              right: '-40px',
-              width: '200px',
-              height: '200px',
-              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)',
-              pointerEvents: 'none'
-            }} />
-
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <div style={{
-                  width: '66px',
-                  height: '66px',
-                  borderRadius: '20px',
-                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.35) 100%)',
-                  border: '1px solid rgba(59, 130, 246, 0.45)',
-                  color: '#60a5fa',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 8px 22px rgba(59, 130, 246, 0.25)'
-                }}>
-                  <FileText size={36} />
-                </div>
-                <span style={{
-                  background: 'rgba(59, 130, 246, 0.15)',
-                  border: '1px solid rgba(59, 130, 246, 0.4)',
-                  color: '#93c5fd',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  <Sparkles size={13} /> Work Module 4
-                </span>
-              </div>
-
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
-                Census Progress Report (Supervisor Base)
-              </h3>
-              <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
-                Supervisor-wise overall progress tracking report displaying Expected Houses, Census Households, Supervisor Verification, Total Population &amp; Work Status for 75 Supervisors, 450 Enumerators &amp; 470 HLBs.
-              </p>
-            </div>
-
-            <div style={{
-              marginTop: '32px',
-              paddingTop: '20px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <span style={{ color: '#60a5fa', fontSize: '0.9rem', fontWeight: 700 }}>
-                Open Census Progress Report Module 4 →
-              </span>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: 'rgba(59, 130, 246, 0.25)',
-                border: '1px solid rgba(59, 130, 246, 0.5)',
-                color: '#ffffff',
+          {/* CARD 4: SUPERVISOR WISE ABSTRACT REPORT HUB (ADMIN ONLY) */}
+          {isAdmin && (
+            <div 
+              onClick={() => navigateModule('MODULE_4_SUPERVISOR_HUB')}
+              style={{
+                background: 'linear-gradient(145deg, rgba(20, 26, 42, 0.95) 0%, rgba(13, 19, 34, 0.98) 100%)',
+                border: '1px solid rgba(59, 130, 246, 0.38)',
+                borderRadius: '24px',
+                padding: '38px 32px',
+                cursor: 'pointer',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                minHeight: '330px'
+              }}
+              className="censusModuleCard"
+            >
+              <div style={{
+                position: 'absolute',
+                top: '-40px',
+                right: '-40px',
+                width: '200px',
+                height: '200px',
+                background: 'radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)',
+                pointerEvents: 'none'
+              }} />
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <div style={{
+                    width: '66px',
+                    height: '66px',
+                    borderRadius: '20px',
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.35) 100%)',
+                    border: '1px solid rgba(59, 130, 246, 0.45)',
+                    color: '#60a5fa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 22px rgba(59, 130, 246, 0.25)'
+                  }}>
+                    <FileText size={36} />
+                  </div>
+                  <span style={{
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                    color: '#93c5fd',
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <Sparkles size={13} /> Work Module 4
+                  </span>
+                </div>
+
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '0 0 12px 0' }}>
+                  Census Progress Report (Supervisor Base)
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: '1.65', margin: 0 }}>
+                  Supervisor-wise overall progress tracking report displaying Expected Houses, Census Households, Supervisor Verification, Total Population &amp; Work Status for 75 Supervisors, 450 Enumerators &amp; 470 HLBs.
+                </p>
+              </div>
+
+              <div style={{
+                marginTop: '32px',
+                paddingTop: '20px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
               }}>
-                <ExternalLink size={18} />
+                <span style={{ color: '#60a5fa', fontSize: '0.9rem', fontWeight: 700 }}>
+                  Open Census Progress Report Module 4 →
+                </span>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'rgba(59, 130, 246, 0.25)',
+                  border: '1px solid rgba(59, 130, 246, 0.5)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ExternalLink size={18} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
         </div>
       </div>
@@ -1299,7 +1314,7 @@ export default function CensusWorkTab({ creds }) {
 
   /* WORK MODULE 3 SUB-CARD SELECTION HUB */
   if (activeModule === 'MODULE_3_HUB') {
-    return <CensusModule3Hub onBack={() => navigateModule('MODULE_SELECTION')} onSelectSubModule={(sub) => navigateModule(sub)} />;
+    return <CensusModule3Hub onBack={() => navigateModule('MODULE_SELECTION')} onSelectSubModule={(sub) => navigateModule(sub)} creds={creds} />;
   }
 
   if (activeModule === 'MODULE_2') {
