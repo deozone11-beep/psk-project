@@ -82,17 +82,17 @@ const DEFAULT_ERRORS = [
   },
   {
     id: 'err3',
-    name: 'LPG Kitchen Mismatch',
+    name: 'LPG Kitchen Fuel Mismatch',
     nameTa: 'LPG சமையலறை முரண்பாடு',
     matchMode: 'AND',
     targetColumn: 'all',
     enKeywords: [
       'Cooking in kitchen: Has LPG/ PNG Connection',
-      'Kerosene | Firewood | Crop residue | Cowdung cake | Coal | No cooking | Other'
+      'Firewood | Kerosene | Coal | Charcoal | Lignite | Crop residue | Cowdung cake'
     ],
     taKeywords: [
       'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
-      'மண்ணெண்ணை | விறகு | பயிர் கழிவு | சாணம் | நிலக்கரி | சமையல் இல்லை | மற்றவை'
+      'விறகு | நிலக்கரி | பழுப்பு நிலக்கரி | எரித்த கரி | மண்ணெண்ணை | பயிர் கழிவு | சாணம்'
     ],
     excludeKeywords: [
       'lpg/ png',
@@ -447,8 +447,21 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
           if (raw) {
             const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (Array.isArray(parsed) && parsed.length > 0) {
-              setErrorFilters(parsed);
-              localStorage.setItem('psk_custom_error_filters', JSON.stringify(parsed));
+              const defaultErr3 = DEFAULT_ERRORS.find(d => d.id === 'err3');
+              const merged = parsed.map(err => {
+                if (err.id === 'err3') {
+                  return {
+                    ...err,
+                    matchMode: 'AND',
+                    enKeywords: defaultErr3.enKeywords,
+                    taKeywords: defaultErr3.taKeywords,
+                    excludeKeywords: defaultErr3.excludeKeywords
+                  };
+                }
+                return err;
+              });
+              setErrorFilters(merged);
+              localStorage.setItem('psk_custom_error_filters', JSON.stringify(merged));
             }
           }
         }
