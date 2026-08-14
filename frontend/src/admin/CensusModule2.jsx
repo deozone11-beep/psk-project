@@ -82,12 +82,28 @@ const DEFAULT_ERRORS = [
   },
   {
     id: 'err3',
-    name: 'Error 3 (Placeholder)',
-    nameTa: 'பிழை 3',
-    enKeywords: ['Error 3'],
-    taKeywords: ['பிழை 3'],
-    enText: 'Error 3',
-    taText: 'பிழை 3',
+    name: 'LPG Kitchen Mismatch',
+    nameTa: 'LPG சமையலறை முரண்பாடு',
+    matchMode: 'AND',
+    targetColumn: 'all',
+    enKeywords: [
+      'Cooking in kitchen: Has LPG/ PNG Connection',
+      'Kerosene | Firewood | Crop residue | Cowdung cake | Coal | No cooking | Other'
+    ],
+    taKeywords: [
+      'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
+      'மண்ணெண்ணை | விறகு | பயிர் கழிவு | சாணம் | நிலக்கரி | சமையல் இல்லை | மற்றவை'
+    ],
+    excludeKeywords: [
+      'lpg/ png',
+      'electricity',
+      'biogas',
+      'சமையல் எரிவாயு',
+      'மின்சாரம்',
+      'பயோகேஸ்'
+    ],
+    enText: 'Cooking in kitchen: Has LPG/ PNG Connection',
+    taText: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
     color: '#eab308',
     icon: '⚠️'
   },
@@ -494,7 +510,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       const hasExclusion = Object.entries(r).some(([key, val]) => {
         const keyLower = key.toLowerCase();
         // Skip kitchen connection column itself so kitchen text like "Has LPG/ PNG Connection" doesn't self-exclude
-        if (keyLower.includes('kitchen') || keyLower.includes('avail_kitchen')) return false;
+        if (keyLower.includes('kitchen') || keyLower.includes('avail_kitchen') || keyLower.includes('lpgname')) return false;
 
         const strVal = String(val ?? '').toLowerCase();
         if (!strVal) return false;
