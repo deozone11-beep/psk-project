@@ -389,6 +389,14 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     return str;
   }
 
+  const isRecordDeleted = useCallback((r) => {
+    if (!r) return false;
+    if (r.is_deleted === true || r.is_deleted === 'true' || r.is_deleted === 1) return true;
+    const st = String(r.status ?? r.Status ?? r.record_status ?? r.RECORD_STATUS ?? r.delete_status ?? r.deleted ?? '').toLowerCase().trim();
+    if (st.includes('delete') || st === 'deleted') return true;
+    return false;
+  }, []);
+
   const uniqueHlbs = useMemo(() => {
     const map = new Map();
     rows.forEach(r => {
@@ -431,14 +439,6 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     setHlbRows(filtered);
     setPage(0);
   }
-
-  const isRecordDeleted = useCallback((r) => {
-    if (!r) return false;
-    if (r.is_deleted === true || r.is_deleted === 'true' || r.is_deleted === 1) return true;
-    const st = String(r.status ?? r.Status ?? r.record_status ?? r.RECORD_STATUS ?? r.delete_status ?? r.deleted ?? '').toLowerCase().trim();
-    if (st.includes('delete') || st === 'deleted') return true;
-    return false;
-  }, []);
 
   const errorCounts = useMemo(() => {
     const counts = {};
