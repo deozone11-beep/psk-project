@@ -336,48 +336,6 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         });
       });
 
-      // Ensure EXACTLY 75 Supervisor Circles are padded if DB returns fewer
-      if (circles.length < 75) {
-        for (let s = circles.length + 1; s <= 75; s++) {
-          const supInfo = getMobileAndUsername('', `sm_3470160011_sup${s}`, true);
-          const supName = supInfo.fullName || `Supervisor ${s}`;
-          const supHlbs = Array.from({ length: 6 }, (_, i) => {
-            const blkNum = (s - 1) * 6 + i + 1;
-            if (blkNum > 470) return null;
-            return String(blkNum).padStart(4, '0');
-          }).filter(Boolean);
-
-          const enumerators = supHlbs.map((blkCode, i) => {
-            const enumNum = (s - 1) * 6 + i + 1;
-            const enumInfo = getMobileAndUsername(`em_3470160011_enum_${enumNum}`, `Enumerator ${enumNum}`, false);
-            const padded = blkCode.padStart(4, '0');
-            const unpadded = String(parseInt(blkCode, 10));
-
-            const totalRecs = hlbTotalMap.get(padded) ?? hlbTotalMap.get(unpadded) ?? hlbTotalMap.get(blkCode) ?? 0;
-            const errCount = hlbErrorMap.get(padded) ?? hlbErrorMap.get(unpadded) ?? hlbErrorMap.get(blkCode) ?? 0;
-            const errRecords = hlbErrorRecordsMap.get(padded) || hlbErrorRecordsMap.get(unpadded) || hlbErrorRecordsMap.get(blkCode) || [];
-
-            return {
-              enumId: enumInfo.username || `em_3470160011_enum_${enumNum}`,
-              enumName: enumInfo.fullName || `ENUMERATOR ${enumNum}`,
-              enumMobile: enumInfo.mobile !== 'N/A' ? enumInfo.mobile : `9840${100000 + enumNum}`,
-              hlbCode: padded,
-              totalRecords: totalRecs,
-              errorCount: errCount,
-              errorRecords: errRecords
-            };
-          });
-
-          circles.push({
-            circleNo: `Circle ${String(s).padStart(3, '0')}`,
-            supervisorName: supName,
-            supervisorId: supInfo.username && supInfo.username !== 'N/A' ? supInfo.username : `sm_3470160011_sup${s}`,
-            supervisorMobile: supInfo.mobile !== 'N/A' ? supInfo.mobile : `9840${300000 + s}`,
-            enumerators
-          });
-        }
-      }
-
       if (circles.length > 0) return circles;
     }
 
