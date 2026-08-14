@@ -485,18 +485,35 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       .map(k => String(k || '').trim().toLowerCase())
       .filter(Boolean);
 
+    // Exclusion check: If row contains ANY excludeKeyword, it is a VALID record (NOT an error)!
+    const allVals = Object.values(r).map(v => String(v ?? '').toLowerCase());
+    const exList = (Array.isArray(errCard.excludeKeywords) ? errCard.excludeKeywords : [])
+      .map(k => String(k || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    if (exList.length > 0) {
+      const hasExclusion = exList.some(exKw => allVals.some(val => val.includes(exKw)));
+      if (hasExclusion) return false;
+    }
+
     const isAndMode = errCard.matchMode === 'AND' || errCard.matchMode === 'COMBINED';
 
+    const lineMatches = (kwLine) => {
+      const opts = kwLine.split(/[\|,]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+      if (opts.length === 0) return false;
+      return opts.some(opt => vals.some(val => val.includes(opt)));
+    };
+
     if (isAndMode) {
-      const enMatch = enList.length > 0 && enList.every(kw => vals.some(val => val.includes(kw)));
-      const taMatch = taList.length > 0 && taList.every(kw => vals.some(val => val.includes(kw)));
+      const enMatch = enList.length > 0 && enList.every(kwLine => lineMatches(kwLine));
+      const taMatch = taList.length > 0 && taList.every(kwLine => lineMatches(kwLine));
       return enMatch || taMatch;
     }
 
-    // Default OR Mode (matches if ANY keyword is found)
+    // Default OR Mode (matches if ANY keyword line is found)
     const allKw = [...enList, ...taList];
     if (allKw.length === 0) return false;
-    return allKw.some(kw => vals.some(val => val.includes(kw)));
+    return allKw.some(kwLine => lineMatches(kwLine));
   }, [isRecordDeleted]);
 
   const hlbErrorCountsMap = useMemo(() => {
@@ -2505,6 +2522,50 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                   </div>
                 ))}
               </div>
+
+              {/* Exclude / NOT Keywords (Valid combinations to ignore) */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <label style={{ fontSize: '0.74rem', color: '#ef4444', fontWeight: 800 }}>
+                    Exclude / NOT Keywords (தவிர்க்க வேண்டிய சரியான வார்த்தைகள்)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEditingErrCard(prev => ({ ...prev, excludeKeywords: [...(prev.excludeKeywords || []), ''] }))}
+                    style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', color: '#fca5a5', borderRadius: 6, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Plus size={12}/> Add Exclude Text
+                  </button>
+                </div>
+                {(editingErrCard.excludeKeywords || []).map((kw, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <input
+                      type="text"
+                      placeholder={`e.g. LPG/ PNG or சமையல் எரிவாயு (Exclude Keyword #${i + 1})`}
+                      value={kw}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEditingErrCard(prev => {
+                          const next = [...(prev.excludeKeywords || [])];
+                          next[i] = val;
+                          return { ...prev, excludeKeywords: next };
+                        });
+                      }}
+                      style={{ flex: 1, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: '0.8rem' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditingErrCard(prev => ({ ...prev, excludeKeywords: prev.excludeKeywords.filter((_, idx) => idx !== i) }))}
+                      style={{ background: 'rgba(239,68,68,0.2)', border: 'none', color: '#fca5a5', borderRadius: 6, padding: 6, cursor: 'pointer' }}
+                    >
+                      <Trash2 size={13}/>
+                    </button>
+                  </div>
+                ))}
+                <div style={{ fontSize: '0.64rem', color: '#94a3b8', marginTop: 2 }}>
+                  * இந்த வார்த்தைகள் இருக்கும் வரிகள் சரியானவை (Valid) எனக் கொள்ளப்பட்டு பிழையாகக் காட்டப்படாது.
+                </div>
+              </div>
             </div>
 
             <div style={{ padding: '12px 18px', background: 'rgba(0,0,0,0.3)', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
@@ -2515,10 +2576,12 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                     if (err.id === editingErrCard.id) {
                       const cleanEn = (editingErrCard.enKeywords || []).filter(k => k.trim().length > 0);
                       const cleanTa = (editingErrCard.taKeywords || []).filter(k => k.trim().length > 0);
+                      const cleanEx = (editingErrCard.excludeKeywords || []).filter(k => k.trim().length > 0);
                       return {
                         ...editingErrCard,
                         enKeywords: cleanEn.length > 0 ? cleanEn : [editingErrCard.name || ''],
                         taKeywords: cleanTa.length > 0 ? cleanTa : [editingErrCard.nameTa || ''],
+                        excludeKeywords: cleanEx,
                         enText: cleanEn[0] || editingErrCard.name || '',
                         taText: cleanTa[0] || editingErrCard.nameTa || ''
                       };
