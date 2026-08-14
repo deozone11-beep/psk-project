@@ -68,27 +68,43 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     }
   }
 
+  async function fetchAllRowsInChunks(t, chunkSize = 3000) {
+    let allRows = [];
+    let offset = 0;
+    let totalCount = 0;
+
+    while (true) {
+      const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${offset}`);
+      const j = await r.json().catch(() => ({}));
+      const chunk = j.rows || [];
+      totalCount = j.total || chunk.length;
+      allRows.push(...chunk);
+      if (chunk.length < chunkSize || allRows.length >= totalCount) break;
+      offset += chunkSize;
+    }
+    return allRows;
+  }
+
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const rRecords = await db2Fetch('/table/hlb_records?limit=50000&offset=0');
-        const jRecords = await rRecords.json().catch(() => ({}));
-        if (jRecords.rows?.length) setRows(jRecords.rows);
+        const records = await fetchAllRowsInChunks('hlb_records', 3000);
+        if (records.length) setRows(records);
 
-        const rCharge = await db2Fetch('/table/charge_wise_report?limit=50000&offset=0');
+        const rCharge = await db2Fetch('/table/charge_wise_report?limit=5000&offset=0');
         const jCharge = await rCharge.json().catch(() => ({}));
         if (jCharge.rows?.length) setChargeRows(jCharge.rows);
 
-        const rAllot = await db2Fetch('/table/hlb_allotted?limit=50000&offset=0');
+        const rAllot = await db2Fetch('/table/hlb_allotted?limit=5000&offset=0');
         const jAllot = await rAllot.json().catch(() => ({}));
         if (jAllot.rows?.length) setAllotedRows(jAllot.rows);
         else if (jCharge.rows?.length) setAllotedRows(jCharge.rows);
 
-        const rUser = await db2Fetch('/table/user_details?limit=50000&offset=0');
+        const rUser = await db2Fetch('/table/user_details?limit=5000&offset=0');
         let jUser = await rUser.json().catch(() => ({}));
         if (!jUser.rows?.length) {
-          const rApp = await db2Fetch('/table/app_user?limit=50000&offset=0');
+          const rApp = await db2Fetch('/table/app_user?limit=5000&offset=0');
           jUser = await rApp.json().catch(() => ({}));
         }
         if (jUser.rows?.length) setUserRows(jUser.rows);

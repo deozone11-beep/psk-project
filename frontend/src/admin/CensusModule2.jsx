@@ -179,6 +179,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   const [rows, setRows]         = useState([]);
   const [total, setTotal]       = useState(0);
   const [loading, setLoading]   = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState('');
   const [error, setError]       = useState('');
   const [connected, setConn]    = useState(null);
 
@@ -258,9 +259,9 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
         // Fetch exact Supabase tables: charge_wise_report & hlb_allotted, user_details, app_user (awaited!)
         try {
-          let rCharge = await db2Fetch('/table/charge_wise_report?limit=50000&offset=0');
+          let rCharge = await db2Fetch('/table/charge_wise_report?limit=5000&offset=0');
           let jCharge = await rCharge.json().catch(() => ({}));
-          let rAllot = await db2Fetch('/table/hlb_allotted?limit=50000&offset=0');
+          let rAllot = await db2Fetch('/table/hlb_allotted?limit=5000&offset=0');
           let jAllot = await rAllot.json().catch(() => ({}));
 
           const combined = [...(jCharge.rows || []), ...(jAllot.rows || [])];
@@ -268,13 +269,13 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
         } catch(e) { console.error('fetch allotments error:', e); }
 
         try {
-          let rUser = await db2Fetch('/table/user_details?limit=50000&offset=0');
-          let jUser = await rUser.json();
+          let rUser = await db2Fetch('/table/user_details?limit=5000&offset=0');
+          let jUser = await rUser.json().catch(() => ({}));
           if (jUser.rows?.length) {
             setUserRows(jUser.rows);
           } else {
-            rUser = await db2Fetch('/table/app_user?limit=50000&offset=0');
-            jUser = await rUser.json();
+            rUser = await db2Fetch('/table/app_user?limit=5000&offset=0');
+            jUser = await rUser.json().catch(() => ({}));
             if (jUser.rows?.length) setUserRows(jUser.rows);
           }
         } catch(e) { console.error('user_details fetch error:', e); }
@@ -284,24 +285,49 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
   const [dbColumns, setDbColumns] = useState([]);
 
-  async function fetchData(t) {
-    if (!t) return;
-    setLoading(true); setError(''); setPage(0); setSel(new Set());
-    try {
-      const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=50000&offset=0`);
+  async function fetchAllRowsInChunks(t, chunkSize = 3000, onProgress) {
+    let allRows = [];
+    let offset = 0;
+    let totalCount = 0;
+    let columns = [];
+
+    while (true) {
+      const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${offset}`);
       const j = await r.json();
       if (j.error) throw new Error(j.error);
-      setRows(j.rows || []);
-      setTotal(j.total || 0);
-      if (j.columns?.length) {
-        setDbColumns(j.columns);
-      } else if (j.rows?.length) {
-        setDbColumns(Object.keys(j.rows[0]));
-      } else {
-        setDbColumns([]);
+
+      const chunk = j.rows || [];
+      totalCount = j.total || chunk.length;
+      if (j.columns?.length) columns = j.columns;
+      else if (chunk.length && !columns.length) columns = Object.keys(chunk[0]);
+
+      allRows.push(...chunk);
+
+      if (onProgress) {
+        onProgress(allRows.length, totalCount);
       }
+
+      if (chunk.length < chunkSize || allRows.length >= totalCount) {
+        break;
+      }
+      offset += chunkSize;
+    }
+
+    return { rows: allRows, total: totalCount, columns };
+  }
+
+  async function fetchData(t) {
+    if (!t) return;
+    setLoading(true); setError(''); setPage(0); setSel(new Set()); setLoadingProgress('Loading data...');
+    try {
+      const result = await fetchAllRowsInChunks(t, 3000, (loaded, total) => {
+        setLoadingProgress(`Loading ${loaded.toLocaleString()} / ${total.toLocaleString()} rows...`);
+      });
+      setRows(result.rows || []);
+      setTotal(result.total || 0);
+      setDbColumns(result.columns || []);
     } catch(e) { setError('Data load failed: ' + e.message); setRows([]); }
-    finally { setLoading(false); }
+    finally { setLoading(false); setLoadingProgress(''); }
   }
 
   const activeCols = useMemo(() => {
@@ -1189,7 +1215,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                 {hlbView && <span style={{ background:`${hlbColor(hlb)}cc`, color:'#fff', fontSize:'0.68rem', padding:'2px 9px', borderRadius:20, fontWeight:800 }}>HLB {hlb}</span>}
               </div>
               <div style={{ fontSize:'0.68rem', color:'#64748b', fontFamily:'monospace' }}>
-                {connected === null ? '⏳ Connecting to DB2...' : connected ? `✅ Connected · ${(total||rows.length).toLocaleString()} rows · showing ${filtered.length.toLocaleString()}` : '❌ Connection failed'}
+                {connected === null ? '⏳ Connecting to DB2...' : connected ? (loadingProgress ? `⚡ ${loadingProgress}` : `✅ Connected · ${(total||rows.length).toLocaleString()} rows · showing ${filtered.length.toLocaleString()}`) : '❌ Connection failed'}
               </div>
             </div>
           </div>
@@ -1565,13 +1591,14 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
             <span style={{ fontSize:'0.72rem', color:'#94a3b8', fontWeight:600 }}>Show:</span>
             <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(0); }}
               style={{ background:'none', border:'none', color:'#c084fc', fontSize:'0.75rem', fontWeight:800, cursor:'pointer', outline:'none' }}>
+              <option value={10} style={{ background:'#1a162b', color:'#fff' }}>10 / page</option>
               <option value={50} style={{ background:'#1a162b', color:'#fff' }}>50 / page</option>
               <option value={100} style={{ background:'#1a162b', color:'#fff' }}>100 / page</option>
               <option value={250} style={{ background:'#1a162b', color:'#fff' }}>250 / page</option>
               <option value={500} style={{ background:'#1a162b', color:'#fff' }}>500 / page</option>
               <option value={1000} style={{ background:'#1a162b', color:'#fff' }}>1,000 / page</option>
               <option value={5000} style={{ background:'#1a162b', color:'#fff' }}>5,000 / page</option>
-              <option value={50000} style={{ background:'#1a162b', color:'#fff' }}>All ({filtered.length.toLocaleString()})</option>
+              <option value={500000} style={{ background:'#1a162b', color:'#fff' }}>All ({filtered.length.toLocaleString()})</option>
             </select>
           </div>
 
