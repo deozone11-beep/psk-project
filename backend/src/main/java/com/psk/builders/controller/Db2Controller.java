@@ -225,6 +225,7 @@ public class Db2Controller {
                 if (conn != null) {
                     java.sql.Statement stmt = conn.createStatement();
                     stmt.execute("CREATE TABLE IF NOT EXISTS settings (id INT PRIMARY KEY, custom_error_filters LONGTEXT)");
+                    try { stmt.execute("ALTER TABLE settings ADD COLUMN custom_error_filters LONGTEXT"); } catch (Exception ignore) {}
                     java.sql.PreparedStatement ps = conn.prepareStatement(
                             "INSERT INTO settings (id, custom_error_filters) VALUES (1, ?) " +
                             "ON DUPLICATE KEY UPDATE custom_error_filters = VALUES(custom_error_filters)"
