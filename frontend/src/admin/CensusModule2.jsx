@@ -60,10 +60,10 @@ const COLS = [
 const DEFAULT_ERRORS = [
   {
     id: 'err1',
-    name: 'Service Latrine',
-    nameTa: 'சேவை கழிவு',
+    name: 'Night soil removed by human',
+    nameTa: 'மனிதர்களால் அகற்றப்படும் வகை',
     enKeywords: ['Service latrine:  Night soil removed by human', 'Night soil removed by human', 'service latrine'],
-    taKeywords: ['சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை', 'சேவை கழிவு'],
+    taKeywords: ['சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை', 'சேவை கழிவு', 'மனிதர்களால் அகற்றப்படும் வகை'],
     enText: 'Service latrine:  Night soil removed by human',
     taText: 'சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை',
     color: '#ef4444',
@@ -82,8 +82,41 @@ const DEFAULT_ERRORS = [
   },
   {
     id: 'err3',
-    name: 'LPG Kitchen Fuel Mismatch',
-    nameTa: 'LPG சமையலறை முரண்பாடு',
+    name: 'No Light',
+    nameTa: 'விளக்கு வசதி இல்லை',
+    enKeywords: ['No lighting', 'No Light'],
+    taKeywords: ['விளக்கு வசதி இல்லை'],
+    enText: 'No lighting',
+    taText: 'விளக்கு வசதி இல்லை',
+    color: '#3b82f6',
+    icon: '⚠️'
+  },
+  {
+    id: 'err4',
+    name: 'River/ Canal',
+    nameTa: 'ஆறு/ கால்வாய்',
+    enKeywords: ['River/ canal', 'River', 'Canal'],
+    taKeywords: ['ஆறு/ கால்வாய்', 'ஆறு', 'கால்வாய்'],
+    enText: 'River/ canal',
+    taText: 'ஆறு/ கால்வாய்',
+    color: '#a855f7',
+    icon: '⚠️'
+  },
+  {
+    id: 'err5',
+    name: 'Open Drainage',
+    nameTa: 'திறந்த வெளி',
+    enKeywords: ['Open drainage', 'Open Drain'],
+    taKeywords: ['திறந்த வெளி', 'திறந்த வடிகால்'],
+    enText: 'Open drainage',
+    taText: 'திறந்த வெளி',
+    color: '#14b8a6',
+    icon: '⚠️'
+  },
+  {
+    id: 'err6',
+    name: 'Cooking in kitchen: Has LPG/ PNG Connection',
+    nameTa: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
     col1Name: 'avail_kitchen_lpgname',
     col1EnText: 'Cooking in kitchen: Has LPG/ PNG Connection',
     col1TaText: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
@@ -93,39 +126,6 @@ const DEFAULT_ERRORS = [
     enText: 'Cooking in kitchen: Has LPG/ PNG Connection',
     taText: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
     color: '#eab308',
-    icon: '⚠️'
-  },
-  {
-    id: 'err4',
-    name: 'Error 4 (Placeholder)',
-    nameTa: 'பிழை 4',
-    enKeywords: ['Error 4'],
-    taKeywords: ['பிழை 4'],
-    enText: 'Error 4',
-    taText: 'பிழை 4',
-    color: '#3b82f6',
-    icon: '⚠️'
-  },
-  {
-    id: 'err5',
-    name: 'Error 5 (Placeholder)',
-    nameTa: 'பிழை 5',
-    enKeywords: ['Error 5'],
-    taKeywords: ['பிழை 5'],
-    enText: 'Error 5',
-    taText: 'பிழை 5',
-    color: '#a855f7',
-    icon: '⚠️'
-  },
-  {
-    id: 'err6',
-    name: 'Error 6 (Placeholder)',
-    nameTa: 'பிழை 6',
-    enKeywords: ['Error 6'],
-    taKeywords: ['பிழை 6'],
-    enText: 'Error 6',
-    taText: 'பிழை 6',
-    color: '#14b8a6',
     icon: '⚠️'
   }
 ];
@@ -240,11 +240,12 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   };
 
   // Try /admin/db2 first (Db2Controller), fallback to /admin/census/db2
-  async function db2Fetch(endpoint) {
+  async function db2Fetch(endpoint, options = {}) {
     try {
-      let res = await fetch(`${API_BASE}/admin/db2${endpoint}`, { headers: hdr() });
-      if (!res.ok) {
-        let res2 = await fetch(`${API_BASE}/admin/census/db2${endpoint}`, { headers: hdr() });
+      const mergedHeaders = { ...hdr(), ...(options.headers || {}) };
+      let res = await fetch(`${API_BASE}/admin/db2${endpoint}`, { ...options, headers: mergedHeaders });
+      if (!res.ok && (!options.method || options.method.toUpperCase() === 'GET')) {
+        let res2 = await fetch(`${API_BASE}/admin/census/db2${endpoint}`, { ...options, headers: mergedHeaders });
         if (res2.ok) return res2;
       }
       return res;
@@ -253,6 +254,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       return { ok: false, status: 500, json: async () => ({}) };
     }
   }
+
 
   async function ping() {
     setConn(null); setError('');

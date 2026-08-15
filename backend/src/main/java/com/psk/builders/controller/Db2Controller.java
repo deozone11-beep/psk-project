@@ -158,6 +158,38 @@ public class Db2Controller {
     }
 
     // ------------------------------------------------------------------ //
+    // POST /api/admin/db2/table/settings  –  save custom admin settings
+    // ------------------------------------------------------------------ //
+    @PostMapping("/table/settings")
+    public ResponseEntity<?> saveSettings(@RequestBody Map<String, Object> body) {
+        try {
+            db2.execute("CREATE TABLE IF NOT EXISTS public.settings (" +
+                    "id INT PRIMARY KEY, " +
+                    "custom_error_filters TEXT" +
+                    ")");
+
+            String filtersJson = null;
+            if (body.containsKey("custom_error_filters")) {
+                Object val = body.get("custom_error_filters");
+                filtersJson = (val instanceof String) ? (String) val : val.toString();
+            } else if (body.containsKey("error_filters")) {
+                Object val = body.get("error_filters");
+                filtersJson = (val instanceof String) ? (String) val : val.toString();
+            }
+
+            db2.update(
+                "INSERT INTO public.settings (id, custom_error_filters) VALUES (1, ?) " +
+                "ON CONFLICT (id) DO UPDATE SET custom_error_filters = EXCLUDED.custom_error_filters",
+                filtersJson
+            );
+
+            return ResponseEntity.ok(Map.of("status", "success", "message", "Settings saved to DB2 successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ------------------------------------------------------------------ //
     // GET /api/admin/db2/ping  –  connection health check
     // ------------------------------------------------------------------ //
     @GetMapping("/ping")
@@ -170,3 +202,4 @@ public class Db2Controller {
         }
     }
 }
+

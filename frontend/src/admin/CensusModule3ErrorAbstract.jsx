@@ -50,11 +50,12 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     return { 'Content-Type':'application/json', ...(t ? { 'Authorization': `Bearer ${t}` } : {}) };
   };
 
-  async function db2Fetch(endpoint) {
+  async function db2Fetch(endpoint, options = {}) {
     try {
-      let res = await fetch(`${API_BASE}/admin/db2${endpoint}`, { headers: hdr() });
-      if (!res.ok) {
-        let res2 = await fetch(`${API_BASE}/admin/census/db2${endpoint}`, { headers: hdr() });
+      const mergedHeaders = { ...hdr(), ...(options.headers || {}) };
+      let res = await fetch(`${API_BASE}/admin/db2${endpoint}`, { ...options, headers: mergedHeaders });
+      if (!res.ok && (!options.method || options.method.toUpperCase() === 'GET')) {
+        let res2 = await fetch(`${API_BASE}/admin/census/db2${endpoint}`, { ...options, headers: mergedHeaders });
         if (res2.ok) return res2;
       }
       return res;
