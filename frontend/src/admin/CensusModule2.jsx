@@ -352,50 +352,69 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
   const [dbColumns, setDbColumns] = useState([]);
 
-  async function fetchAllRowsInChunks(t, chunkSize = 3000, onProgress) {
+  async function fetchAllRowsInChunks(t, chunkSize = 15000, onProgress) {
     let allRows = [];
-    let offset = 0;
     let totalCount = 0;
     let columns = [];
 
-    while (true) {
-      let chunk = [];
-      let retries = 3;
-      let success = false;
-
-      while (retries > 0 && !success) {
-        try {
-          const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${offset}`);
-          const j = await r.json().catch(() => ({}));
-          if (j.rows && Array.isArray(j.rows)) {
-            chunk = j.rows;
-            if (j.total) totalCount = j.total;
-            if (j.columns?.length) columns = j.columns;
-            else if (chunk.length && !columns.length) columns = Object.keys(chunk[0]);
-            success = true;
-          } else {
-            retries--;
-            if (retries > 0) await new Promise(res => setTimeout(res, 1000));
-          }
-        } catch (e) {
+    let initialSuccess = false;
+    let retries = 3;
+    while (retries > 0 && !initialSuccess) {
+      try {
+        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0`);
+        const j = await r.json().catch(() => ({}));
+        if (j.rows && Array.isArray(j.rows)) {
+          allRows.push(...j.rows);
+          totalCount = j.total || j.rows.length;
+          if (j.columns?.length) columns = j.columns;
+          else if (j.rows.length && !columns.length) columns = Object.keys(j.rows[0]);
+          initialSuccess = true;
+          if (onProgress) onProgress(allRows.length, totalCount, j.rows, columns);
+        } else {
           retries--;
-          if (retries > 0) await new Promise(res => setTimeout(res, 1000));
+          if (retries > 0) await new Promise(res => setTimeout(res, 200));
         }
+      } catch (e) {
+        retries--;
+        if (retries > 0) await new Promise(res => setTimeout(res, 200));
+      }
+    }
+
+    if (!initialSuccess) return { rows: allRows, total: totalCount || allRows.length, columns };
+
+    if (totalCount > chunkSize) {
+      const remainingOffsets = [];
+      for (let off = chunkSize; off < totalCount; off += chunkSize) {
+        remainingOffsets.push(off);
       }
 
-      if (chunk.length > 0) {
-        allRows.push(...chunk);
+      const BATCH_SIZE = 3;
+      for (let i = 0; i < remainingOffsets.length; i += BATCH_SIZE) {
+        const batchOffsets = remainingOffsets.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batchOffsets.map(async (off) => {
+            let chunkRetries = 2;
+            while (chunkRetries > 0) {
+              try {
+                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}`);
+                const data = await res.json().catch(() => ({}));
+                if (data.rows && Array.isArray(data.rows)) return data.rows;
+                chunkRetries--;
+              } catch (err) {
+                chunkRetries--;
+              }
+            }
+            return [];
+          })
+        );
+
+        batchResults.forEach(rowsChunk => {
+          if (rowsChunk.length > 0) {
+            allRows.push(...rowsChunk);
+            if (onProgress) onProgress(allRows.length, totalCount, rowsChunk, columns);
+          }
+        });
       }
-
-      if (onProgress) {
-        onProgress(allRows.length, totalCount || 74906, chunk, columns);
-      }
-
-      if (success && chunk.length < chunkSize) break;
-      if (totalCount > 0 && allRows.length >= totalCount) break;
-      if (!success) break;
-
-      offset += chunkSize;
     }
 
     return { rows: allRows, total: totalCount || allRows.length, columns };
@@ -409,7 +428,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     let isFirstChunk = true;
 
     try {
-      await fetchAllRowsInChunks(t, 3000, (loaded, total, chunk, cols) => {
+      await fetchAllRowsInChunks(t, 15000, (loaded, total, chunk, cols) => {
         setLoadingProgress(`Loading ${loaded.toLocaleString()} / ${total.toLocaleString()} rows...`);
 
         if (cols && cols.length > 0) {
@@ -1526,10 +1545,10 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     const hd = activeCols.map(c => `"${c.h}"`).join(',');
     const body = data.map(r => activeCols.map(c => {
       const rawVal = r[c.k] ?? r[c.alt] ?? '';
-      const strVal = String(rawVal).replace(/"/g, '""');
-      // Use single quote prefix ('340200470160143000100) for HLB code so Excel renders clean text without extra quotes or 3.4E+20
-      if (c.k === 'hlb_code' || (strVal.length > 12 && /^\d+$/.test(strVal))) {
-        return `"'${strVal}"`;
+      const strVal = String(rawVal).replace(/"/g, '""').trim();
+      // Protect slash strings (3/2, 4/2/1), hyphenated values, leading zeros, or long codes from Excel date/scientific conversion
+      if (/\d+\/\d+|\d+-\d+|^\d{2,}\//.test(strVal) || c.k === 'hlb_code' || /^0\d+/.test(strVal) || (strVal.length > 10 && /^\d+$/.test(strVal))) {
+        return `="` + strVal + `"`;
       }
       return `"${strVal}"`;
     }).join(',')).join('\n');
@@ -1538,11 +1557,81 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     const bom = '\uFEFF';
     const csvContent = bom + hd + '\n' + body;
 
+    const now = new Date();
+    const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+
+    const isErrorFiltered = initialShowErrors || selectedErrorIds.size > 0;
+    const hlbPrefix = hlbView && hlb ? `HLB_${hlb}_` : '';
+    const recordType = isErrorFiltered ? 'HLB_Error_Records' : 'HLB_Records';
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `census${hlbView ? '_hlb' + hlb : ''}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `${hlbPrefix}${recordType}_${dateStr}.csv`;
     a.click();
+  }
+
+  function downloadPDF() {
+    const dataToPrint = sel.size > 0 ? filtered.filter((_,i) => sel.has(i)) : filtered;
+    if (!dataToPrint || dataToPrint.length === 0) return;
+
+    import('html2pdf.js').then(module => {
+      const html2pdf = module.default || module;
+      const now = new Date();
+      const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+      const filename = `Census_Records_${table || 'hlb_records'}_${dateStr}.pdf`;
+
+      const formattedDateTime = now.toLocaleString('en-IN', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+      });
+
+      const displayCols = activeCols.slice(0, 10);
+
+      const rowsHtml = dataToPrint.slice(0, 500).map((r, i) => `
+        <tr>
+          <td style="text-align:center; font-weight:700; padding:5px; border:1px solid #cbd5e1;">${i + 1}</td>
+          ${displayCols.map(c => `<td style="padding:5px; border:1px solid #cbd5e1;">${r[c.k] ?? r[c.alt] ?? '-'}</td>`).join('')}
+        </tr>
+      `).join('');
+
+      const container = document.createElement('div');
+      container.style.padding = '14px';
+      container.style.background = '#ffffff';
+      container.style.color = '#0f172a';
+      container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      container.style.width = '1000px';
+
+      container.innerHTML = `
+        <div style="text-align: center; border-bottom: 2px solid #7c3aed; padding-bottom: 8px; margin-bottom: 12px;">
+          <h2 style="font-size: 15px; font-weight: 900; color: #6b21a8; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — RECORDS REPORT (${(table || 'HLB_RECORDS').toUpperCase()})</h2>
+          <div style="font-size: 9.5px; color: #64748b; margin-top: 3px; font-weight: 600;">Generated Date &amp; Time: ${formattedDateTime} · Total Records: ${dataToPrint.length.toLocaleString()}</div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 9px;">
+          <thead>
+            <tr style="background: #1e293b; color: #ffffff;">
+              <th style="width: 30px; text-align: center; padding: 6px; border: 1px solid #334155;">#</th>
+              ${displayCols.map(c => `<th style="padding: 6px; border: 1px solid #334155; text-align: left;">${c.h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
+
+      const opt = {
+        margin: [6, 6, 6, 6],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      };
+
+      html2pdf().set(opt).from(container).save();
+    }).catch(err => {
+      console.warn('html2pdf error:', err);
+    });
   }
 
   const [toast, setToast] = useState('');
@@ -1631,19 +1720,47 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
             flexDirection: 'column',
             gap: 10
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ fontSize: '0.68rem', color: '#fca5a5', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <AlertCircle size={13} color="#ef4444"/>
                 Default Error Filter Cards — Tap to Toggle Filter (Dual Language: English + Tamil)
               </div>
-              {selectedErrorIds.size > 0 && (
-                <button 
-                  onClick={() => setSelectedErrorIds(new Set())}
-                  style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5', fontSize: '0.7rem', fontWeight: 700, padding: '2px 10px', borderRadius: 10, cursor: 'pointer' }}
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={() => setSelectedErrorIds(new Set(errorFilters.map(e => e.id)))}
+                  style={{
+                    background: 'rgba(59, 130, 246, 0.18)',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                    color: '#60a5fa',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    padding: '3px 12px',
+                    borderRadius: 12,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
                 >
-                  Clear Error Filters ({selectedErrorIds.size})
+                  Select All ({errorFilters.length})
                 </button>
-              )}
+                {selectedErrorIds.size > 0 && (
+                  <button 
+                    onClick={() => setSelectedErrorIds(new Set())}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.2)',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      color: '#fca5a5',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '3px 12px',
+                      borderRadius: 12,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Clear Selection ({selectedErrorIds.size})
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>

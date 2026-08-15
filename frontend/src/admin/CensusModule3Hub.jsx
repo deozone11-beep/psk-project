@@ -163,18 +163,19 @@ export default function CensusModule3Hub({ onBack, onSelectSubModule, creds }) {
           </div>
         )}
 
-        {/* SUB-CARD 3: CUSTOM REPORT 3 (RESERVED - ADMIN ONLY) */}
+        {/* SUB-CARD 3: 6 ERRORS USER-WISE SUPERVISOR & ENUMERATOR ABSTRACT REPORT (ADMIN ONLY) */}
         {isAdmin && (
           <div 
             onClick={() => onSelectSubModule('MODULE_3_CUSTOM')}
             style={{
-              background: 'rgba(28, 22, 44, 0.4)',
-              border: '1.5px dashed rgba(168, 85, 247, 0.35)',
+              background: 'linear-gradient(145deg, rgba(34, 19, 44, 0.95) 0%, rgba(22, 12, 30, 0.98) 100%)',
+              border: '1px solid rgba(168, 85, 247, 0.38)',
               borderRadius: '24px',
               padding: '34px 28px',
               cursor: 'pointer',
               position: 'relative',
               overflow: 'hidden',
+              boxShadow: '0 14px 40px rgba(0, 0, 0, 0.4)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -188,8 +189,8 @@ export default function CensusModule3Hub({ onBack, onSelectSubModule, creds }) {
                   width: '56px',
                   height: '56px',
                   borderRadius: '16px',
-                  background: 'rgba(168, 85, 247, 0.15)',
-                  border: '1px solid rgba(168, 85, 247, 0.35)',
+                  background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(147, 51, 234, 0.35) 100%)',
+                  border: '1px solid rgba(168, 85, 247, 0.45)',
                   color: '#c084fc',
                   display: 'flex',
                   alignItems: 'center',
@@ -197,19 +198,20 @@ export default function CensusModule3Hub({ onBack, onSelectSubModule, creds }) {
                 }}>
                   <Sparkles size={30} />
                 </div>
-                <span style={{ background: 'rgba(168, 85, 247, 0.18)', color: '#c084fc', padding: '4px 12px', borderRadius: '16px', fontSize: '0.74rem', fontWeight: 800 }}>
+                <span style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', padding: '4px 12px', borderRadius: '16px', fontSize: '0.74rem', fontWeight: 800 }}>
                   Option 3
                 </span>
               </div>
               <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', margin: '0 0 10px 0' }}>
-                Custom Report 3 (Reserved)
+                6 Errors Userwise Abstract Report
               </h3>
               <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                Reserved for 3rd custom report. Will be populated as soon as details are shared!
+                View 6 Default Error headings with system counts and hierarchical userwise (Supervisor &amp; Enumerator) error matrix.
               </p>
             </div>
             <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: 700 }}>⏳ Coming Soon</span>
+              <span style={{ color: '#c084fc', fontSize: '0.88rem', fontWeight: 700 }}>Open 6 Errors Custom Report →</span>
+              <ExternalLink size={16} color="#c084fc" />
             </div>
           </div>
         )}

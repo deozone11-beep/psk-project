@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle, Download } from 'lucide-react';
 import hlbMapping from './hlbMapping.json';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -231,46 +231,66 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     }
   }
 
-  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk) {
+  async function fetchAllRowsInChunks(t, chunkSize = 15000, onChunk) {
     let allRows = [];
-    let offset = 0;
     let totalCount = 0;
 
-    while (true) {
-      let chunk = [];
-      let retries = 3;
-      let success = false;
-
-      while (retries > 0 && !success) {
-        try {
-          const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${offset}`);
-          const j = await r.json().catch(() => ({}));
-          if (j.rows && Array.isArray(j.rows)) {
-            chunk = j.rows;
-            if (j.total) totalCount = j.total;
-            success = true;
-          } else {
-            retries--;
-            if (retries > 0) await new Promise(res => setTimeout(res, 1000));
-          }
-        } catch (e) {
+    let initialSuccess = false;
+    let retries = 3;
+    while (retries > 0 && !initialSuccess) {
+      try {
+        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0`);
+        const j = await r.json().catch(() => ({}));
+        if (j.rows && Array.isArray(j.rows)) {
+          allRows.push(...j.rows);
+          totalCount = j.total || j.rows.length;
+          initialSuccess = true;
+          if (onChunk) onChunk(j.rows, allRows.length, totalCount);
+        } else {
           retries--;
-          if (retries > 0) await new Promise(res => setTimeout(res, 1000));
+          if (retries > 0) await new Promise(res => setTimeout(res, 200));
         }
+      } catch (e) {
+        retries--;
+        if (retries > 0) await new Promise(res => setTimeout(res, 200));
+      }
+    }
+
+    if (!initialSuccess) return allRows;
+
+    if (totalCount > chunkSize) {
+      const remainingOffsets = [];
+      for (let off = chunkSize; off < totalCount; off += chunkSize) {
+        remainingOffsets.push(off);
       }
 
-      if (chunk.length > 0) {
-        allRows.push(...chunk);
-        if (onChunk) {
-          onChunk(chunk, allRows.length, totalCount || 74906);
-        }
+      const BATCH_SIZE = 3;
+      for (let i = 0; i < remainingOffsets.length; i += BATCH_SIZE) {
+        const batchOffsets = remainingOffsets.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batchOffsets.map(async (off) => {
+            let chunkRetries = 2;
+            while (chunkRetries > 0) {
+              try {
+                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}`);
+                const data = await res.json().catch(() => ({}));
+                if (data.rows && Array.isArray(data.rows)) return data.rows;
+                chunkRetries--;
+              } catch (err) {
+                chunkRetries--;
+              }
+            }
+            return [];
+          })
+        );
+
+        batchResults.forEach(rowsChunk => {
+          if (rowsChunk.length > 0) {
+            allRows.push(...rowsChunk);
+            if (onChunk) onChunk(rowsChunk, allRows.length, totalCount);
+          }
+        });
       }
-
-      if (success && chunk.length < chunkSize) break;
-      if (totalCount > 0 && allRows.length >= totalCount) break;
-      if (!success) break;
-
-      offset += chunkSize;
     }
 
     return allRows;
@@ -816,69 +836,116 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     };
   }, [abstractReport, chargeRows, hlbErrorMap, uniqueErrorCount]);
 
+  const formatCsvCell = (val) => {
+    if (val === null || val === undefined) return '""';
+    const str = String(val).replace(/"/g, '""').trim();
+    if (/\d+\/\d+|\d+-\d+|^\d{2,}\//.test(str) || /^0\d+/.test(str) || (str.length > 10 && /^\d+$/.test(str))) {
+      return `="` + str + `"`;
+    }
+    return `"${str}"`;
+  };
+
+  const downloadSupervisorSummaryCSV = () => {
+    let csv = 'S.No,Circle No,Supervisor Name,Supervisor ID,Supervisor Mobile,Allotted HLBs,Expected Houses,Census Houses,Census Households,Verified By Supervisor,SE ID Used,Total Population,Error Count,Status\n';
+    abstractReport.forEach((c, i) => {
+      const totExp = c.enumerators.reduce((s, e) => s + (e.expectedHouses || 0), 0);
+      const totCen = c.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0);
+      const totHH  = c.enumerators.reduce((s, e) => s + (e.households || 0), 0);
+      const totVer = c.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0);
+      const totSe  = c.enumerators.reduce((s, e) => s + (e.seIdUsed || 0), 0);
+      const totPop = c.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0);
+      const totErr = c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
+      const compCount = c.enumerators.filter(e => e.isCompleted).length;
+      const isComp = compCount === c.enumerators.length && c.enumerators.length > 0;
+      csv += `${formatCsvCell(i + 1)},${formatCsvCell(c.circleNo)},${formatCsvCell(c.supervisorName)},${formatCsvCell(c.supervisorId || '')},${formatCsvCell(c.supervisorMobile || '')},${formatCsvCell(c.enumerators.length)},${formatCsvCell(totExp)},${formatCsvCell(totCen)},${formatCsvCell(totHH)},${formatCsvCell(totVer)},${formatCsvCell(totSe)},${formatCsvCell(totPop)},${formatCsvCell(totErr)},${formatCsvCell(isComp ? 'Completed' : 'In Progress')}\n`;
+    });
+
+    const now = new Date();
+    const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Census_Supervisor_Summary_Progress_Report_${dateStr}.csv`;
+    a.click();
+  };
+
+  const downloadDetailedBreakdownCSV = () => {
+    let csv = 'Circle No,Supervisor Name,Supervisor Mobile,Enumerator Name,Enumerator ID,Enumerator Mobile,HLB Code,Expected Houses,Census Houses,Census Households,Verified By Supervisor,SE ID Used,Total Population,Error Count,Status\n';
+    abstractReport.forEach(c => {
+      c.enumerators.forEach(e => {
+        csv += `${formatCsvCell(c.circleNo)},${formatCsvCell(c.supervisorName)},${formatCsvCell(c.supervisorMobile || '')},${formatCsvCell(e.enumName)},${formatCsvCell(e.enumId || '')},${formatCsvCell(e.enumMobile || '')},${formatCsvCell(`HLB ${String(e.hlbCode).padStart(4, '0')}`)},${formatCsvCell(e.expectedHouses || 0)},${formatCsvCell(e.censusHouses || 0)},${formatCsvCell(e.households || 0)},${formatCsvCell(e.verifiedBySup || 0)},${formatCsvCell(e.seIdUsed || 0)},${formatCsvCell(e.totalPopulation || 0)},${formatCsvCell(e.errorCount || 0)},${formatCsvCell(e.isCompleted ? 'Completed' : 'In Progress')}\n`;
+      });
+    });
+
+    const now = new Date();
+    const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Census_Supervisor_Enumerator_Detailed_Progress_Report_${dateStr}.csv`;
+    a.click();
+  };
+
   const printSupervisorSummaryOnlyReport = (dataToPrint) => {
     if (!dataToPrint || dataToPrint.length === 0) return;
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
+    
+    const win = window.open('', '_blank');
+    if (!win) return;
 
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
+    win.document.open();
+    win.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
         <title>Supervisor Progress Summary Report</title>
         <style>
-          @page { size: A4 landscape; margin: 10mm; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; background: #fff; }
-          .report-header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px; }
-          .report-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em; }
-          .report-sub { font-size: 11px; color: #475569; font-weight: 600; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
-          th { background: #f1f5f9; color: #334155; font-weight: 800; text-align: center; padding: 7px 8px; border: 1px solid #cbd5e1; text-transform: uppercase; font-size: 9px; }
-          td { padding: 7px 8px; border: 1px solid #cbd5e1; color: #1e293b; text-align: center; }
+          @page { size: A4 landscape; margin: 8mm; }
+          * { box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; background: #fff; font-size: 9.5px; }
+          .report-header { text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px; }
+          .report-title { font-size: 15px; font-weight: 900; color: #991b1b; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+          .report-sub { font-size: 9px; color: #475569; font-weight: 600; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9px; table-layout: fixed; }
+          th { background: #1e293b; color: #ffffff; font-weight: 800; text-align: center; padding: 6px 4px; border: 1px solid #334155; text-transform: uppercase; font-size: 8.5px; vertical-align: middle; }
+          td { padding: 5px 4px; border: 1px solid #cbd5e1; color: #1e293b; text-align: center; vertical-align: middle; word-wrap: break-word; }
+          tr { page-break-inside: avoid !important; break-inside: avoid !important; }
           tr:nth-child(even) { background: #f8fafc; }
-          .circle-badge { font-weight: 900; background: #7c3aed; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 9.5px; white-space: nowrap; }
-          .err-badge { font-weight: 800; padding: 2px 8px; border-radius: 10px; font-size: 9.5px; display: inline-block; }
+          .circle-badge { font-weight: 900; background: #991b1b; color: #fff; padding: 3px 8px; border-radius: 8px; font-size: 8.5px; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; }
+          .err-badge { font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; }
           .has-err { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
           .no-err { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-          .status-badge { display: inline-block; font-weight: 800; padding: 2px 6px; border-radius: 8px; font-size: 9.5px; }
+          .status-badge { font-weight: 800; padding: 2px 6px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; }
           .in-prog { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
           .comp { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-          tfoot { display: table-row-group; }
-          tfoot tr { background: #e2e8f0; font-weight: 900; page-break-inside: avoid; }
-          tfoot td { border-top: 2.5px solid #0f172a; font-size: 10px; padding: 8px; }
-          .print-footer { text-align: right; font-size: 9px; color: #94a3b8; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+          tfoot tr { background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important; }
+          tfoot td { border-top: 2px solid #0f172a; font-size: 9.5px; padding: 6px 4px; vertical-align: middle; }
+          .print-footer { text-align: right; font-size: 9px; color: #94a3b8; margin-top: 12px; border-top: 1px solid #e2e8f0; padding-top: 5px; }
         </style>
       </head>
       <body>
         <div class="report-header">
           <div class="report-title">CENSUS WORK — SUPERVISOR SUMMARY PROGRESS REPORT</div>
-          <div class="report-sub">Generated on ${new Date().toLocaleString()} · Total Supervisors: ${dataToPrint.length}</div>
+          <div class="report-sub">Generated Date &amp; Time: ${new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })} · Total Supervisors: ${dataToPrint.length}</div>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th style="width: 35px;">S.No</th>
-              <th style="width: 75px;">Circle No</th>
-              <th style="text-align: left;">Supervisor Name &amp; ID</th>
-              <th style="width: 95px; text-align: left;">Mobile No</th>
-              <th style="width: 80px;">Allotted HLBs</th>
-              <th style="width: 90px;">Expected Houses</th>
-              <th style="width: 85px;">Census Houses</th>
-              <th style="width: 85px;">Households</th>
-              <th style="width: 95px;">Verified By Sup</th>
-              <th style="width: 80px;">SE ID Used</th>
-              <th style="width: 90px;">Total Population</th>
-              <th style="width: 80px;">No. of Errors</th>
-              <th style="width: 80px;">Status</th>
+              <th style="width: 4%;">S.No</th>
+              <th style="width: 10%;">Circle No</th>
+              <th style="width: 22%; text-align: left;">Supervisor Name &amp; ID</th>
+              <th style="width: 14%; text-align: left;">Mobile No</th>
+              <th style="width: 10%;">Allotted HLBs</th>
+              <th style="width: 8%;">Exp Houses</th>
+              <th style="width: 8%;">Cen Houses</th>
+              <th style="width: 8%;">Households</th>
+              <th style="width: 8%;">Verified By Sup</th>
+              <th style="width: 8%;">SE ID Used</th>
+              <th style="width: 8%;">Population</th>
+              <th style="width: 8%;">No. of Errors</th>
+              <th style="width: 8%;">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -898,7 +965,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                   <td><span class="circle-badge">${c.circleNo}</span></td>
                   <td style="text-align: left; font-weight: 700;">
                     ${c.supervisorName}<br/>
-                    <span style="font-size: 8.5px; color: #64748b; font-family: monospace;">${c.supervisorId || ''}</span>
+                    <span style="font-size: 8px; color: #64748b; font-family: monospace;">${c.supervisorId || ''}</span>
                   </td>
                   <td style="text-align: left; font-family: monospace; font-weight: 700;">${c.supervisorMobile || 'N/A'}</td>
                   <td style="font-weight: 700;">${c.enumerators.length} HLBs</td>
@@ -948,64 +1015,58 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       </body>
       </html>
     `);
-    doc.close();
+    win.document.close();
 
     setTimeout(() => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+      win.focus();
+      win.print();
     }, 500);
   };
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
+    const win = window.open('', '_blank');
+    if (!win) return;
 
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
+    win.document.open();
+    win.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Census Progress Report (Supervisor Base Report)</title>
+        <title>Census Progress Report (Supervisor & Enumerator Detailed)</title>
         <style>
-          @page { size: A4 landscape; margin: 10mm; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; background: #fff; }
-          .report-header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px; }
-          .report-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em; }
-          .report-sub { font-size: 11px; color: #475569; font-weight: 600; }
-          .circle-card { border: 1.5px solid #cbd5e1; border-radius: 10px; margin-bottom: 16px; page-break-inside: avoid; overflow: hidden; }
-          .circle-header { background: #f1f5f9; padding: 8px 12px; border-bottom: 1px solid #cbd5e1; display: flex; justify-space-between; align-items: center; }
-          .circle-badge { background: #1e293b; color: #fff; font-weight: 800; font-size: 11px; padding: 3px 10px; border-radius: 12px; }
-          .sup-name { font-size: 13px; font-weight: 800; color: #0f172a; margin-left: 10px; }
-          .sup-mobile { font-size: 11px; color: #475569; font-weight: 700; }
-          table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
-          th { background: #f8fafc; color: #334155; font-weight: 700; text-align: center; padding: 6px 8px; border: 1px solid #cbd5e1; text-transform: uppercase; font-size: 9.5px; }
-          td { padding: 6px 8px; border: 1px solid #cbd5e1; color: #1e293b; text-align: center; }
+          @page { size: A4 landscape; margin: 8mm; }
+          * { box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; background: #fff; font-size: 9.5px; }
+          .report-header { text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px; }
+          .report-title { font-size: 15px; font-weight: 900; color: #991b1b; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+          .report-sub { font-size: 9px; color: #475569; font-weight: 600; }
+          .circle-card { border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 14px; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden; }
+          .circle-header { background: #f1f5f9; padding: 6px 10px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; }
+          .circle-badge { background: #991b1b; color: #fff; font-weight: 900; font-size: 8.5px; padding: 3px 8px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; }
+          .sup-name { font-size: 11px; font-weight: 800; color: #0f172a; margin-left: 8px; }
+          .sup-mobile { font-size: 9.5px; color: #475569; font-weight: 700; }
+          table { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
+          th { background: #1e293b; color: #ffffff; font-weight: 800; text-align: center; padding: 6px 4px; border: 1px solid #334155; text-transform: uppercase; font-size: 8.5px; vertical-align: middle; }
+          td { padding: 5px 4px; border: 1px solid #cbd5e1; color: #1e293b; text-align: center; vertical-align: middle; word-wrap: break-word; }
+          tr { page-break-inside: avoid !important; break-inside: avoid !important; }
           tr:nth-child(even) { background: #f8fafc; }
-          .err-badge { display: inline-block; font-weight: 800; padding: 2px 8px; border-radius: 10px; font-size: 10px; }
+          .err-badge { display: inline-flex; align-items: center; justify-content: center; font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; line-height: 1; vertical-align: middle; }
           .has-err { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
           .no-err { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-          .status-badge { display: inline-block; font-weight: 800; padding: 1px 6px; border-radius: 8px; font-size: 9.5px; }
+          .status-badge { display: inline-flex; align-items: center; justify-content: center; font-weight: 800; padding: 2px 6px; border-radius: 6px; font-size: 8.5px; line-height: 1; vertical-align: middle; }
           .in-prog { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
           .comp { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-          .hlb-code { font-weight: 800; background: #e2e8f0; padding: 2px 6px; borderRadius: 4px; }
-          .print-footer { text-align: right; font-size: 10px; color: #94a3b8; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px; }
-          tfoot tr { background: #e2e8f0; font-weight: 800; }
-          tfoot td { border-top: 2px solid #0f172a; font-size: 10px; }
+          .hlb-code { font-weight: 800; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+          .print-footer { text-align: right; font-size: 9px; color: #94a3b8; margin-top: 12px; border-top: 1px solid #e2e8f0; padding-top: 5px; }
+          tfoot tr { background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important; }
+          tfoot td { border-top: 2px solid #0f172a; font-size: 9.5px; vertical-align: middle; }
         </style>
       </head>
       <body>
         <div class="report-header">
-          <div class="report-title">CENSUS WORK — CENSUS PROGRESS REPORT (SUPERVISOR BASE REPORT)</div>
-          <div class="report-sub">Generated on ${new Date().toLocaleString()} · Total Circles: ${circlesToPrint.length}</div>
+          <div class="report-title">CENSUS WORK — SUPERVISOR &amp; ENUMERATOR DETAILED PROGRESS REPORT</div>
+          <div class="report-sub">Generated Date &amp; Time: ${new Date().toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })} · Total Circles: ${circlesToPrint.length}</div>
         </div>
 
         ${circlesToPrint.map(c => {
@@ -1013,7 +1074,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           return `
           <div class="circle-card">
             <div class="circle-header">
-              <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="circle-badge">${c.circleNo}</span>
                 <span class="sup-name">Supervisor: ${c.supervisorName} ${c.supervisorId ? `(${c.supervisorId})` : ''}</span>
               </div>
@@ -1022,17 +1083,17 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
             <table>
               <thead>
                 <tr>
-                  <th style="text-align:left;">Enumerator Name &amp; ID</th>
-                  <th style="text-align:left;">Mobile No</th>
-                  <th>Allotted HLB Code</th>
-                  <th>Total Number of Expected Census Houses</th>
-                  <th>Total Number of Census Houses</th>
-                  <th>Total Number of Census Households</th>
-                  <th>Households Verified By Supervisor</th>
-                  <th>Total SE ID Used</th>
-                  <th>Total Population</th>
-                  <th>No. of Errors</th>
-                  <th>Status</th>
+                  <th style="width: 20%; text-align:left;">Enumerator Name &amp; ID</th>
+                  <th style="width: 12%; text-align:left;">Mobile No</th>
+                  <th style="width: 10%;">HLB Code</th>
+                  <th style="width: 8%;">Exp Houses</th>
+                  <th style="width: 8%;">Cen Houses</th>
+                  <th style="width: 8%;">Households</th>
+                  <th style="width: 9%;">Verified By Sup</th>
+                  <th style="width: 8%;">SE ID Used</th>
+                  <th style="width: 9%;">Population</th>
+                  <th style="width: 8%;">Errors</th>
+                  <th style="width: 8%;">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -1040,9 +1101,9 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                   <tr>
                     <td style="text-align:left;">
                       <strong>${e.enumName}</strong><br/>
-                      <span style="font-size:9px; color:#64748b;">${e.enumId}</span>
+                      <span style="font-size:8px; color:#64748b; font-family:monospace;">${e.enumId}</span>
                     </td>
-                    <td style="text-align:left;">${e.enumMobile || 'N/A'}</td>
+                    <td style="text-align:left; font-family:monospace;">${e.enumMobile || 'N/A'}</td>
                     <td><span class="hlb-code">HLB ${String(e.hlbCode).padStart(4, '0')}</span></td>
                     <td style="font-weight:700;">${e.expectedHouses}</td>
                     <td style="font-weight:700;">${e.censusHouses}</td>
@@ -1065,7 +1126,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
               </tbody>
               <tfoot>
                 <tr>
-                  <td style="text-align:left; font-weight:900;">SUPERVISOR TOTAL (${uniqueCount} Enumerators)</td>
+                  <td style="text-align:left; font-weight:900;">SUPERVISOR TOTAL (${uniqueCount} Enums)</td>
                   <td style="text-align:left;">-</td>
                   <td>${c.enumerators.length} HLBs</td>
                   <td style="font-weight:800;">${c.enumerators.reduce((s, e) => s + (e.expectedHouses || 0), 0)}</td>
@@ -1092,18 +1153,262 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         }).join('')}
 
         <div class="print-footer">
-          Census Progress Report (Supervisor Base Report)
+          Supervisor &amp; Enumerator Detailed Progress Report — PSK Builders Census Module
         </div>
       </body>
       </html>
     `);
-    doc.close();
+    win.document.close();
 
     setTimeout(() => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+      win.focus();
+      win.print();
     }, 500);
+  };
+
+  const downloadSupervisorSummaryPDF = (reportData) => {
+    const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
+    if (!dataToPrint || dataToPrint.length === 0) return;
+
+    import('html2pdf.js').then(module => {
+      const html2pdf = module.default || module;
+      const now = new Date();
+      const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+      const filename = `Census_Supervisor_Summary_Progress_Report_${dateStr}.pdf`;
+
+      const formattedDateTime = now.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+      const container = document.createElement('div');
+      container.style.padding = '0';
+      container.style.margin = '0';
+      container.style.background = '#ffffff';
+      container.style.color = '#0f172a';
+      container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      container.style.width = '100%';
+      container.style.boxSizing = 'border-box';
+
+      container.innerHTML = `
+        <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px;">
+          <h2 style="font-size: 15px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR SUMMARY PROGRESS REPORT</h2>
+          <div style="font-size: 9px; color: #64748b; margin-top: 3px; font-weight: 600;">Generated Date &amp; Time: ${formattedDateTime} · Total Supervisors: ${dataToPrint.length}</div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 9px; table-layout: fixed;">
+          <thead>
+            <tr style="background: #1e293b; color: #ffffff; page-break-inside: avoid !important; break-inside: avoid !important;">
+              <th style="width: 4%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">S.No</th>
+              <th style="width: 10%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Circle No</th>
+              <th style="width: 22%; text-align: left; padding: 6px 6px; border: 1px solid #334155; vertical-align: middle;">Supervisor Name &amp; ID</th>
+              <th style="width: 14%; text-align: left; padding: 6px 6px; border: 1px solid #334155; vertical-align: middle;">Mobile No</th>
+              <th style="width: 10%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Allotted HLBs</th>
+              <th style="width: 8%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Exp Houses</th>
+              <th style="width: 8%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Cen Houses</th>
+              <th style="width: 8%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Households</th>
+              <th style="width: 8%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Verified By Sup</th>
+              <th style="width: 8%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">SE ID Used</th>
+              <th style="width: 8%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Population</th>
+              <th style="width: 8%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Errors</th>
+              <th style="width: 8%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataToPrint.map((c, i) => {
+              const totExp = c.enumerators.reduce((s, e) => s + (e.expectedHouses || 0), 0);
+              const totCen = c.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0);
+              const totHH  = c.enumerators.reduce((s, e) => s + (e.households || 0), 0);
+              const totVer = c.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0);
+              const totSe  = c.enumerators.reduce((s, e) => s + (e.seIdUsed || 0), 0);
+              const totPop = c.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0);
+              const totErr = c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
+              const compCount = c.enumerators.filter(e => e.isCompleted).length;
+              const isComp = compCount === c.enumerators.length && c.enumerators.length > 0;
+              return `
+                <tr style="page-break-inside: avoid !important; break-inside: avoid !important;">
+                  <td style="text-align: center; font-weight: 700; color: #64748b; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${i + 1}</td>
+                  <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
+                    <span style="font-weight: 900; background: #991b1b; color: #fff; padding: 3px 8px; border-radius: 8px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle;">${c.circleNo}</span>
+                  </td>
+                  <td style="text-align: left; font-weight: 700; padding: 5px 6px; border: 1px solid #cbd5e1; word-wrap: break-word; vertical-align: middle;">${c.supervisorName}<br/><span style="font-size: 8px; color: #64748b; font-family: monospace;">${c.supervisorId || ''}</span></td>
+                  <td style="text-align: left; font-family: monospace; font-weight: 700; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${c.supervisorMobile || 'N/A'}</td>
+                  <td style="text-align: center; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${c.enumerators.length} HLBs</td>
+                  <td style="text-align: center; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${totExp.toLocaleString()}</td>
+                  <td style="text-align: center; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${totCen.toLocaleString()}</td>
+                  <td style="text-align: center; font-weight: 800; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${totHH.toLocaleString()}</td>
+                  <td style="text-align: center; font-weight: 800; color: #0284c7; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${totVer.toLocaleString()}</td>
+                  <td style="text-align: center; font-weight: 800; color: #7c3aed; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${totSe.toLocaleString()}</td>
+                  <td style="text-align: center; font-weight: 800; color: #15803d; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${totPop.toLocaleString()}</td>
+                  <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
+                    <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${totErr > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
+                      ${totErr} ${totErr === 1 ? 'error' : 'errors'}
+                    </span>
+                  </td>
+                  <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
+                    <span style="font-weight: 800; padding: 2px 6px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${isComp ? 'background: #dcfce7; color: #166534; border: 1px solid #86efac;' : 'background: #fef3c7; color: #92400e; border: 1px solid #fde68a;'}">
+                      ${isComp ? 'Completed' : `${compCount}/${c.enumerators.length} Comp`}
+                    </span>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important;">
+              <td colspan="4" style="text-align: left; padding: 7px 6px; border-top: 2px solid #0f172a; vertical-align: middle;">SUPERVISOR GRAND TOTAL (${dataToPrint.length} Circles)</td>
+              <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.totalHlbs} HLBs</td>
+              <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.expectedHouses.toLocaleString()}</td>
+              <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.censusHouses.toLocaleString()}</td>
+              <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.households.toLocaleString()}</td>
+              <td style="text-align: center; color: #0284c7; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.verifiedBySup.toLocaleString()}</td>
+              <td style="text-align: center; color: #7c3aed; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.totalSeIdUsed.toLocaleString()}</td>
+              <td style="text-align: center; color: #15803d; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.totalPopulation.toLocaleString()}</td>
+              <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">
+                <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${overallStats.errorCount > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
+                  ${overallStats.errorCount} errors
+                </span>
+              </td>
+              <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.completedCount}/${overallStats.totalHlbs} Comp</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+
+      const opt = {
+        margin: [8, 8, 8, 8],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      html2pdf().set(opt).from(container).save();
+    }).catch(err => {
+      console.warn('html2pdf error:', err);
+      printSupervisorSummaryOnlyReport(abstractReport);
+    });
+  };
+
+  const downloadDetailedBreakdownPDF = (reportData) => {
+    const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
+    if (!dataToPrint || dataToPrint.length === 0) return;
+
+    import('html2pdf.js').then(module => {
+      const html2pdf = module.default || module;
+      const now = new Date();
+      const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+      const filename = `Census_Supervisor_Enumerator_Detailed_Progress_Report_${dateStr}.pdf`;
+      const formattedDateTime = now.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+      let circleCardsHtml = dataToPrint.map(c => {
+        const uniqueCount = new Set(c.enumerators.map(e => e.enumId || e.enumName)).size;
+        return `
+          <div style="border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 14px; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden;">
+            <div style="background: #f1f5f9; padding: 6px 10px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="background: #991b1b; color: #fff; font-weight: 900; font-size: 8.5px; padding: 3px 8px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; vertical-align: middle;">${c.circleNo}</span>
+                <span style="font-size: 11px; font-weight: 800; color: #0f172a;">Supervisor: ${c.supervisorName} ${c.supervisorId ? `(${c.supervisorId})` : ''}</span>
+              </div>
+              <div style="font-size: 9.5px; color: #475569; font-weight: 700;">📞 ${c.supervisorMobile || 'N/A'}</div>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed;">
+              <thead>
+                <tr style="background: #1e293b; color: #ffffff; page-break-inside: avoid !important; break-inside: avoid !important;">
+                  <th style="width: 20%; text-align: left; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Enumerator Name &amp; ID</th>
+                  <th style="width: 12%; text-align: left; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Mobile No</th>
+                  <th style="width: 10%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">HLB Code</th>
+                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Exp Houses</th>
+                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Cen Houses</th>
+                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Households</th>
+                  <th style="width: 9%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Verified By Sup</th>
+                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">SE ID Used</th>
+                  <th style="width: 9%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Population</th>
+                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Errors</th>
+                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${c.enumerators.map(e => `
+                  <tr style="page-break-inside: avoid !important; break-inside: avoid !important;">
+                    <td style="text-align: left; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;"><b>${e.enumName}</b><br/><span style="font-size: 8px; color: #64748b; font-family: monospace;">${e.enumId || ''}</span></td>
+                    <td style="text-align: left; font-family: monospace; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.enumMobile || 'N/A'}</td>
+                    <td style="text-align: center; font-family: monospace; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">HLB ${String(e.hlbCode).padStart(4, '0')}</td>
+                    <td style="text-align: center; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.expectedHouses}</td>
+                    <td style="text-align: center; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.censusHouses}</td>
+                    <td style="text-align: center; font-weight: 800; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.households}</td>
+                    <td style="text-align: center; font-weight: 800; color: #0284c7; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.verifiedBySup}</td>
+                    <td style="text-align: center; font-weight: 800; color: #7c3aed; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.seIdUsed || 0}</td>
+                    <td style="text-align: center; font-weight: 800; color: #15803d; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.totalPopulation}</td>
+                    <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
+                      <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${e.errorCount > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
+                        ${e.errorCount}
+                      </span>
+                    </td>
+                    <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
+                      <span style="font-weight: 800; padding: 2px 6px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${e.isCompleted ? 'background: #dcfce7; color: #166534; border: 1px solid #86efac;' : 'background: #fef3c7; color: #92400e; border: 1px solid #fde68a;'}">
+                        ${e.isCompleted ? 'Completed' : 'In progress'}
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+              <tfoot>
+                <tr style="background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important;">
+                  <td style="text-align: left; padding: 6px; border-top: 2px solid #0f172a; vertical-align: middle;">SUPERVISOR TOTAL (${uniqueCount} Enums)</td>
+                  <td style="text-align: left; padding: 6px; border-top: 2px solid #0f172a; vertical-align: middle;">-</td>
+                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.length} HLBs</td>
+                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.expectedHouses || 0), 0)}</td>
+                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0)}</td>
+                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.households || 0), 0)}</td>
+                  <td style="text-align: center; color: #0284c7; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0)}</td>
+                  <td style="text-align: center; color: #7c3aed; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.seIdUsed || 0), 0)}</td>
+                  <td style="text-align: center; color: #15803d; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0)}</td>
+                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">
+                    <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0) > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
+                      ${c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0)} errors
+                    </span>
+                  </td>
+                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">
+                    <span style="font-weight: 800; padding: 2px 6px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${c.enumerators.filter(e => e.isCompleted).length === c.enumerators.length ? 'background: #dcfce7; color: #166534; border: 1px solid #86efac;' : 'background: #fef3c7; color: #92400e; border: 1px solid #fde68a;'}">
+                      ${c.enumerators.filter(e => e.isCompleted).length}/${c.enumerators.length} Comp
+                    </span>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        `;
+      }).join('');
+
+      const container = document.createElement('div');
+      container.style.padding = '0';
+      container.style.margin = '0';
+      container.style.background = '#ffffff';
+      container.style.color = '#0f172a';
+      container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      container.style.width = '100%';
+      container.style.boxSizing = 'border-box';
+
+      container.innerHTML = `
+        <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px;">
+          <h2 style="font-size: 15px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR &amp; ENUMERATOR DETAILED PROGRESS REPORT</h2>
+          <div style="font-size: 9px; color: #64748b; margin-top: 3px; font-weight: 600;">Generated Date &amp; Time: ${formattedDateTime} · Total Supervisors: ${dataToPrint.length}</div>
+        </div>
+        ${circleCardsHtml}
+      `;
+
+      const opt = {
+        margin: [8, 8, 8, 8],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      html2pdf().set(opt).from(container).save();
+    }).catch(err => {
+      console.warn('html2pdf error:', err);
+      printSupervisorAbstractReport(abstractReport);
+    });
   };
 
   return (
@@ -1118,6 +1423,30 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => {
+              if (activeViewTab === 'SUPERVISOR_TABLE') {
+                downloadSupervisorSummaryCSV();
+              } else {
+                downloadDetailedBreakdownCSV();
+              }
+            }}
+            style={{ background: 'linear-gradient(135deg, #059669, #047857)', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 10, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)' }}
+          >
+            <Download size={16}/> {activeViewTab === 'SUPERVISOR_TABLE' ? 'Export CSV (Summary)' : 'Export CSV (Detailed)'}
+          </button>
+          <button
+            onClick={() => {
+              if (activeViewTab === 'SUPERVISOR_TABLE') {
+                downloadSupervisorSummaryPDF(abstractReport);
+              } else {
+                downloadDetailedBreakdownPDF(abstractReport);
+              }
+            }}
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 10, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)' }}
+          >
+            <Download size={16}/> {activeViewTab === 'SUPERVISOR_TABLE' ? 'Export PDF (Summary)' : 'Export PDF (Detailed)'}
+          </button>
           <button
             onClick={() => {
               if (activeViewTab === 'SUPERVISOR_TABLE') {

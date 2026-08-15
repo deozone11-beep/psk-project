@@ -12,6 +12,7 @@ import shp from 'shpjs';
 import CensusModule2 from './CensusModule2';
 import CensusModule3Hub from './CensusModule3Hub';
 import CensusModule3ErrorAbstract from './CensusModule3ErrorAbstract';
+import CensusModule3ErrorCustomReport from './CensusModule3ErrorCustomReport';
 import CensusModule4ProgressReport from './CensusModule4ProgressReport';
 
 
@@ -1334,54 +1335,7 @@ export default function CensusWorkTab({ creds }) {
   }
 
   if (activeModule === 'MODULE_3_CUSTOM') {
-    return wrapFullWidth(
-      <div style={{
-        minHeight: '100vh',
-        background: '#0a0d16',
-        color: '#f8fafc',
-        padding: '30px 40px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '24px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button 
-            onClick={() => navigateModule('MODULE_3_HUB')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#f8fafc',
-              padding: '10px 18px',
-              borderRadius: '12px',
-              fontWeight: 700,
-              fontSize: '0.88rem',
-              cursor: 'pointer'
-            }}
-          >
-            <ArrowLeft size={16} /> Back to Module 3 Hub
-          </button>
-          
-          <span style={{ fontSize: '0.8rem', color: '#c084fc', fontWeight: 800, background: 'rgba(168, 85, 247, 0.15)', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '6px 14px', borderRadius: 20 }}>
-            Option 3 — Custom Report 3
-          </span>
-        </div>
-
-        <div style={{ textAlign: 'center', maxWidth: '650px', margin: '40px auto 0 auto' }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(168, 85, 247, 0.15)', border: '1px solid rgba(168, 85, 247, 0.35)', color: '#c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto' }}>
-            <Sparkles size={32} />
-          </div>
-          <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#ffffff', margin: '0 0 12px 0' }}>
-            Custom Report 3 (Reserved)
-          </h2>
-          <p style={{ color: '#94a3b8', fontSize: '1.02rem', lineHeight: '1.6' }}>
-            This 3rd sub-module is reserved for your upcoming 3rd custom report. As soon as you share the report details &amp; rules, we will immediately populate this page!
-          </p>
-        </div>
-      </div>
-    );
+    return wrapFullWidth(<CensusModule3ErrorCustomReport onBack={() => navigateModule('MODULE_3_HUB')} creds={creds} />);
   }
 
   // Default: Return Map Application Shell (Full width)
