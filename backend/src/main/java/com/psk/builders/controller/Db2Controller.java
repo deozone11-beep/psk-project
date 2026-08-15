@@ -214,24 +214,24 @@ public class Db2Controller {
 
             // 2. Also save to MySQL database if running locally
             try {
-                java.sql.Connection conn = java.sql.DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/census_db?allowPublicKeyRetrieval=true&useSSL=false",
-                        "root",
-                        "Meera@9898"
-                );
-                java.sql.Statement stmt = conn.createStatement();
-                stmt.execute("CREATE TABLE IF NOT EXISTS settings (id INT PRIMARY KEY, custom_error_filters LONGTEXT)");
-                java.sql.PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO settings (id, custom_error_filters) VALUES (1, ?) " +
-                        "ON DUPLICATE KEY UPDATE custom_error_filters = VALUES(custom_error_filters)"
-                );
-                ps.setString(1, filtersJson);
-                ps.executeUpdate();
-                ps.close();
-                stmt.close();
-                conn.close();
-            } catch (Exception mysqlEx) {
-                System.out.println("MySQL sync note: " + mysqlEx.getMessage());
+                String mysqlUrl = "jdbc:mysql://localhost:3306/census_db?allowPublicKeyRetrieval=true&useSSL=false&connectTimeout=2000";
+                java.sql.Connection conn = java.sql.DriverManager.getConnection(mysqlUrl, "root", "Meera@9898");
+                if (conn != null) {
+                    java.sql.Statement stmt = conn.createStatement();
+                    stmt.execute("CREATE TABLE IF NOT EXISTS settings (id INT PRIMARY KEY, custom_error_filters LONGTEXT)");
+                    java.sql.PreparedStatement ps = conn.prepareStatement(
+                            "INSERT INTO settings (id, custom_error_filters) VALUES (1, ?) " +
+                            "ON DUPLICATE KEY UPDATE custom_error_filters = VALUES(custom_error_filters)"
+                    );
+                    ps.setString(1, filtersJson);
+                    ps.executeUpdate();
+                    ps.close();
+                    stmt.close();
+                    conn.close();
+                }
+            } catch (Throwable mysqlEx) {
+                // Silently ignore if MySQL is unavailable (e.g. running on cloud server like Render)
+                System.out.println("MySQL settings sync note: " + mysqlEx.getMessage());
             }
 
             return ResponseEntity.ok(Map.of("status", "success", "message", "Settings saved to Supabase & MySQL successfully"));
