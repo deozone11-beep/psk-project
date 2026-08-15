@@ -800,10 +800,67 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
     a.click();
   };
 
-  const printMatrixReport = () => {
-    const win = window.open('', '_blank');
-    if (!win) return;
+  const triggerUniversalPrint = (htmlContent) => {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+      
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
 
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 2000);
+      }, 500);
+    } else {
+      const win = window.open('', '_blank');
+      if (!win) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+        setTimeout(() => {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            if (document.body.contains(iframe)) document.body.removeChild(iframe);
+          }, 2000);
+        }, 500);
+        return;
+      }
+      win.document.open();
+      win.document.write(htmlContent);
+      win.document.close();
+      setTimeout(() => {
+        win.focus();
+        win.print();
+      }, 500);
+    }
+  };
+
+  const printMatrixReport = () => {
     const activeFilterNames = selectedErrorIds.length > 0 
       ? selectedErrorIds.map(id => errorFilters.find(e => e.id === id)?.name || id).join(', ')
       : 'All 6 Errors';
@@ -812,7 +869,7 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
       <div style="page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 10px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed;">
           <thead>
-            <tr style="background: #1e293b; color: #ffffff;">
+            <tr style="background: #1e293b; color: #ffffff; page-break-inside: avoid !important;">
               <th style="width: 14%; text-align: left; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Supervisor Circle</th>
               <th style="width: 20%; text-align: left; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Enumerator (User Name &amp; Phone)</th>
               <th style="width: 7%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">HLB Code</th>
@@ -828,18 +885,29 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
           </thead>
           <tbody>
             ${c.enumerators.map((e, idx) => `
-              <tr style="page-break-inside: avoid !important; break-inside: avoid !important;">
-                ${idx === 0 ? `<td rowspan="${c.enumerators.length}" style="vertical-align:top; font-weight:bold; background:#f8fafc; border:1px solid #cbd5e1; padding:6px;"><span class="circle-badge">${c.circleNo}</span><br/><br/><b>${c.supervisorName}</b><br/><small style="color:#64748b; font-family:monospace;">📞 ${c.supervisorMobile}</small></td>` : ''}
-                <td style="border:1px solid #cbd5e1; padding:5px 6px; vertical-align:middle;"><b>${e.enumName}</b><br/><small style="color:#64748b;">${e.enumId} | 📞 ${e.enumMobile}</small></td>
-                <td style="text-align:center; font-family:monospace; font-weight:bold; border:1px solid #cbd5e1; padding:5px 4px; vertical-align:middle;">${e.hlbCode}</td>
-                <td style="text-align:center; font-weight:700; border:1px solid #cbd5e1; padding:5px 4px; vertical-align:middle;">${e.totalRecords}</td>
-                <td style="text-align:center; border:1px solid #cbd5e1; padding:5px 4px; vertical-align:middle; ${e.err1 > 0 ? 'background:#fee2e2; color:#991b1b; font-weight:bold;' : 'color:#94a3b8;'}">${e.err1}</td>
-                <td style="text-align:center; border:1px solid #cbd5e1; padding:5px 4px; vertical-align:middle; ${e.err2 > 0 ? 'background:#ffedd5; color:#c2410c; font-weight:bold;' : 'color:#94a3b8;'}">${e.err2}</td>
-                <td style="text-align:center; border:1px solid #cbd5e1; padding:5px 4px; vertical-align:middle; ${e.err3 > 0 ? 'background:#dbeafe; color:#1d4ed8; font-weight:bold;' : 'color:#94a3b8;'}">${e.err3}</td>
-                <td style="text-align:center; border:1px solid #cbd5e1; padding:5px 4px; vertical-align:middle; ${e.err4 > 0 ? 'background:#f3e8ff; color:#6b21a8; font-weight:bold;' : 'color:#94a3b8;'}">${e.err4}</td>
-                <td style="text-align:center; border:1px solid #cbd5e1; padding:5px 4px; vertical-align:middle; ${e.err5 > 0 ? 'background:#ccfbf1; color:#0f766e; font-weight:bold;' : 'color:#94a3b8;'}">${e.err5}</td>
-                <td style="text-align:center; border:1px solid #cbd5e1; padding:5px 4px; vertical-align:middle; ${e.err6 > 0 ? 'background:#fef9c3; color:#a16207; font-weight:bold;' : 'color:#94a3b8;'}">${e.err6}</td>
-                <td style="text-align:center; border:1px solid #cbd5e1; padding:5px 4px; vertical-align:middle; ${e.totalErrors > 0 ? 'background:#fee2e2; color:#991b1b; font-weight:bold;' : 'background:#f8fafc; color:#64748b;'}">${e.totalErrors}</td>
+              <tr>
+                ${idx === 0 ? `<td rowspan="${c.enumerators.length}" style="text-align: left; padding: 6px 4px; border: 1px solid #cbd5e1; font-weight: 700; background: #ffffff; vertical-align: middle;">
+                  <span class="circle-badge">${c.circleNo}</span><br/>
+                  <span style="font-size: 10px; font-weight: 800; color: #0f172a;">${c.supervisorName}</span><br/>
+                  <span style="font-size: 8px; color: #64748b;">📞 ${c.supervisorMobile}</span>
+                </td>` : ''}
+                <td style="text-align: left; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
+                  <strong style="color: #0f172a;">${e.enumName}</strong><br/>
+                  <span style="font-size: 8px; color: #64748b; font-family: monospace;">${e.enumId}</span> · <span style="font-size: 8px; color: #64748b;">${e.enumMobile}</span>
+                </td>
+                <td style="font-family: monospace; font-weight: 700; border: 1px solid #cbd5e1; text-align: center; vertical-align: middle;">HLB ${String(e.hlbCode).padStart(4, '0')}</td>
+                <td style="font-weight: 700; border: 1px solid #cbd5e1; text-align: center; vertical-align: middle;">${e.totalRecords}</td>
+                <td style="border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; ${e.err1 > 0 ? 'background: #fef2f2; color: #991b1b; font-weight: 800;' : 'color: #94a3b8;'}">${e.err1 || '-'}</td>
+                <td style="border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; ${e.err2 > 0 ? 'background: #fef2f2; color: #991b1b; font-weight: 800;' : 'color: #94a3b8;'}">${e.err2 || '-'}</td>
+                <td style="border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; ${e.err3 > 0 ? 'background: #fef2f2; color: #991b1b; font-weight: 800;' : 'color: #94a3b8;'}">${e.err3 || '-'}</td>
+                <td style="border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; ${e.err4 > 0 ? 'background: #fef2f2; color: #991b1b; font-weight: 800;' : 'color: #94a3b8;'}">${e.err4 || '-'}</td>
+                <td style="border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; ${e.err5 > 0 ? 'background: #fef2f2; color: #991b1b; font-weight: 800;' : 'color: #94a3b8;'}">${e.err5 || '-'}</td>
+                <td style="border: 1px solid #cbd5e1; text-align: center; vertical-align: middle; ${e.err6 > 0 ? 'background: #fef2f2; color: #991b1b; font-weight: 800;' : 'color: #94a3b8;'}">${e.err6 || '-'}</td>
+                <td style="border: 1px solid #cbd5e1; text-align: center; vertical-align: middle;">
+                  <span style="font-weight: 800; padding: 2px 6px; border-radius: 4px; font-size: 8.5px; ${e.totalErrors > 0 ? 'background: #fee2e2; color: #991b1b;' : 'background: #dcfce7; color: #166534;'}">
+                    ${e.totalErrors}
+                  </span>
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -847,16 +915,15 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
       </div>
     `).join('');
 
-    win.document.open();
-    win.document.write(`
+    const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>6 Errors Userwise Supervisor & Enumerator Abstract Report</title>
+        <title>Census 6 Errors Abstract Matrix Report</title>
         <style>
           @page { size: A4 landscape; margin: 8mm; }
           * { box-sizing: border-box; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9.5px; color: #0f172a; margin: 0; padding: 0; background: #fff; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9px; color: #1e293b; margin: 0; padding: 0; background: #fff; }
           .report-header { text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px; }
           .report-title { font-size: 15px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0; }
           .report-sub { font-size: 9px; color: #64748b; margin-top: 3px; font-weight: 600; }
@@ -872,13 +939,9 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
         ${circleBlocksHtml}
       </body>
       </html>
-    `);
+    `;
 
-    win.document.close();
-    setTimeout(() => {
-      win.focus();
-      win.print();
-    }, 500);
+    triggerUniversalPrint(htmlContent);
   };
 
   const downloadDirectPDF = () => {

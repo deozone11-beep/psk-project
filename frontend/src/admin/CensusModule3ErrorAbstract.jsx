@@ -656,19 +656,75 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     });
   }, [abstractReport, searchQuery]);
 
+  const triggerUniversalPrint = (htmlContent) => {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+      
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 2000);
+      }, 500);
+    } else {
+      const win = window.open('', '_blank');
+      if (!win) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+        setTimeout(() => {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            if (document.body.contains(iframe)) document.body.removeChild(iframe);
+          }, 2000);
+        }, 500);
+        return;
+      }
+      win.document.open();
+      win.document.write(htmlContent);
+      win.document.close();
+      setTimeout(() => {
+        win.focus();
+        win.print();
+      }, 500);
+    }
+  };
+
   const printSupervisorSummaryOnlyReport = (reportData) => {
     const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
     if (!dataToPrint || dataToPrint.length === 0) return;
-
-    const win = window.open('', '_blank');
-    if (!win) return;
 
     const grandTotalHLBs = dataToPrint.reduce((s, c) => s + c.enumerators.length, 0);
     const grandTotalRecs = dataToPrint.reduce((s, c) => s + c.enumerators.reduce((es, e) => es + (e.totalRecords || e.households || 0), 0), 0);
     const grandTotalErrs = dataToPrint.reduce((s, c) => s + c.enumerators.reduce((es, e) => es + (e.errorCount || 0), 0), 0);
 
-    win.document.open();
-    win.document.write(`
+    const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -756,13 +812,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         </div>
       </body>
       </html>
-    `);
-    win.document.close();
-
-    setTimeout(() => {
-      win.focus();
-      win.print();
-    }, 500);
+    `;
+    triggerUniversalPrint(htmlContent);
   };
 
   const downloadSupervisorSummaryPDF = (reportData) => {
@@ -991,11 +1042,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
-    const win = window.open('', '_blank');
-    if (!win) return;
-
-    win.document.open();
-    win.document.write(`
+    
+    const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -1060,7 +1108,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                     </td>
                     <td style="text-align:left;">${e.enumMobile || 'N/A'}</td>
                     <td><span class="hlb-code">HLB ${String(e.hlbCode).padStart(4, '0')}</span></td>
-                    <td style="font-weight:800;">${e.totalRecords}</td>
+                    <td style="font-weight:700;">${e.totalRecords}</td>
                     <td>
                       <span class="err-badge ${e.errorCount > 0 ? 'has-err' : 'no-err'}">
                         ${e.errorCount} ${e.errorCount === 1 ? 'error' : 'errors'}
@@ -1092,13 +1140,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         </div>
       </body>
       </html>
-    `);
-    win.document.close();
-
-    setTimeout(() => {
-      win.focus();
-      win.print();
-    }, 500);
+    `;
+    triggerUniversalPrint(htmlContent);
   };
 
   return (

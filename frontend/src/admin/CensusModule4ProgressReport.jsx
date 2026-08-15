@@ -888,14 +888,70 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     a.click();
   };
 
+  const triggerUniversalPrint = (htmlContent) => {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+      
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 2000);
+      }, 500);
+    } else {
+      const win = window.open('', '_blank');
+      if (!win) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+        setTimeout(() => {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            if (document.body.contains(iframe)) document.body.removeChild(iframe);
+          }, 2000);
+        }, 500);
+        return;
+      }
+      win.document.open();
+      win.document.write(htmlContent);
+      win.document.close();
+      setTimeout(() => {
+        win.focus();
+        win.print();
+      }, 500);
+    }
+  };
+
   const printSupervisorSummaryOnlyReport = (dataToPrint) => {
     if (!dataToPrint || dataToPrint.length === 0) return;
     
-    const win = window.open('', '_blank');
-    if (!win) return;
-
-    win.document.open();
-    win.document.write(`
+    const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -1014,22 +1070,14 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         </div>
       </body>
       </html>
-    `);
-    win.document.close();
-
-    setTimeout(() => {
-      win.focus();
-      win.print();
-    }, 500);
+    `;
+    triggerUniversalPrint(htmlContent);
   };
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
-    const win = window.open('', '_blank');
-    if (!win) return;
-
-    win.document.open();
-    win.document.write(`
+    
+    const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -1157,13 +1205,8 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         </div>
       </body>
       </html>
-    `);
-    win.document.close();
-
-    setTimeout(() => {
-      win.focus();
-      win.print();
-    }, 500);
+    `;
+    triggerUniversalPrint(htmlContent);
   };
 
   const downloadSupervisorSummaryPDF = (reportData) => {
