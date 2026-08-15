@@ -86,8 +86,12 @@ public class Db2Controller {
         try {
             String countSql = "SELECT COUNT(*) FROM public.\"" + tableName + "\"";
             long total = db2.queryForObject(countSql, Long.class);
-
-            String dataSql = "SELECT * FROM public.\"" + tableName + "\" LIMIT ? OFFSET ?";
+            String dataSql;
+            if ("hlb_records".equalsIgnoreCase(tableName)) {
+                dataSql = "SELECT * FROM public.\"" + tableName + "\" ORDER BY id ASC LIMIT ? OFFSET ?";
+            } else {
+                dataSql = "SELECT * FROM public.\"" + tableName + "\" LIMIT ? OFFSET ?";
+            }
             List<Map<String, Object>> rows = db2.queryForList(dataSql, limit, offset);
 
             // Derive column names from first row or from information_schema
