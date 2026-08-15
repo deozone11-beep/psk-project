@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle, ChevronDown, ChevronUp, Maximize2, Minimize2, Layers, Filter } from 'lucide-react';
+import hlbMapping from './hlbMapping.json';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -9,7 +10,13 @@ function getHlbBlockNo(codeStr) {
   if (!codeStr) return '0001';
   let s = String(codeStr).trim();
 
+  if (hlbMapping[s]) return hlbMapping[s];
+
   if (s.length >= 19 && /^\d+$/.test(s)) {
+    if (s.endsWith('00')) {
+      const blkPart = s.slice(-6, -2);
+      if (blkPart && blkPart !== '0000') return blkPart.padStart(4, '0');
+    }
     const blkPart = s.substring(15, 19);
     if (blkPart && blkPart !== '0000') return blkPart.padStart(4, '0');
   }
@@ -134,6 +141,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
   
   const [expandedCircles, setExpandedCircles] = useState(new Set());
   const [searchQuery, setSearchQuery]         = useState('');
+  const [activeViewTab, setActiveViewTab]     = useState('SUPERVISOR_TABLE'); // 'SUPERVISOR_TABLE' | 'DETAILED_ACCORDION'
 
   const toggleCircle = (circleNo) => {
     setExpandedCircles(prev => {
@@ -184,7 +192,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     }
   }
 
-  async function fetchAllRowsInChunks(t, chunkSize = 3000) {
+  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk) {
     let allRows = [];
     let offset = 0;
     let totalCount = 0;
@@ -214,6 +222,9 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
 
       if (chunk.length > 0) {
         allRows.push(...chunk);
+        if (onChunk) {
+          onChunk(chunk, allRows.length, totalCount || 74906);
+        }
       }
 
       if (success && chunk.length < chunkSize) break;
@@ -230,24 +241,33 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     async function loadData() {
       setLoading(true);
       try {
-        const records = await fetchAllRowsInChunks('hlb_records', 3000);
-        if (records.length) setRows(records);
+        let isFirstChunk = true;
 
-        const rAllot = await db2Fetch('/table/hlb_allotted?limit=5000&offset=0');
-        const jAllot = await rAllot.json().catch(() => ({}));
-        if (jAllot.rows?.length) setAllotedRows(jAllot.rows);
+        // Fetch user metadata & allotments in parallel right away
+        const pAllot = db2Fetch('/table/hlb_allotted?limit=5000&offset=0').then(r => r.json().catch(() => ({})));
+        const pCharge = db2Fetch('/table/charge_wise_report?limit=5000&offset=0').then(r => r.json().catch(() => ({})));
+        const pUser = db2Fetch('/table/user_details?limit=5000&offset=0').then(r => r.json().catch(() => ({})));
 
-        const rCharge = await db2Fetch('/table/charge_wise_report?limit=5000&offset=0');
-        const jCharge = await rCharge.json().catch(() => ({}));
-        if (jCharge.rows?.length) setChargeRows(jCharge.rows);
+        pAllot.then(jAllot => { if (jAllot.rows?.length) setAllotedRows(jAllot.rows); });
+        pCharge.then(jCharge => { if (jCharge.rows?.length) setChargeRows(jCharge.rows); });
+        pUser.then(async jUser => {
+          if (!jUser.rows?.length) {
+            const rApp = await db2Fetch('/table/app_user?limit=5000&offset=0');
+            jUser = await rApp.json().catch(() => ({}));
+          }
+          if (jUser.rows?.length) setUserRows(jUser.rows);
+        });
 
-        const rUser = await db2Fetch('/table/user_details?limit=5000&offset=0');
-        let jUser = await rUser.json().catch(() => ({}));
-        if (!jUser.rows?.length) {
-          const rApp = await db2Fetch('/table/app_user?limit=5000&offset=0');
-          jUser = await rApp.json().catch(() => ({}));
-        }
-        if (jUser.rows?.length) setUserRows(jUser.rows);
+        // Stream hlb_records chunks progressively
+        await fetchAllRowsInChunks('hlb_records', 3000, (chunk, loaded, total) => {
+          if (chunk && chunk.length) {
+            setRows(prev => (isFirstChunk ? chunk : [...prev, ...chunk]));
+          }
+          if (isFirstChunk) {
+            isFirstChunk = false;
+            setLoading(false); // UNBLOCK SCREEN IMMEDIATELY ON 1ST CHUNK!
+          }
+        });
       } catch (e) {
         console.error('Data load error:', e);
       } finally {
@@ -495,45 +515,43 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     }
 
     if (allotedRows.length > 0) {
-      const supGroupMap = new Map();
+      const circleMap = new Map();
+
+      // Group allotedRows strictly by sc_serial_no (Circle No)
       allotedRows.forEach(a => {
         const areaType = String(a.area_type || '').toUpperCase();
         if (areaType && areaType !== 'HLB') return;
-        if (parseInt(a.total_households || 0) > 10000) return;
-
-        const hlbSerial = String(a.hlb_block_no || a.hlb_block_number || a.hlb_no || a.hlb_number || a.hlb_serial_no || a.hlb_serial_number || a.block_no || a.block_number || a.blk_no || a.hlb_code || a.area_code || a.hlb || '').trim();
-        const blkCode = getHlbBlockNo(hlbSerial) || hlbSerial.padStart(4, '0');
-        const blkNum = parseInt(blkCode, 10);
-        if (blkNum > 470) return;
-
-        const rawSup = String(a.supervisor_name || a.supervisor || a.supervisor_full_name || a.sup_name || a.supervisor_id || '').trim();
-        const supInfo = getMobileAndUsername(rawSup, rawSup, true);
-
-        const getSupNameByHlb = (blk) => {
-          const num = parseInt(blk, 10) || 1;
-          const supList = ['MUTHU LAKSHMI', 'PULLAIAH P', 'VASANTHA KUMAR V', 'R RUKMANI DEVI', 'P MURALI'];
-          return supList[Math.floor((num - 1) / 6) % supList.length];
-        };
-
-        const supName = supInfo.fullName || (rawSup && rawSup !== 'GENERAL SUPERVISOR' && !rawSup.startsWith('sm_') ? rawSup : getSupNameByHlb(blkCode));
-
-        if (!supGroupMap.has(supName)) supGroupMap.set(supName, []);
-        supGroupMap.get(supName).push({ ...a, _blkCode: blkCode });
+        
+        const scNumStr = String(a.sc_serial_no || a.circle_no || a.circle_number || a.circle || '').trim();
+        if (!scNumStr) return;
+        
+        const circleNo = `Circle ${scNumStr.padStart(3, '0')}`;
+        if (!circleMap.has(circleNo)) circleMap.set(circleNo, []);
+        circleMap.get(circleNo).push(a);
       });
 
       const circles = [];
-      let circleIdx = 1;
+      const sortedCircleKeys = Array.from(circleMap.keys()).sort();
 
-      supGroupMap.forEach((allotList, supName) => {
-        const supInfo = getMobileAndUsername('', supName, true);
+      sortedCircleKeys.forEach(circleNo => {
+        const allotList = circleMap.get(circleNo);
+        if (!allotList || allotList.length === 0) return;
+
+        const firstRow = allotList[0];
+        const rawSup = String(firstRow.supervisor_name || firstRow.supervisor || firstRow.supervisor_full_name || firstRow.sup_name || '').trim();
+        const supInfo = getMobileAndUsername(rawSup, rawSup, true);
+        const supName = supInfo.fullName || (rawSup && !rawSup.startsWith('sm_') ? rawSup : 'SUPERVISOR');
+        const supMob = supInfo.mobile !== 'N/A' ? supInfo.mobile : (String(firstRow.sup_mobile || firstRow.supervisor_mobile || firstRow.mobile || '') || 'N/A');
 
         const enumerators = allotList.map(a => {
-          const rawEnum = String(a.enumerator_name || a.enumerator || a.enum_name || a.enumerator_full_name || a.user_name || '').trim();
+          const rawEnum = String(a.enumerator_name || a.enumerator || a.enum_name || a.enumerator_full_name || '').trim();
           const userId = String(a.user_id || a.enumerator_id || a.username || '').trim();
           const enumInfo = getMobileAndUsername(userId || rawEnum, rawEnum || userId, false);
 
           const resolvedEnumName = enumInfo.fullName || (rawEnum && !rawEnum.startsWith('em_') ? rawEnum : (enumInfo.username !== 'N/A' ? enumInfo.username : 'ENUMERATOR'));
-          const blkCode = (a._blkCode || getHlbBlockNo(String(a.hlb_serial_no || a.hlb_code || a.hlb_no || '')) || '0001').padStart(4, '0');
+          
+          const hlbSerial = String(a.hlb_serial_no || a.hlb_block_no || a.hlb_block_number || a.hlb_no || a.hlb_code || '').trim();
+          const blkCode = getHlbBlockNo(hlbSerial) || hlbSerial.padStart(4, '0');
 
           const unpadded = String(parseInt(blkCode, 10) || blkCode);
           const padded = blkCode.padStart(4, '0');
@@ -547,7 +565,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           return {
             enumId: enumInfo.username || userId || `ENUM-${resolvedEnumName}`,
             enumName: resolvedEnumName,
-            enumMobile: enumInfo.mobile !== 'N/A' ? enumInfo.mobile : (String(a.mobile || a.mobile_no || a.phone || a.user_mobile || a.enum_mobile || '') || '98401000' + circleIdx),
+            enumMobile: enumInfo.mobile !== 'N/A' ? enumInfo.mobile : (String(a.mobile || a.mobile_no || a.phone || a.user_mobile || a.enum_mobile || '') || 'N/A'),
             hlbCode: padded,
             totalRecords: totalRecs,
             errorCount: errCount,
@@ -555,10 +573,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           };
         });
 
-        const supMob = supInfo.mobile !== 'N/A' ? supInfo.mobile : (String(allotList[0]?.sup_mobile || allotList[0]?.supervisor_mobile || allotList[0]?.mobile || '') || ('98403000' + circleIdx));
-
         circles.push({
-          circleNo: `Circle ${String(circleIdx++).padStart(3, '0')}`,
+          circleNo,
           supervisorName: supName,
           supervisorId: supInfo.username && supInfo.username !== 'N/A' ? supInfo.username : '',
           supervisorMobile: supMob,
@@ -566,47 +582,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         });
       });
 
-      if (circles.length < 75) {
-        for (let s = circles.length + 1; s <= 75; s++) {
-          const supInfo = getMobileAndUsername('', `sm_3470160011_sup${s}`, true);
-          const supName = supInfo.fullName || `Supervisor ${s}`;
-          const supHlbs = Array.from({ length: 6 }, (_, i) => {
-            const blkNum = (s - 1) * 6 + i + 1;
-            if (blkNum > 470) return null;
-            return String(blkNum).padStart(4, '0');
-          }).filter(Boolean);
-
-          const enumerators = supHlbs.map((blkCode, i) => {
-            const enumNum = (s - 1) * 6 + i + 1;
-            const enumInfo = getMobileAndUsername(`em_3470160011_enum_${enumNum}`, `Enumerator ${enumNum}`, false);
-            const unpadded = String(parseInt(blkCode, 10) || blkCode);
-            const padded = blkCode.padStart(4, '0');
-            const totalRecs = hlbTotalMap.get(padded) ?? hlbTotalMap.get(unpadded) ?? hlbTotalMap.get(blkCode) ?? (chargeMetricsMap.get(blkCode) || 0);
-            const errCount = hlbErrorMap.get(padded) ?? hlbErrorMap.get(unpadded) ?? hlbErrorMap.get(blkCode) ?? 0;
-            const errRecords = hlbErrorRecordsMap.get(padded) || hlbErrorRecordsMap.get(unpadded) || hlbErrorRecordsMap.get(blkCode) || [];
-
-            return {
-              enumId: enumInfo.username || `em_3470160011_enum_${enumNum}`,
-              enumName: enumInfo.fullName || `Enumerator ${enumNum}`,
-              enumMobile: enumInfo.mobile || `9840${100000 + enumNum}`,
-              hlbCode: blkCode,
-              totalRecords: totalRecs,
-              errorCount: errCount,
-              errorRecords: errRecords
-            };
-          });
-
-          circles.push({
-            circleNo: `Circle ${String(s).padStart(3, '0')}`,
-            supervisorName: supName,
-            supervisorId: supInfo.username || `sm_3470160011_sup${s}`,
-            supervisorMobile: supInfo.mobile || `9840${300000 + s}`,
-            enumerators
-          });
-        }
-      }
-
-      if (circles.length > 0) return circles;
+      return circles;
     }
 
     return [];
@@ -659,6 +635,123 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       return circleMatch || supMatch || enumMatch;
     });
   }, [abstractReport, searchQuery]);
+
+  const printSupervisorSummaryOnlyReport = (reportData) => {
+    const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
+    if (!dataToPrint || dataToPrint.length === 0) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+
+    const grandTotalHLBs = dataToPrint.reduce((s, c) => s + c.enumerators.length, 0);
+    const grandTotalRecs = dataToPrint.reduce((s, c) => s + c.enumerators.reduce((es, e) => es + (e.totalRecords || e.households || 0), 0), 0);
+    const grandTotalErrs = dataToPrint.reduce((s, c) => s + c.enumerators.reduce((es, e) => es + (e.errorCount || 0), 0), 0);
+
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Supervisor Abstract Summary Report</title>
+        <style>
+          @page { size: A4 portrait; margin: 10mm; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; color: #0f172a; margin: 0; padding: 0; background: #fff; }
+          .report-header { text-align: center; border-bottom: 2px solid #7c3aed; padding-bottom: 10px; margin-bottom: 14px; }
+          .report-title { font-size: 16px; font-weight: 900; color: #6b21a8; letter-spacing: 0.5px; text-transform: uppercase; margin: 0; }
+          .report-sub { font-size: 10px; color: #64748b; margin-top: 4px; font-weight: 600; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10.5px; }
+          th { background: #f1f5f9; color: #334155; font-weight: 800; text-align: center; padding: 8px 10px; border: 1px solid #cbd5e1; text-transform: uppercase; font-size: 9.5px; }
+          td { padding: 8px 10px; border: 1px solid #cbd5e1; color: #1e293b; }
+          tr:nth-child(even) { background: #f8fafc; }
+          .circle-badge { font-weight: 900; background: #7c3aed; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 10px; white-space: nowrap; }
+          .err-badge { font-weight: 800; padding: 3px 8px; border-radius: 10px; font-size: 10px; display: inline-block; }
+          .has-err { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+          .no-err { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+          tfoot { display: table-row-group; }
+          tfoot tr { background: #e2e8f0; font-weight: 900; page-break-inside: avoid; }
+          tfoot td { border-top: 2.5px solid #0f172a; font-size: 11px; padding: 10px; }
+          .print-footer { text-align: right; font-size: 9.5px; color: #94a3b8; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <div class="report-header">
+          <div class="report-title">CENSUS WORK — SUPERVISOR ABSTRACT SUMMARY REPORT</div>
+          <div class="report-sub">Generated on ${new Date().toLocaleString()} · Total Supervisors: ${dataToPrint.length}</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px; text-align: center;">S.No</th>
+              <th style="width: 100px; text-align: center;">Circle No</th>
+              <th style="text-align: left;">Supervisor Name &amp; ID</th>
+              <th style="width: 110px; text-align: left;">Mobile No</th>
+              <th style="width: 130px; text-align: center;">Allotted HLBs</th>
+              <th style="width: 100px; text-align: center;">Total Records</th>
+              <th style="width: 100px; text-align: center;">No. of Errors</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataToPrint.map((c, i) => {
+              const totalRecs = c.enumerators.reduce((s, e) => s + (e.totalRecords || e.households || 0), 0);
+              const totalErrs = c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
+              const uniqueEnumCount = new Set(c.enumerators.map(e => e.enumId || e.enumName)).size;
+              return `
+                <tr>
+                  <td style="text-align: center; font-weight: 700; color: #64748b;">${i + 1}</td>
+                  <td style="text-align: center;"><span class="circle-badge">${c.circleNo}</span></td>
+                  <td style="text-align: left; font-weight: 700;">
+                    ${c.supervisorName}<br/>
+                    <span style="font-size: 9px; color: #64748b; font-family: monospace;">${c.supervisorId || ''}</span>
+                  </td>
+                  <td style="text-align: left; font-family: monospace; font-weight: 700;">${c.supervisorMobile || 'N/A'}</td>
+                  <td style="text-align: center; font-weight: 700;">${c.enumerators.length} HLBs (${uniqueEnumCount} Enums)</td>
+                  <td style="text-align: center; font-weight: 800; color: #0284c7;">${totalRecs.toLocaleString()}</td>
+                  <td style="text-align: center;">
+                    <span class="err-badge ${totalErrs > 0 ? 'has-err' : 'no-err'}">
+                      ${totalErrs} ${totalErrs === 1 ? 'error' : 'errors'}
+                    </span>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="text-align: left; font-weight: 900;">GRAND TOTAL (${dataToPrint.length} Supervisors)</td>
+              <td style="text-align: center; font-weight: 900;">${grandTotalHLBs} HLBs</td>
+              <td style="text-align: center; font-weight: 900; color: #0284c7;">${grandTotalRecs.toLocaleString()}</td>
+              <td style="text-align: center;">
+                <span class="err-badge ${grandTotalErrs > 0 ? 'has-err' : 'no-err'}">
+                  ${grandTotalErrs} errors
+                </span>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="print-footer">
+          Supervisor Abstract Summary Report — PSK Builders Census Module
+        </div>
+      </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+    }, 500);
+  };
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
@@ -793,10 +886,16 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
-            onClick={() => printSupervisorAbstractReport(abstractReport)}
+            onClick={() => {
+              if (activeViewTab === 'SUPERVISOR_TABLE') {
+                printSupervisorSummaryOnlyReport(filteredReport);
+              } else {
+                printSupervisorAbstractReport(filteredReport);
+              }
+            }}
             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 10, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
           >
-            <Printer size={16}/> Print All Supervisors
+            <Printer size={16}/> {activeViewTab === 'SUPERVISOR_TABLE' ? 'Print Supervisors Summary' : 'Print All Supervisors'}
           </button>
         </div>
       </div>
@@ -922,23 +1021,69 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading Supervisor Error Abstract Report...</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Controls Bar: Search & Expand/Collapse All */}
+          {/* VIEW MODE TABS & CONTROLS BAR */}
           <div style={{
             background: 'rgba(255, 255, 255, 0.03)',
             border: '1px solid rgba(255, 255, 255, 0.09)',
             borderRadius: 14,
-            padding: '10px 14px',
+            padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
             justify: 'space-between',
             flexWrap: 'wrap',
-            gap: 10
+            gap: 12
           }}>
-            <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 420 }}>
+            {/* View Mode Toggle Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                onClick={() => setActiveViewTab('SUPERVISOR_TABLE')}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: 10,
+                  fontWeight: 900,
+                  fontSize: '0.8rem',
+                  background: activeViewTab === 'SUPERVISOR_TABLE' ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255, 255, 255, 0.05)',
+                  color: activeViewTab === 'SUPERVISOR_TABLE' ? '#ffffff' : '#94a3b8',
+                  border: activeViewTab === 'SUPERVISOR_TABLE' ? '1px solid #c084fc' : '1px solid rgba(255, 255, 255, 0.1)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s ease',
+                  boxShadow: activeViewTab === 'SUPERVISOR_TABLE' ? '0 4px 14px rgba(168, 85, 247, 0.4)' : 'none'
+                }}
+              >
+                📊 Supervisor Summary Table
+              </button>
+
+              <button
+                onClick={() => setActiveViewTab('DETAILED_ACCORDION')}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: 10,
+                  fontWeight: 900,
+                  fontSize: '0.8rem',
+                  background: activeViewTab === 'DETAILED_ACCORDION' ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255, 255, 255, 0.05)',
+                  color: activeViewTab === 'DETAILED_ACCORDION' ? '#ffffff' : '#94a3b8',
+                  border: activeViewTab === 'DETAILED_ACCORDION' ? '1px solid #c084fc' : '1px solid rgba(255, 255, 255, 0.1)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s ease',
+                  boxShadow: activeViewTab === 'DETAILED_ACCORDION' ? '0 4px 14px rgba(168, 85, 247, 0.4)' : 'none'
+                }}
+              >
+                📋 Detailed Circle &amp; Enumerators Breakdown
+              </button>
+            </div>
+
+            {/* Search Bar aligned to far right */}
+            <div style={{ position: 'relative', width: 340, marginLeft: 'auto' }}>
               <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
-                placeholder="Search Supervisor, Circle No, Enumerator or HLB Code..."
+                placeholder="Search Supervisor, Circle, Enumerator or HLB Code..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
@@ -961,49 +1106,102 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                 />
               )}
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button
-                onClick={expandAllCircles}
-                style={{
-                  background: 'rgba(168, 85, 247, 0.15)',
-                  border: '1px solid rgba(168, 85, 247, 0.4)',
-                  color: '#c084fc',
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  fontSize: '0.76rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6
-                }}
-              >
-                <Maximize2 size={13} /> Expand All ({filteredReport.length})
-              </button>
-              <button
-                onClick={collapseAllCircles}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  color: '#94a3b8',
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  fontSize: '0.76rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6
-                }}
-              >
-                <Minimize2 size={13} /> Collapse All
-              </button>
-            </div>
           </div>
 
-          {filteredReport.map((circle, cIdx) => {
-            const isExpanded = expandedCircles.has(circle.circleNo);
+          {/* TAB 1: SUPERVISOR SUMMARY TABLE VIEW */}
+          {activeViewTab === 'SUPERVISOR_TABLE' && (
+            <div style={{ overflowX: 'auto', width: '100%', borderRadius: 14, border: '1px solid rgba(168, 85, 247, 0.3)', background: 'rgba(15, 23, 42, 0.7)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                <thead>
+                  <tr style={{ background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(124, 58, 237, 0.15))', color: '#e9d5ff', borderBottom: '2px solid rgba(168, 85, 247, 0.4)' }}>
+                    <th style={{ padding: '12px 14px', textAlign: 'center', width: 120 }}>Circle No</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left' }}>Supervisor Name &amp; ID</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'left', width: 140 }}>Mobile No</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'center', width: 170 }}>Allotted HLBs</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'center', width: 130 }}>Total Records</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'center', width: 130 }}>No. of Errors</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredReport.map((circle, cIdx) => {
+                    const circleTotalRecs = circle.enumerators.reduce((sum, e) => sum + (e.totalRecords || e.households || 0), 0);
+                    const circleTotalErrs = circle.enumerators.reduce((sum, e) => sum + (e.errorCount || 0), 0);
+                    const uniqueEnumCount = new Set(circle.enumerators.map(e => e.enumId || e.enumName)).size;
+
+                    return (
+                      <tr 
+                        key={circle.circleNo || cIdx}
+                        onClick={() => setActiveViewTab('DETAILED_ACCORDION')}
+                        style={{
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                          background: cIdx % 2 === 0 ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s ease'
+                        }}
+                      >
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                          <span style={{
+                            background: 'linear-gradient(135deg, #a855f7, #7c3aed)',
+                            color: '#ffffff',
+                            fontSize: '0.76rem',
+                            fontWeight: 900,
+                            padding: '4px 12px',
+                            borderRadius: 20,
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 2px 8px rgba(168, 85, 247, 0.4)',
+                            display: 'inline-block'
+                          }}>
+                            {circle.circleNo}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', color: '#f8fafc', fontWeight: 800 }}>
+                          <div style={{ fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <User size={15} color="#c084fc" style={{ flexShrink: 0 }} /> 
+                            <span>{circle.supervisorName}</span>
+                          </div>
+                          {circle.supervisorId && (
+                            <div style={{ fontSize: '0.68rem', color: '#a855f7', fontFamily: 'monospace', fontWeight: 700, marginTop: 2, paddingLeft: 23 }}>
+                              {circle.supervisorId}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 14px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 700 }}>
+                          {circle.supervisorMobile || 'N/A'}
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                          <span style={{ background: 'rgba(168, 85, 247, 0.15)', border: '1px solid rgba(168, 85, 247, 0.35)', color: '#c084fc', padding: '4px 10px', borderRadius: 8, fontSize: '0.74rem', fontWeight: 800 }}>
+                            {circle.enumerators.length} HLBs ({uniqueEnumCount} Enums)
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center', color: '#38bdf8', fontWeight: 900, fontSize: '0.88rem' }}>
+                          {circleTotalRecs.toLocaleString()}
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                          <span style={{
+                            background: circleTotalErrs > 0 ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 197, 94, 0.15)',
+                            border: circleTotalErrs > 0 ? '1px solid #ef4444' : '1px solid rgba(34, 197, 94, 0.3)',
+                            color: circleTotalErrs > 0 ? '#fca5a5' : '#86efac',
+                            padding: '4px 12px',
+                            borderRadius: 12,
+                            fontWeight: 900,
+                            fontSize: '0.76rem'
+                          }}>
+                            {circleTotalErrs} {circleTotalErrs === 1 ? 'error' : 'errors'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* TAB 2: DETAILED CIRCLE & ENUMERATORS BREAKDOWN VIEW (ALWAYS EXPANDED) */}
+          {activeViewTab === 'DETAILED_ACCORDION' && filteredReport.map((circle, cIdx) => {
+            const circleTotalRecs = circle.enumerators.reduce((sum, e) => sum + (e.totalRecords || e.households || 0), 0);
+            const circleTotalErrs = circle.enumerators.reduce((sum, e) => sum + (e.errorCount || 0), 0);
+            const uniqueEnumCount = new Set(circle.enumerators.map(e => e.enumId || e.enumName)).size;
 
             return (
               <div key={circle.circleNo || cIdx} style={{
@@ -1016,180 +1214,148 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                 gap: 12
               }}>
                 {/* Supervisor Info Header Row */}
-                <div 
-                  onClick={() => toggleCircle(circle.circleNo)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justify: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 10,
-                    cursor: 'pointer',
-                    userSelect: 'none'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#fff', fontSize: '0.72rem', fontWeight: 900, padding: '3px 10px', borderRadius: 20 }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(124, 58, 237, 0.05))',
+                  border: '1px solid rgba(168, 85, 247, 0.25)',
+                  borderRadius: 12,
+                  padding: '10px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                  userSelect: 'none'
+                }}>
+                  {/* Left Info Group: Circle No | Supervisor Name & ID | Mobile No */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                    <span style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#fff', fontSize: '0.74rem', fontWeight: 900, padding: '4px 12px', borderRadius: 20, boxShadow: '0 2px 8px rgba(168,85,247,0.4)' }}>
                       {circle.circleNo}
                     </span>
-                    <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <User size={14} color="#c084fc"/> Supervisor: {circle.supervisorName} {circle.supervisorId ? `(${circle.supervisorId})` : ''}
+                    <span style={{ fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <User size={16} color="#c084fc"/> Supervisor: <span style={{ color: '#ffffff', fontWeight: 900 }}>{circle.supervisorName}</span> {circle.supervisorId ? <span style={{ color: '#a855f7', fontSize: '0.75rem', fontFamily: 'monospace' }}>({circle.supervisorId})</span> : ''}
+                    </span>
+                    <span style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'monospace', background: 'rgba(0,0,0,0.2)', padding: '3px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <Phone size={13} color="#60a5fa"/> {circle.supervisorMobile || 'N/A'}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'monospace' }}>
-                      <Phone size={12} color="#60a5fa"/> {circle.supervisorMobile}
-                    </span>
-
+                  {/* Right Action Group: Print Circle Button on Far Right */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        printSupervisorAbstractReport([circle]);
-                      }}
+                      onClick={() => printSupervisorAbstractReport([circle])}
                       style={{
-                        background: 'rgba(59, 130, 246, 0.15)',
-                        border: '1px solid rgba(59, 130, 246, 0.4)',
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.15))',
+                        border: '1px solid rgba(59, 130, 246, 0.5)',
                         color: '#60a5fa',
-                        padding: '4px 12px',
+                        padding: '6px 16px',
                         borderRadius: 8,
-                        fontSize: '0.72rem',
-                        fontWeight: 800,
+                        fontSize: '0.76rem',
+                        fontWeight: 900,
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: 4
+                        gap: 6,
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 8px rgba(59,130,246,0.2)'
                       }}
                     >
-                      <Printer size={13} /> Print Circle
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleCircle(circle.circleNo);
-                      }}
-                      style={{
-                        background: isExpanded ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                        border: isExpanded ? '1px solid rgba(168, 85, 247, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
-                        color: isExpanded ? '#c084fc' : '#f1f5f9',
-                        padding: '4px 12px',
-                        borderRadius: 8,
-                        fontSize: '0.72rem',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                    >
-                      {isExpanded ? <ChevronUp size={14} color="#c084fc" /> : <ChevronDown size={14} color="#f1f5f9" />}
-                      {isExpanded ? 'Hide' : 'Expand'}
+                      <Printer size={14} /> Print Circle
                     </button>
                   </div>
                 </div>
 
-                {/* Enumerators Table (Shown ONLY when isExpanded = true) */}
-                {isExpanded && (
-                  <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: 4 }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem' }}>
-                      <thead>
-                        <tr style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#e9d5ff', borderBottom: '1px solid rgba(168, 85, 247, 0.25)' }}>
-                          <th style={{ padding: '10px 12px', textAlign: 'left', minWidth: 170 }}>Enumerator Name &amp; ID</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'left', minWidth: 110 }}>Mobile No</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'center', minWidth: 110 }}>Allotted HLB Code</th>
-                          <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>Total Records</th>
-                          <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>No. of Errors</th>
+                {/* Enumerators Table (Always Visible in Tab 2) */}
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: 4 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem' }}>
+                    <thead>
+                      <tr style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#e9d5ff', borderBottom: '1px solid rgba(168, 85, 247, 0.25)' }}>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', minWidth: 170 }}>Enumerator Name &amp; ID</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', minWidth: 110 }}>Mobile No</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'center', minWidth: 110 }}>Allotted HLB Code</th>
+                        <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>Total Records</th>
+                        <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>No. of Errors</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {circle.enumerators.map((enumItem, eIdx) => (
+                        <tr key={eIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <td style={{ padding: '10px 12px', color: '#f1f5f9', fontWeight: 700 }}>
+                            <div style={{ fontSize: '0.82rem' }}>{enumItem.enumName}</div>
+                            <div style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'monospace' }}>{enumItem.enumId}</div>
+                          </td>
+                          <td style={{ padding: '10px 12px', color: '#94a3b8', fontFamily: 'monospace' }}>{enumItem.enumMobile}</td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            <span style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc', padding: '3px 10px', borderRadius: 8, fontWeight: 800, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                              HLB {String(enumItem.hlbCode).padStart(4, '0')}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f1f5f9', fontWeight: 800 }}>
+                            {enumItem.totalRecords || enumItem.households || 0}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            <span 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (enumItem.errorCount > 0) {
+                                  setSelectedHlbErrorPopup({
+                                    hlbCode: String(enumItem.hlbCode).padStart(4, '0'),
+                                    supervisorName: circle.supervisorName,
+                                    enumName: enumItem.enumName,
+                                    enumMobile: enumItem.enumMobile,
+                                    records: enumItem.errorRecords || []
+                                  });
+                                }
+                              }}
+                              style={{
+                                background: enumItem.errorCount > 0 ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.15)',
+                                border: enumItem.errorCount > 0 ? '1px solid #ef4444' : '1px solid rgba(34,197,94,0.3)',
+                                color: enumItem.errorCount > 0 ? '#fca5a5' : '#86efac',
+                                padding: '4px 12px',
+                                borderRadius: 12,
+                                fontWeight: 900,
+                                fontSize: '0.74rem',
+                                whiteSpace: 'nowrap',
+                                display: 'inline-block',
+                                cursor: enumItem.errorCount > 0 ? 'pointer' : 'default'
+                              }}
+                            >
+                              {enumItem.errorCount} {enumItem.errorCount === 1 ? 'error' : 'errors'}
+                            </span>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {circle.enumerators.map((enumItem, eIdx) => (
-                          <tr key={eIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <td style={{ padding: '10px 12px', color: '#f1f5f9', fontWeight: 700 }}>
-                              <div style={{ fontSize: '0.82rem' }}>{enumItem.enumName}</div>
-                              <div style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'monospace' }}>{enumItem.enumId}</div>
-                            </td>
-                            <td style={{ padding: '10px 12px', color: '#94a3b8', fontFamily: 'monospace' }}>{enumItem.enumMobile}</td>
-                            <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                              <span style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc', padding: '3px 10px', borderRadius: 8, fontWeight: 800, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-                                HLB {String(enumItem.hlbCode).padStart(4, '0')}
-                              </span>
-                            </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f1f5f9', fontWeight: 800 }}>
-                              {enumItem.totalRecords || enumItem.households || 0}
-                            </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                              <span 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (enumItem.errorCount > 0) {
-                                    setSelectedHlbErrorPopup({
-                                      hlbCode: String(enumItem.hlbCode).padStart(4, '0'),
-                                      supervisorName: circle.supervisorName,
-                                      enumName: enumItem.enumName,
-                                      enumMobile: enumItem.enumMobile,
-                                      records: enumItem.errorRecords || []
-                                    });
-                                  }
-                                }}
-                                style={{
-                                  background: enumItem.errorCount > 0 ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.15)',
-                                  border: enumItem.errorCount > 0 ? '1px solid #ef4444' : '1px solid rgba(34,197,94,0.3)',
-                                  color: enumItem.errorCount > 0 ? '#fca5a5' : '#86efac',
-                                  padding: '4px 12px',
-                                  borderRadius: 12,
-                                  fontWeight: 900,
-                                  fontSize: '0.74rem',
-                                  whiteSpace: 'nowrap',
-                                  display: 'inline-block',
-                                  cursor: enumItem.errorCount > 0 ? 'pointer' : 'default'
-                                }}
-                              >
-                                {enumItem.errorCount} {enumItem.errorCount === 1 ? 'error' : 'errors'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        {(() => {
-                          const uniqueEnumCount = new Set(circle.enumerators.map(e => e.enumId || e.enumName)).size;
-                          const circleTotalRecs = circle.enumerators.reduce((sum, e) => sum + (e.totalRecords || e.households || 0), 0);
-                          const circleTotalErrs = circle.enumerators.reduce((sum, e) => sum + (e.errorCount || 0), 0);
-                          return (
-                            <tr style={{ background: 'rgba(168, 85, 247, 0.18)', color: '#ffffff', fontWeight: 900, borderTop: '2px solid rgba(168, 85, 247, 0.4)' }}>
-                              <td style={{ padding: '10px 12px', textAlign: 'left', color: '#e9d5ff', fontSize: '0.82rem' }}>
-                                SUPERVISOR TOTAL ({uniqueEnumCount} Enumerator{uniqueEnumCount === 1 ? '' : 's'})
-                              </td>
-                              <td style={{ padding: '10px 12px', color: '#94a3b8' }}>-</td>
-                              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#c084fc', fontWeight: 800 }}>
-                                {circle.enumerators.length} HLBs
-                              </td>
-                              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#38bdf8', fontSize: '0.88rem', fontWeight: 900 }}>
-                                {circleTotalRecs.toLocaleString()}
-                              </td>
-                              <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                                <span style={{
-                                  background: circleTotalErrs > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.2)',
-                                  border: circleTotalErrs > 0 ? '1.5px solid #ef4444' : '1.5px solid rgba(34,197,94,0.4)',
-                                  color: circleTotalErrs > 0 ? '#fca5a5' : '#86efac',
-                                  padding: '4px 12px',
-                                  borderRadius: 12,
-                                  fontWeight: 900,
-                                  fontSize: '0.78rem',
-                                  whiteSpace: 'nowrap',
-                                  display: 'inline-block'
-                                }}>
-                                  {circleTotalErrs} {circleTotalErrs === 1 ? 'error' : 'errors'}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })()}
-                      </tfoot>
-                    </table>
-                  </div>
-                )}
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: 'rgba(168, 85, 247, 0.18)', color: '#ffffff', fontWeight: 900, borderTop: '2px solid rgba(168, 85, 247, 0.4)' }}>
+                        <td style={{ padding: '10px 12px', textAlign: 'left', color: '#e9d5ff', fontSize: '0.82rem' }}>
+                          SUPERVISOR TOTAL ({uniqueEnumCount} Enumerator{uniqueEnumCount === 1 ? '' : 's'})
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#94a3b8' }}>-</td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#c084fc', fontWeight: 800 }}>
+                          {circle.enumerators.length} HLBs
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#38bdf8', fontSize: '0.88rem', fontWeight: 900 }}>
+                          {circleTotalRecs.toLocaleString()}
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                          <span style={{
+                            background: circleTotalErrs > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.2)',
+                            border: circleTotalErrs > 0 ? '1.5px solid #ef4444' : '1.5px solid rgba(34,197,94,0.4)',
+                            color: circleTotalErrs > 0 ? '#fca5a5' : '#86efac',
+                            padding: '4px 12px',
+                            borderRadius: 12,
+                            fontWeight: 900,
+                            fontSize: '0.78rem',
+                            whiteSpace: 'nowrap',
+                            display: 'inline-block'
+                          }}>
+                            {circleTotalErrs} {circleTotalErrs === 1 ? 'error' : 'errors'}
+                          </span>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
             );
           })}

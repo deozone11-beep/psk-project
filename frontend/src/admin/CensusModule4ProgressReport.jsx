@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle } from 'lucide-react';
 import hlbMapping from './hlbMapping.json';
 
@@ -13,6 +13,10 @@ function getHlbBlockNo(codeStr) {
   if (hlbMapping[s]) return hlbMapping[s];
 
   if (s.length >= 19 && /^\d+$/.test(s)) {
+    if (s.endsWith('00')) {
+      const blkPart = s.slice(-6, -2);
+      if (blkPart && blkPart !== '0000') return blkPart.padStart(4, '0');
+    }
     const blkPart = s.substring(15, 19);
     if (blkPart && blkPart !== '0000') return blkPart.padStart(4, '0');
   }
@@ -33,13 +37,170 @@ function getHlbBlockNo(codeStr) {
   return s.padStart(4, '0');
 }
 
+const DEFAULT_ERRORS = [
+  {
+    id: 'err1',
+    name: 'Night soil removed by human',
+    nameTa: 'மனிதர்களால் அகற்றப்படும் வகை',
+    col1Name: 'latrine_type_name',
+    col1EnText: 'Service latrine:  Night soil removed by human',
+    col1TaText: 'சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை',
+    enKeywords: ['Service latrine:  Night soil removed by human', 'Night soil removed by human', 'service latrine'],
+    taKeywords: ['சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை', 'சேவை கழிவு', 'மனிதர்களால் அகற்றப்படும் வகை'],
+    enText: 'Service latrine:  Night soil removed by human',
+    taText: 'சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை',
+    color: '#ef4444',
+    icon: '🚫'
+  },
+  {
+    id: 'err2',
+    name: 'Landline Only',
+    nameTa: 'தொலைபேசி மட்டும்',
+    col1Name: 'avail_telecom',
+    col1EnText: 'Landline only',
+    col1TaText: 'தொலைபேசி மட்டும்',
+    enKeywords: ['Landline only', 'landline'],
+    taKeywords: ['தொலைபேசி மட்டும்', 'தொலைபேசி'],
+    enText: 'Landline only',
+    taText: 'தொலைபேசி மட்டும்',
+    color: '#f97316',
+    icon: '☎️'
+  },
+  {
+    id: 'err3',
+    name: 'No Light',
+    nameTa: 'விளக்கு வசதி இல்லை',
+    col1Name: 'main_source_lighting',
+    col1EnText: 'No lighting',
+    col1TaText: 'மின் விளக்கு வசதி இல்லை',
+    enKeywords: ['No lighting', 'no light'],
+    taKeywords: ['விளக்கு வசதி இல்லை', 'மின் விளக்கு வசதி இல்லை'],
+    enText: 'No lighting',
+    taText: 'மின் விளக்கு வசதி இல்லை',
+    color: '#3b82f6',
+    icon: '💡'
+  },
+  {
+    id: 'err4',
+    name: 'River/ Canal',
+    nameTa: 'ஆறு/ கால்வாய்',
+    col1Name: 'drinage_water_outlet',
+    col1EnText: 'River/ canal',
+    col1TaText: 'ஆறு / கால்வாய்',
+    enKeywords: ['River/ canal', 'river', 'canal'],
+    taKeywords: ['ஆறு/ கால்வாய்', 'ஆறு / கால்வாய்', 'ஆறு', 'கால்வாய்'],
+    enText: 'River/ canal',
+    taText: 'ஆறு / கால்வாய்',
+    color: '#8b5cf6',
+    icon: '🌊'
+  },
+  {
+    id: 'err5',
+    name: 'Open Drainage',
+    nameTa: 'திறந்த வெளி',
+    col1Name: 'drinage_water_outlet',
+    col2Name: 'drinage_water_outlet_other',
+    col1EnText: 'No: Open',
+    col1TaText: 'திறந்த வெளி',
+    col2EnText: 'Open',
+    col2TaText: 'திறந்த வெளி',
+    enKeywords: ['No: Open', 'open drainage', 'open'],
+    taKeywords: ['திறந்த வெளி', 'திறந்த'],
+    enText: 'No: Open',
+    taText: 'திறந்த வெளி',
+    color: '#14b8a6',
+    icon: '🕳️'
+  },
+  {
+    id: 'err6',
+    name: 'Cooking in kitchen: Has LPG/ PNG Connection',
+    nameTa: 'சமையலறையில் சமைத்து LPG/ PNG இணைப்பு',
+    col1Name: 'has_kitchen_facility',
+    col2Name: 'fuel_cooking',
+    col1EnText: 'Cooking inside house: Has kitchen',
+    col1TaText: 'வீட்டிற்குள் சமையல்: சமையலறை உள்ளது',
+    col2EnText: 'LPG/ PNG connection',
+    col2TaText: 'எல்.பி.ஜி / பி.என்.ஜி இணைப்பு',
+    enKeywords: ['Cooking inside house: Has kitchen', 'LPG/ PNG connection', 'lpg', 'png'],
+    taKeywords: ['வீட்டிற்குள் சமையல்: சமையலறை உள்ளது', 'எல்.பி.ஜி / பி.என்.ஜி இணைப்பு', 'சமையலறை உள்ளது'],
+    enText: 'Cooking inside house: Has kitchen',
+    taText: 'வீட்டிற்குள் சமையல்: சமையலறை உள்ளது',
+    color: '#eab308',
+    icon: '🔥'
+  }
+];
+
 export default function CensusModule4ProgressReport({ onBack, creds }) {
   const [rows, setRows]               = useState([]);
   const [allotedRows, setAllotedRows] = useState([]);
   const [chargeRows, setChargeRows]   = useState([]);
   const [userRows, setUserRows]       = useState([]);
+  const [hlbMappingRows, setHlbMappingRows] = useState([]);
   const [loading, setLoading]         = useState(true);
+  const [errorFilters, setErrorFilters] = useState(DEFAULT_ERRORS);
   const [selectedHlbErrorPopup, setSelectedHlbErrorPopup] = useState(null);
+
+  const dbHlbMap = useMemo(() => {
+    const map = new Map();
+    if (hlbMappingRows.length > 0) {
+      hlbMappingRows.forEach(m => {
+        const fullId = String(m.full_hlb_id || m.full_hlb || m.hlb_code || '').trim();
+        const hNo = String(m.hlb_no || m.hlb_code || m.blk_no || '').trim();
+        if (fullId && hNo) {
+          map.set(fullId, hNo.padStart(4, '0'));
+        }
+      });
+    }
+    return map;
+  }, [hlbMappingRows]);
+
+  const getHlbBlockNo = useCallback((codeStr) => {
+    if (!codeStr) return '0001';
+    let s = String(codeStr).trim();
+
+    if (dbHlbMap.has(s)) return dbHlbMap.get(s);
+    if (hlbMapping[s]) return hlbMapping[s];
+
+    if (s.length >= 19 && /^\d+$/.test(s)) {
+      if (s.endsWith('00')) {
+        const blkPart = s.slice(-6, -2);
+        if (blkPart && blkPart !== '0000') return blkPart.padStart(4, '0');
+      }
+      const blkPart = s.substring(15, 19);
+      if (blkPart && blkPart !== '0000') return blkPart.padStart(4, '0');
+    }
+
+    if (/hlb/i.test(s)) {
+      const numPart = s.replace(/[^0-9]/g, '');
+      if (numPart) return numPart.padStart(4, '0');
+    }
+
+    if (/^\d{1,4}$/.test(s)) {
+      return s.padStart(4, '0');
+    }
+
+    const match = s.match(/(\d{1,4})(?:00)?$/) || s.match(/(\d{1,4})$/);
+    if (match && match[1]) {
+      return match[1].padStart(4, '0');
+    }
+    return s.padStart(4, '0');
+  }, [dbHlbMap]);
+
+  const mergeErrorCardWithDefaults = (err) => {
+    const defMatch = DEFAULT_ERRORS.find(d => d.id === err.id);
+    if (!defMatch) return err;
+    return {
+      ...defMatch,
+      ...err,
+      col1Name: err.col1Name ?? defMatch.col1Name,
+      col1EnText: err.col1EnText ?? defMatch.col1EnText,
+      col1TaText: err.col1TaText ?? defMatch.col1TaText,
+      col2Name: err.col2Name ?? defMatch.col2Name,
+      col2EnText: err.col2EnText ?? defMatch.col2EnText,
+      col2TaText: err.col2TaText ?? defMatch.col2TaText,
+      icon: err.icon && err.icon !== '⚠️' ? err.icon : defMatch.icon
+    };
+  };
 
   const token = () => {
     if (creds?.token) return creds.token;
@@ -69,7 +230,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     }
   }
 
-  async function fetchAllRowsInChunks(t, chunkSize = 3000) {
+  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk) {
     let allRows = [];
     let offset = 0;
     let totalCount = 0;
@@ -99,6 +260,9 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
 
       if (chunk.length > 0) {
         allRows.push(...chunk);
+        if (onChunk) {
+          onChunk(chunk, allRows.length, totalCount || 74906);
+        }
       }
 
       if (success && chunk.length < chunkSize) break;
@@ -115,11 +279,13 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     async function loadData() {
       setLoading(true);
       try {
-        // Fetch summary tables FIRST for instant header & allotment rendering (<200ms)
-        const [rCharge, rAllot, rUser] = await Promise.all([
+        // Fetch summary tables FIRST including hlb_code_mapping and settings from DB
+        const [rCharge, rAllot, rUser, rMap, rSettings] = await Promise.all([
           db2Fetch('/table/charge_wise_report?limit=5000&offset=0'),
           db2Fetch('/table/hlb_allotted?limit=5000&offset=0'),
-          db2Fetch('/table/user_details?limit=5000&offset=0')
+          db2Fetch('/table/user_details?limit=5000&offset=0'),
+          db2Fetch('/table/hlb_code_mapping?limit=1000&offset=0'),
+          db2Fetch('/table/settings')
         ]);
 
         const jCharge = await rCharge.json().catch(() => ({}));
@@ -136,11 +302,34 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         }
         if (jUser.rows?.length) setUserRows(jUser.rows);
 
-        setLoading(false);
+        const jMap = await rMap.json().catch(() => ({}));
+        if (jMap.rows?.length) setHlbMappingRows(jMap.rows);
 
-        // Stream hlb_records in background for detailed error metrics
-        const records = await fetchAllRowsInChunks('hlb_records', 3000);
-        if (records.length) setRows(records);
+        const jSettings = await rSettings.json().catch(() => ({}));
+        if (jSettings.rows?.length) {
+          const row = jSettings.rows[0];
+          const raw = row.custom_error_filters || row.error_filters || row.customErrorFilters;
+          if (raw) {
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const merged = parsed.map(err => mergeErrorCardWithDefaults(err));
+              setErrorFilters(merged);
+            }
+          }
+        }
+
+        let isFirstChunk = true;
+
+        // Stream hlb_records progressively chunk by chunk
+        await fetchAllRowsInChunks('hlb_records', 3000, (chunk) => {
+          if (chunk && chunk.length) {
+            setRows(prev => (isFirstChunk ? chunk : [...prev, ...chunk]));
+          }
+          if (isFirstChunk) {
+            isFirstChunk = false;
+            setLoading(false);
+          }
+        });
       } catch (e) {
         console.error('Data load error:', e);
         setLoading(false);
@@ -327,7 +516,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     });
 
     return { hlbErrorMap: errMap, hlbErrorRecordsMap: errRecsMap };
-  }, [rows, errorFilters]);
+  }, [rows, errorFilters, getHlbBlockNo, dbHlbMap]);
 
   const liveHlbMetricsMap = useMemo(() => {
     const map = new Map();
@@ -377,7 +566,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     });
 
     return map;
-  }, [rows]);
+  }, [rows, getHlbBlockNo, dbHlbMap]);
 
   const abstractReport = useMemo(() => {
     const chargeMetricsMap = new Map();
@@ -406,38 +595,34 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     }
 
     if (allotedRows.length > 0) {
-      const supGroupMap = new Map();
+      const circleMap = new Map();
 
+      // Group allotedRows strictly by sc_serial_no (Circle No)
       allotedRows.forEach(a => {
         const areaType = String(a.area_type || '').toUpperCase();
         if (areaType && areaType !== 'HLB') return;
         if (parseInt(a.total_households || 0) > 10000) return;
-
-        const hlbSerial = String(a.hlb_block_no || a.hlb_block_number || a.hlb_no || a.hlb_number || a.hlb_serial_no || a.hlb_serial_number || a.block_no || a.block_number || a.blk_no || a.hlb_code || a.area_code || a.hlb || '').trim();
-        const blkCode = getHlbBlockNo(hlbSerial) || hlbSerial.padStart(4, '0');
-        const blkNum = parseInt(blkCode, 10);
-        if (blkNum > 470) return;
-
-        const rawSup = String(a.supervisor_name || a.supervisor || a.supervisor_full_name || a.sup_name || a.supervisor_id || '').trim();
-        const supInfo = getMobileAndUsername(rawSup, rawSup, true);
-
-        const getSupNameByHlb = (blk) => {
-          const num = parseInt(blk, 10) || 1;
-          const supList = ['MUTHU LAKSHMI', 'PULLAIAH P', 'VASANTHA KUMAR V', 'R RUKMANI DEVI', 'P MURALI'];
-          return supList[Math.floor((num - 1) / 6) % supList.length];
-        };
-
-        const supName = supInfo.fullName || (rawSup && rawSup !== 'GENERAL SUPERVISOR' && !rawSup.startsWith('sm_') ? rawSup : getSupNameByHlb(blkCode));
-
-        if (!supGroupMap.has(supName)) supGroupMap.set(supName, []);
-        supGroupMap.get(supName).push({ ...a, _blkCode: blkCode });
+        
+        const scNumStr = String(a.sc_serial_no || a.circle_no || a.circle_number || a.circle || '').trim();
+        if (!scNumStr) return;
+        
+        const circleNo = `Circle ${scNumStr.padStart(3, '0')}`;
+        if (!circleMap.has(circleNo)) circleMap.set(circleNo, []);
+        circleMap.get(circleNo).push(a);
       });
 
       const circles = [];
-      let circleIdx = 1;
+      const sortedCircleKeys = Array.from(circleMap.keys()).sort();
 
-      supGroupMap.forEach((allotList, supName) => {
-        const supInfo = getMobileAndUsername('', supName, true);
+      sortedCircleKeys.forEach(circleNo => {
+        const allotList = circleMap.get(circleNo);
+        if (!allotList || allotList.length === 0) return;
+
+        const firstRow = allotList[0];
+        const rawSup = String(firstRow.supervisor_name || firstRow.supervisor || firstRow.supervisor_full_name || firstRow.sup_name || '').trim();
+        const supInfo = getMobileAndUsername(rawSup, rawSup, true);
+        const supName = supInfo.fullName || (rawSup && !rawSup.startsWith('sm_') ? rawSup : 'SUPERVISOR');
+        const supMob = supInfo.mobile !== 'N/A' ? supInfo.mobile : (String(firstRow.sup_mobile || firstRow.supervisor_mobile || firstRow.mobile || '') || 'N/A');
 
         const enumerators = allotList.map(a => {
           const rawEnum = String(a.enumerator_name || a.enumerator || a.enum_name || a.enumerator_full_name || a.user_name || '').trim();
@@ -445,7 +630,9 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           const enumInfo = getMobileAndUsername(userId || rawEnum, rawEnum || userId, false);
 
           const resolvedEnumName = enumInfo.fullName || (rawEnum && !rawEnum.startsWith('em_') ? rawEnum : (enumInfo.username !== 'N/A' ? enumInfo.username : 'ENUMERATOR'));
-          const blkCode = (a._blkCode || getHlbBlockNo(String(a.hlb_serial_no || a.hlb_code || a.hlb_no || '')) || '0001').padStart(4, '0');
+          
+          const hlbSerial = String(a.hlb_serial_no || a.hlb_block_no || a.hlb_block_number || a.hlb_no || a.hlb_code || '').trim();
+          const blkCode = getHlbBlockNo(hlbSerial) || hlbSerial.padStart(4, '0');
 
           const unpadded = String(parseInt(blkCode, 10) || blkCode);
           const padded = blkCode.padStart(4, '0');
@@ -494,7 +681,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           return {
             enumId: enumInfo.username || userId || `ENUM-${resolvedEnumName}`,
             enumName: resolvedEnumName,
-            enumMobile: enumInfo.mobile !== 'N/A' ? enumInfo.mobile : (String(a.mobile || a.mobile_no || a.phone || a.user_mobile || a.enum_mobile || '') || '98401000' + circleIdx),
+            enumMobile: enumInfo.mobile !== 'N/A' ? enumInfo.mobile : (String(a.mobile || a.mobile_no || a.phone || a.user_mobile || a.enum_mobile || '') || 'N/A'),
             hlbCode: padded,
             expectedHouses: expHouses,
             censusHouses: housesCount,
@@ -508,10 +695,8 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           };
         });
 
-        const supMob = supInfo.mobile !== 'N/A' ? supInfo.mobile : (String(allotList[0]?.sup_mobile || allotList[0]?.supervisor_mobile || allotList[0]?.mobile || '') || ('98403000' + circleIdx));
-
         circles.push({
-          circleNo: `Circle ${String(circleIdx++).padStart(3, '0')}`,
+          circleNo,
           supervisorName: supName,
           supervisorId: supInfo.username && supInfo.username !== 'N/A' ? supInfo.username : '',
           supervisorMobile: supMob,
@@ -519,54 +704,23 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         });
       });
 
-      if (circles.length < 75) {
-        for (let s = circles.length + 1; s <= 75; s++) {
-          const supInfo = getMobileAndUsername('', `sm_3470160011_sup${s}`, true);
-          const supName = supInfo.fullName || `Supervisor ${s}`;
-          const supHlbs = Array.from({ length: 6 }, (_, i) => {
-            const blkNum = (s - 1) * 6 + i + 1;
-            if (blkNum > 470) return null;
-            return String(blkNum).padStart(4, '0');
-          }).filter(Boolean);
-
-          const enumerators = supHlbs.map((blkCode, i) => {
-            const enumNum = (s - 1) * 6 + i + 1;
-            const enumInfo = getMobileAndUsername(`em_3470160011_enum_${enumNum}`, `Enumerator ${enumNum}`, false);
-            const errCount = hlbErrorMap.get(blkCode) || 0;
-            const errRecords = hlbErrorRecordsMap.get(blkCode) || [];
-
-            return {
-              enumId: enumInfo.username || `em_3470160011_enum_${enumNum}`,
-              enumName: enumInfo.fullName || `Enumerator ${enumNum}`,
-              enumMobile: enumInfo.mobile || `9840${100000 + enumNum}`,
-              hlbCode: blkCode,
-              expectedHouses: 102,
-              censusHouses: 100,
-              households: 100,
-              verifiedBySup: 100,
-              seIdUsed: 0,
-              totalPopulation: 400,
-              errorCount: errCount,
-              isCompleted: errCount === 0,
-              errorRecords: errRecords
-            };
-          });
-
-          circles.push({
-            circleNo: `Circle ${String(s).padStart(3, '0')}`,
-            supervisorName: supName,
-            supervisorId: supInfo.username || `sm_3470160011_sup${s}`,
-            supervisorMobile: supInfo.mobile || `9840${300000 + s}`,
-            enumerators
-          });
-        }
-      }
-
       if (circles.length > 0) return circles;
     }
 
     return [];
-  }, [rows, allotedRows, chargeRows, userRows, hlbErrorMap, hlbErrorRecordsMap]);
+  }, [rows, allotedRows, chargeRows, userRows, hlbErrorMap, hlbErrorRecordsMap, liveHlbMetricsMap, getHlbBlockNo, dbHlbMap]);
+
+  const uniqueErrorCount = useMemo(() => {
+    let count = 0;
+    if (!rows || rows.length === 0) return 0;
+    rows.forEach(r => {
+      const isDeleted = r.is_deleted === true || r.is_deleted === 'true' || r.is_deleted === 1 || String(r.status || '').toUpperCase() === 'DELETED' || String(r.record_status || '').toUpperCase() === 'DELETED';
+      if (isDeleted) return;
+      const matched = errorFilters.some(errCard => recordMatchesErrorCard(r, errCard));
+      if (matched) count++;
+    });
+    return count;
+  }, [rows, errorFilters]);
 
   const overallStats = useMemo(() => {
     let expHouses = 0;
@@ -655,10 +809,10 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       verifiedBySup: verCount,
       totalSeIdUsed: seIdCount,
       totalPopulation: popCount,
-      errorCount: errCount,
+      errorCount: uniqueErrorCount,
       completedCount: compCount
     };
-  }, [abstractReport, chargeRows, hlbErrorMap]);
+  }, [abstractReport, chargeRows, hlbErrorMap, uniqueErrorCount]);
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;

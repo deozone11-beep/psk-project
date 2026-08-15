@@ -6,6 +6,7 @@ import {
   User, Phone, ShieldCheck, FileText, AlertTriangle, Sparkles, Printer,
   Edit2, Plus, Trash2, Save, ChevronDown, ChevronUp
 } from 'lucide-react';
+import hlbMapping from './hlbMapping.json';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -184,12 +185,18 @@ function getHlbBlockNo(codeStr) {
   if (!codeStr) return '';
   let s = String(codeStr).trim();
 
+  if (hlbMapping[s]) return String(parseInt(hlbMapping[s], 10));
+
   if (/hlb/i.test(s)) {
     const numPart = s.replace(/[^0-9]/g, '');
     if (numPart) return String(parseInt(numPart, 10));
   }
 
   if (s.length >= 19 && /^\d+$/.test(s)) {
+    if (s.endsWith('00')) {
+      const blkPart = s.slice(-6, -2);
+      if (blkPart && blkPart !== '0000') return String(parseInt(blkPart, 10));
+    }
     const blkPart = s.substring(15, 19);
     if (blkPart && blkPart !== '0000') return String(parseInt(blkPart, 10));
   }
@@ -228,6 +235,8 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
   const [expandedAbstractCircles, setExpandedAbstractCircles] = useState(new Set());
   const [abstractSearchQuery, setAbstractSearchQuery]         = useState('');
+
+  const [abstractViewTab, setAbstractViewTab] = useState('SUPERVISOR_TABLE'); // 'SUPERVISOR_TABLE' | 'DETAILED_ACCORDION'
 
   const toggleAbstractCircle = (circleNo) => {
     setExpandedAbstractCircles(prev => {
@@ -379,7 +388,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       }
 
       if (onProgress) {
-        onProgress(allRows.length, totalCount || 74906);
+        onProgress(allRows.length, totalCount || 74906, chunk, columns);
       }
 
       if (success && chunk.length < chunkSize) break;
@@ -395,24 +404,45 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   async function fetchData(t) {
     if (!t) return;
     setLoading(true); setError(''); setPage(0); setSel(new Set()); setLoadingProgress('Loading data...');
+
+    const seenIds = new Set();
+    let isFirstChunk = true;
+
     try {
-      const result = await fetchAllRowsInChunks(t, 3000, (loaded, total) => {
+      await fetchAllRowsInChunks(t, 3000, (loaded, total, chunk, cols) => {
         setLoadingProgress(`Loading ${loaded.toLocaleString()} / ${total.toLocaleString()} rows...`);
-      });
-      const uniqueRows = [];
-      const seen = new Set();
-      (result.rows || []).forEach(r => {
-        const idKey = r.id != null ? String(r.id) : `${r.hlb_code}_${r.line_number}_${r.building_number}_${r.census_house_num}_${r.household_number}`;
-        if (!seen.has(idKey)) {
-          seen.add(idKey);
-          uniqueRows.push(r);
+
+        if (cols && cols.length > 0) {
+          setDbColumns(cols);
+        }
+
+        if (chunk && chunk.length > 0) {
+          const newUniqueRows = [];
+          chunk.forEach(r => {
+            const idKey = r.id != null ? String(r.id) : `${r.hlb_code}_${r.line_number}_${r.building_number}_${r.census_house_num}_${r.household_number}`;
+            if (!seenIds.has(idKey)) {
+              seenIds.add(idKey);
+              newUniqueRows.push(r);
+            }
+          });
+
+          if (newUniqueRows.length > 0) {
+            setRows(prev => (isFirstChunk ? newUniqueRows : [...prev, ...newUniqueRows]));
+            setTotal(prev => (isFirstChunk ? newUniqueRows.length : prev + newUniqueRows.length));
+          }
+        }
+
+        if (isFirstChunk) {
+          isFirstChunk = false;
+          setLoading(false); // UNBLOCK SCREEN IMMEDIATELY ON 1ST CHUNK!
         }
       });
-      setRows(uniqueRows);
-      setTotal(uniqueRows.length);
-      setDbColumns(result.columns || []);
-    } catch(e) { setError('Data load failed: ' + e.message); setRows([]); }
-    finally { setLoading(false); setLoadingProgress(''); }
+    } catch(e) {
+      setError('Data load failed: ' + e.message);
+    } finally {
+      setLoading(false);
+      setLoadingProgress('');
+    }
   }
 
   const activeCols = useMemo(() => {
@@ -468,10 +498,14 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   function getHlbBlockNo(hlbCode) {
     if (!hlbCode) return '';
     const str = String(hlbCode).trim();
-    if (str.length >= 20) {
-      return str.substring(15, 19);
+    if (str.length >= 19 && /^\d+$/.test(str)) {
+      if (str.endsWith('00')) {
+        const blkPart = str.slice(-6, -2);
+        if (blkPart && blkPart !== '0000') return blkPart.padStart(4, '0');
+      }
+      return str.substring(15, 19).padStart(4, '0');
     }
-    return str;
+    return str.padStart(4, '0');
   }
 
   const isRecordDeleted = useCallback((r) => {
@@ -945,55 +979,51 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
     // If hlb_allotted rows exist from Supabase DB2
     if (allotedRows.length > 0) {
-      const supGroupMap = new Map(); // supervisorName -> list of allotted rows
+      const circleMap = new Map();
 
+      // Group allotedRows strictly by sc_serial_no (Circle No)
       allotedRows.forEach(a => {
-        // Exclude total/header summary rows
         const areaType = String(a.area_type || '').toUpperCase();
         if (areaType && areaType !== 'HLB') return;
-        if (parseInt(a.total_households || 0) > 10000) return;
 
-        const hlbSerial = String(a.hlb_block_no || a.hlb_block_number || a.hlb_no || a.hlb_number || a.hlb_serial_no || a.hlb_serial_number || a.block_no || a.block_number || a.blk_no || a.hlb_code || a.area_code || a.hlb || '').trim();
-        const blkCode = getHlbBlockNo(hlbSerial) || hlbSerial.padStart(4, '0');
+        const scNumStr = String(a.sc_serial_no || a.circle_no || a.circle_number || a.circle || '').trim();
+        if (!scNumStr) return;
 
-        const rawSup = String(a.supervisor_name || a.supervisor || a.supervisor_full_name || a.sup_name || a.supervisor_id || a.charge_officer_name || a.charge_name || '').trim();
-        const supInfo = getMobileAndUsername(rawSup, rawSup, true);
-
-        // Fallback Supervisor resolution by HLB block range if DB string is generic
-        const getSupNameByHlb = (blk) => {
-          const num = parseInt(blk, 10) || 1;
-          const supList = ['MUTHU LAKSHMI', 'PULLAIAH P', 'VASANTHA KUMAR V', 'R RUKMANI DEVI', 'P MURALI'];
-          return supList[Math.floor((num - 1) / 6) % supList.length];
-        };
-
-        const supName = supInfo.fullName || (rawSup && rawSup !== 'GENERAL SUPERVISOR' && !rawSup.startsWith('sm_') ? rawSup : getSupNameByHlb(blkCode));
-
-        if (!supGroupMap.has(supName)) supGroupMap.set(supName, []);
-        supGroupMap.get(supName).push({ ...a, _blkCode: blkCode });
+        const circleNo = `Circle ${scNumStr.padStart(3, '0')}`;
+        if (!circleMap.has(circleNo)) circleMap.set(circleNo, []);
+        circleMap.get(circleNo).push(a);
       });
 
       const circles = [];
-      let circleIdx = 1;
+      const sortedCircleKeys = Array.from(circleMap.keys()).sort();
 
-      supGroupMap.forEach((allotList, supName) => {
-        const supInfo = getMobileAndUsername('', supName, true);
+      sortedCircleKeys.forEach(circleNo => {
+        const allotList = circleMap.get(circleNo);
+        if (!allotList || allotList.length === 0) return;
+
+        const firstRow = allotList[0];
+        const rawSup = String(firstRow.supervisor_name || firstRow.supervisor || firstRow.supervisor_full_name || firstRow.sup_name || '').trim();
+        const supInfo = getMobileAndUsername(rawSup, rawSup, true);
+        const supName = supInfo.fullName || (rawSup && !rawSup.startsWith('sm_') ? rawSup : 'SUPERVISOR');
+        const supMob = supInfo.mobile !== 'N/A' ? supInfo.mobile : (String(firstRow.sup_mobile || firstRow.supervisor_mobile || firstRow.mobile || '') || 'N/A');
 
         const enumerators = allotList.map(a => {
-          const rawEnum = String(a.enumerator_name || a.enumerator || a.enum_name || a.enumerator_full_name || a.user_name || a.name || a.full_name || '').trim();
+          const rawEnum = String(a.enumerator_name || a.enumerator || a.enum_name || a.enumerator_full_name || a.user_name || '').trim();
           const userId = String(a.user_id || a.enumerator_id || a.username || '').trim();
           const enumInfo = getMobileAndUsername(userId || rawEnum, rawEnum || userId, false);
 
           const resolvedEnumName = enumInfo.fullName || (rawEnum && !rawEnum.startsWith('em_') ? rawEnum : (enumInfo.username !== 'N/A' ? enumInfo.username : 'ENUMERATOR'));
+          const hlbSerial = String(a.hlb_serial_no || a.hlb_block_no || a.hlb_block_number || a.hlb_no || a.hlb_code || '').trim();
+          const blkCode = getHlbBlockNo(hlbSerial) || hlbSerial.padStart(4, '0');
 
-          const blkCode = a._blkCode || getHlbBlockNo(String(a.hlb_serial_no || a.hlb_code || a.hlb_no || a.area_code || '')) || '0001';
+          const unpadded = String(parseInt(blkCode, 10) || blkCode);
+          const padded = blkCode.padStart(4, '0');
 
-          // Error count & error records are fetched from hlb_records census data table
-          const errCount = hlbErrorMap.get(blkCode) || 0;
-          const errRecords = hlbErrorRecordsMap.get(blkCode) || [];
+          const errCount = hlbErrorMap.get(padded) ?? hlbErrorMap.get(unpadded) ?? hlbErrorMap.get(blkCode) ?? 0;
+          const errRecords = hlbErrorRecordsMap.get(padded) || hlbErrorRecordsMap.get(unpadded) || hlbErrorRecordsMap.get(blkCode) || [];
 
-          // Exact 5 column metrics matched from charge_wise_report table by 4-digit HLB code:
-          const totalRecs = hlbTotalMap.get(blkCode) || 0;
-          const cData = chargeMetricsMap.get(blkCode) || chargeMetricsMap.get(String(parseInt(blkCode, 10))) || chargeMetricsMap.get(blkCode.padStart(4, '0'));
+          const totalRecs = hlbTotalMap.get(padded) ?? hlbTotalMap.get(unpadded) ?? hlbTotalMap.get(blkCode) ?? 0;
+          const cData = chargeMetricsMap.get(padded) || chargeMetricsMap.get(unpadded) || chargeMetricsMap.get(blkCode);
 
           const expHouses = (cData && cData.exp > 0) ? cData.exp : (parseInt(a.total_expected_census_houses || 0) || (totalRecs > 0 ? totalRecs + 2 : 130));
           const hhCount = (cData && cData.hh > 0) ? cData.hh : (parseInt(a.total_households || 0) || (totalRecs > 0 ? totalRecs : 102));
@@ -1009,8 +1039,8 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
           return {
             enumId: enumInfo.username || userId || `ENUM-${resolvedEnumName}`,
             enumName: resolvedEnumName,
-            enumMobile: enumInfo.mobile,
-            hlbCode: blkCode,
+            enumMobile: enumInfo.mobile !== 'N/A' ? enumInfo.mobile : (String(a.mobile || a.mobile_no || a.phone || a.user_mobile || a.enum_mobile || '') || 'N/A'),
+            hlbCode: padded,
             expectedHouses: expHouses,
             censusHouses: hhCount,
             households: hhCount,
@@ -1025,64 +1055,15 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
         });
 
         circles.push({
-          circleNo: `Circle ${String(circleIdx++).padStart(3, '0')}`,
+          circleNo,
           supervisorName: supName,
           supervisorId: supInfo.username && supInfo.username !== 'N/A' ? supInfo.username : '',
-          supervisorMobile: supInfo.mobile,
+          supervisorMobile: supMob,
           enumerators
         });
       });
 
-      if (circles.length < 75) {
-        for (let s = circles.length + 1; s <= 75; s++) {
-          const supInfo = getMobileAndUsername('', `sm_3470160011_sup${s}`, true);
-          const supName = supInfo.fullName || `Supervisor ${s}`;
-          const supHlbs = Array.from({ length: 6 }, (_, i) => {
-            const blkNum = (s - 1) * 6 + i + 1;
-            if (blkNum > 470) return null;
-            return String(blkNum).padStart(4, '0');
-          }).filter(Boolean);
-
-          const enumerators = supHlbs.map((blkCode, i) => {
-            const enumNum = (s - 1) * 6 + i + 1;
-            const enumInfo = getMobileAndUsername(`em_3470160011_enum_${enumNum}`, `Enumerator ${enumNum}`, false);
-            const totalRecs = hlbTotalMap.get(blkCode) || 0;
-            const errCount = hlbErrorMap.get(blkCode) || 0;
-            const hhCount = hlbHouseholdsMap.get(blkCode) || (totalRecs > 0 ? totalRecs : 100);
-            const expHouses = hhCount + 2;
-            const verCount = hlbVerifiedMap.get(blkCode) || (errCount === 0 ? hhCount : Math.max(0, hhCount - errCount));
-            const popCount = hlbPopulationMap.get(blkCode) || (hhCount * 4);
-            const isComp = errCount === 0;
-
-            return {
-              enumId: enumInfo.username || `em_3470160011_enum_${enumNum}`,
-              enumName: enumInfo.fullName || `Enumerator ${enumNum}`,
-              enumMobile: enumInfo.mobile || `9840${100000 + enumNum}`,
-              hlbCode: blkCode,
-              expectedHouses: expHouses,
-              censusHouses: hhCount,
-              households: hhCount,
-              verifiedBySup: verCount,
-              totalPopulation: popCount,
-              errorCount: errCount,
-              inProgress: isComp ? 0 : 1,
-              completed: isComp ? 1 : 0,
-              isCompleted: isComp,
-              errorRecords: hlbErrorRecordsMap.get(blkCode) || []
-            };
-          });
-
-          circles.push({
-            circleNo: `Circle ${String(s).padStart(3, '0')}`,
-            supervisorName: supName,
-            supervisorId: supInfo.username || `sm_3470160011_sup${s}`,
-            supervisorMobile: supInfo.mobile || `9840${300000 + s}`,
-            enumerators
-          });
-        }
-      }
-
-      if (circles.length > 0) return circles;
+      return circles;
     }
 
     // Dynamic Calculation Fallback: 75 Supervisors, 450 Enumerators, 470 HLBs
@@ -1137,6 +1118,123 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
   const uniqueEnumCount = useMemo(() => 450, []);
   const uniqueHlbCount = useMemo(() => 470, []);
+
+  const printSupervisorSummaryOnlyReport = (reportData) => {
+    const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
+    if (!dataToPrint || dataToPrint.length === 0) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+
+    const grandTotalHLBs = dataToPrint.reduce((s, c) => s + c.enumerators.length, 0);
+    const grandTotalRecs = dataToPrint.reduce((s, c) => s + c.enumerators.reduce((es, e) => es + (e.totalRecords || e.households || 0), 0), 0);
+    const grandTotalErrs = dataToPrint.reduce((s, c) => s + c.enumerators.reduce((es, e) => es + (e.errorCount || 0), 0), 0);
+
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Supervisor Abstract Summary Report</title>
+        <style>
+          @page { size: A4 portrait; margin: 10mm; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; color: #0f172a; margin: 0; padding: 0; background: #fff; }
+          .report-header { text-align: center; border-bottom: 2px solid #7c3aed; padding-bottom: 10px; margin-bottom: 14px; }
+          .report-title { font-size: 16px; font-weight: 900; color: #6b21a8; letter-spacing: 0.5px; text-transform: uppercase; margin: 0; }
+          .report-sub { font-size: 10px; color: #64748b; margin-top: 4px; font-weight: 600; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10.5px; }
+          th { background: #f1f5f9; color: #334155; font-weight: 800; text-align: center; padding: 8px 10px; border: 1px solid #cbd5e1; text-transform: uppercase; font-size: 9.5px; }
+          td { padding: 8px 10px; border: 1px solid #cbd5e1; color: #1e293b; }
+          tr:nth-child(even) { background: #f8fafc; }
+          .circle-badge { font-weight: 900; background: #7c3aed; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 10px; white-space: nowrap; }
+          .err-badge { font-weight: 800; padding: 3px 8px; border-radius: 10px; font-size: 10px; display: inline-block; }
+          .has-err { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+          .no-err { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+          tfoot { display: table-row-group; }
+          tfoot tr { background: #e2e8f0; font-weight: 900; page-break-inside: avoid; }
+          tfoot td { border-top: 2.5px solid #0f172a; font-size: 11px; padding: 10px; }
+          .print-footer { text-align: right; font-size: 9.5px; color: #94a3b8; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <div class="report-header">
+          <div class="report-title">CENSUS WORK — SUPERVISOR ABSTRACT SUMMARY REPORT</div>
+          <div class="report-sub">Generated on ${new Date().toLocaleString()} · Total Supervisors: ${dataToPrint.length}</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px; text-align: center;">S.No</th>
+              <th style="width: 100px; text-align: center;">Circle No</th>
+              <th style="text-align: left;">Supervisor Name &amp; ID</th>
+              <th style="width: 110px; text-align: left;">Mobile No</th>
+              <th style="width: 130px; text-align: center;">Allotted HLBs</th>
+              <th style="width: 100px; text-align: center;">Total Records</th>
+              <th style="width: 100px; text-align: center;">No. of Errors</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataToPrint.map((c, i) => {
+              const totalRecs = c.enumerators.reduce((s, e) => s + (e.totalRecords || e.households || 0), 0);
+              const totalErrs = c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
+              const uniqueEnumCount = new Set(c.enumerators.map(e => e.enumId || e.enumName)).size;
+              return `
+                <tr>
+                  <td style="text-align: center; font-weight: 700; color: #64748b;">${i + 1}</td>
+                  <td style="text-align: center;"><span class="circle-badge">${c.circleNo}</span></td>
+                  <td style="text-align: left; font-weight: 700;">
+                    ${c.supervisorName}<br/>
+                    <span style="font-size: 9px; color: #64748b; font-family: monospace;">${c.supervisorId || ''}</span>
+                  </td>
+                  <td style="text-align: left; font-family: monospace; font-weight: 700;">${c.supervisorMobile || 'N/A'}</td>
+                  <td style="text-align: center; font-weight: 700;">${c.enumerators.length} HLBs (${uniqueEnumCount} Enums)</td>
+                  <td style="text-align: center; font-weight: 800; color: #0284c7;">${totalRecs.toLocaleString()}</td>
+                  <td style="text-align: center;">
+                    <span class="err-badge ${totalErrs > 0 ? 'has-err' : 'no-err'}">
+                      ${totalErrs} ${totalErrs === 1 ? 'error' : 'errors'}
+                    </span>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="text-align: left; font-weight: 900;">GRAND TOTAL (${dataToPrint.length} Supervisors)</td>
+              <td style="text-align: center; font-weight: 900;">${grandTotalHLBs} HLBs</td>
+              <td style="text-align: center; font-weight: 900; color: #0284c7;">${grandTotalRecs.toLocaleString()}</td>
+              <td style="text-align: center;">
+                <span class="err-badge ${grandTotalErrs > 0 ? 'has-err' : 'no-err'}">
+                  ${grandTotalErrs} errors
+                </span>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="print-footer">
+          Supervisor Abstract Summary Report — PSK Builders Census Module
+        </div>
+      </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+    }, 500);
+  };
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
@@ -2113,7 +2211,13 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <button
-                  onClick={() => printSupervisorAbstractReport(abstractReport)}
+                  onClick={() => {
+                    if (abstractViewTab === 'SUPERVISOR_TABLE') {
+                      printSupervisorSummaryOnlyReport(filteredAbstractReport);
+                    } else {
+                      printSupervisorAbstractReport(filteredAbstractReport);
+                    }
+                  }}
                   style={{
                     background: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
                     border: '1px solid #60a5fa',
@@ -2128,9 +2232,9 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                     gap: 6,
                     boxShadow: '0 4px 12px rgba(59,130,246,0.3)'
                   }}
-                  title="Print Abstract Report for all Supervisors"
+                  title="Print Report for Supervisors"
                 >
-                  <PrinterIcon /> Print All Supervisors
+                  <PrinterIcon /> {abstractViewTab === 'SUPERVISOR_TABLE' ? 'Print Supervisors Summary' : 'Print All Supervisors'}
                 </button>
                 <button 
                   onClick={() => {
@@ -2148,23 +2252,69 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
             {/* Modal Content / Abstract List with Collapsible Accordion UI */}
             <div style={{ padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
-              {/* Filter & Expand/Collapse Controls Bar */}
+              {/* VIEW MODE TABS & CONTROLS BAR */}
               <div style={{
                 background: 'rgba(255, 255, 255, 0.03)',
                 border: '1px solid rgba(255, 255, 255, 0.09)',
                 borderRadius: 14,
-                padding: '10px 14px',
+                padding: '12px 16px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                justify: 'space-between',
                 flexWrap: 'wrap',
-                gap: 10
+                gap: 12
               }}>
-                <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 420 }}>
+                {/* View Mode Toggle Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    onClick={() => setAbstractViewTab('SUPERVISOR_TABLE')}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: 10,
+                      fontWeight: 900,
+                      fontSize: '0.8rem',
+                      background: abstractViewTab === 'SUPERVISOR_TABLE' ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255, 255, 255, 0.05)',
+                      color: abstractViewTab === 'SUPERVISOR_TABLE' ? '#ffffff' : '#94a3b8',
+                      border: abstractViewTab === 'SUPERVISOR_TABLE' ? '1px solid #c084fc' : '1px solid rgba(255, 255, 255, 0.1)',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'all 0.2s ease',
+                      boxShadow: abstractViewTab === 'SUPERVISOR_TABLE' ? '0 4px 14px rgba(168, 85, 247, 0.4)' : 'none'
+                    }}
+                  >
+                    📊 Supervisor Summary Table
+                  </button>
+
+                  <button
+                    onClick={() => setAbstractViewTab('DETAILED_ACCORDION')}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: 10,
+                      fontWeight: 900,
+                      fontSize: '0.8rem',
+                      background: abstractViewTab === 'DETAILED_ACCORDION' ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255, 255, 255, 0.05)',
+                      color: abstractViewTab === 'DETAILED_ACCORDION' ? '#ffffff' : '#94a3b8',
+                      border: abstractViewTab === 'DETAILED_ACCORDION' ? '1px solid #c084fc' : '1px solid rgba(255, 255, 255, 0.1)',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'all 0.2s ease',
+                      boxShadow: abstractViewTab === 'DETAILED_ACCORDION' ? '0 4px 14px rgba(168, 85, 247, 0.4)' : 'none'
+                    }}
+                  >
+                    📋 Detailed Circle &amp; Enumerators Breakdown
+                  </button>
+                </div>
+
+                {/* Search Bar aligned to far right */}
+                <div style={{ position: 'relative', width: 340, marginLeft: 'auto' }}>
                   <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     type="text"
-                    placeholder="Search Supervisor, Circle No, Enumerator or HLB Code..."
+                    placeholder="Search Supervisor, Circle, Enumerator or HLB Code..."
                     value={abstractSearchQuery}
                     onChange={(e) => setAbstractSearchQuery(e.target.value)}
                     style={{
@@ -2187,49 +2337,102 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                     />
                   )}
                 </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button
-                    onClick={() => expandAllAbstractCircles(filteredAbstractReport)}
-                    style={{
-                      background: 'rgba(168, 85, 247, 0.15)',
-                      border: '1px solid rgba(168, 85, 247, 0.4)',
-                      color: '#c084fc',
-                      padding: '6px 12px',
-                      borderRadius: 8,
-                      fontSize: '0.76rem',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6
-                    }}
-                  >
-                    <Maximize2 size={13} /> Expand All ({filteredAbstractReport.length})
-                  </button>
-                  <button
-                    onClick={collapseAllAbstractCircles}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      color: '#94a3b8',
-                      padding: '6px 12px',
-                      borderRadius: 8,
-                      fontSize: '0.76rem',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6
-                    }}
-                  >
-                    <Minimize2 size={13} /> Collapse All
-                  </button>
-                </div>
               </div>
 
-              {filteredAbstractReport.map((circle, cIdx) => {
-                const isExpanded = expandedAbstractCircles.has(circle.circleNo);
+              {/* TAB 1: SUPERVISOR SUMMARY TABLE VIEW */}
+              {abstractViewTab === 'SUPERVISOR_TABLE' && (
+                <div style={{ overflowX: 'auto', width: '100%', borderRadius: 14, border: '1px solid rgba(168, 85, 247, 0.3)', background: 'rgba(15, 23, 42, 0.7)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr style={{ background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(124, 58, 237, 0.15))', color: '#e9d5ff', borderBottom: '2px solid rgba(168, 85, 247, 0.4)' }}>
+                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 120 }}>Circle No</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left' }}>Supervisor Name &amp; ID</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', width: 140 }}>Mobile No</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 170 }}>Allotted HLBs</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 130 }}>Total Records</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'center', width: 130 }}>No. of Errors</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAbstractReport.map((circle, cIdx) => {
+                        const circleTotalRecs = circle.enumerators.reduce((sum, e) => sum + (e.totalRecords || e.households || 0), 0);
+                        const circleTotalErrs = circle.enumerators.reduce((sum, e) => sum + (e.errorCount || 0), 0);
+                        const uniqueEnumCount = new Set(circle.enumerators.map(e => e.enumId || e.enumName)).size;
+
+                        return (
+                          <tr 
+                            key={circle.circleNo || cIdx}
+                            onClick={() => setAbstractViewTab('DETAILED_ACCORDION')}
+                            style={{
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                              background: cIdx % 2 === 0 ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s ease'
+                            }}
+                          >
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <span style={{
+                                background: 'linear-gradient(135deg, #a855f7, #7c3aed)',
+                                color: '#ffffff',
+                                fontSize: '0.76rem',
+                                fontWeight: 900,
+                                padding: '4px 12px',
+                                borderRadius: 20,
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 2px 8px rgba(168, 85, 247, 0.4)',
+                                display: 'inline-block'
+                              }}>
+                                {circle.circleNo}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 14px', color: '#f8fafc', fontWeight: 800 }}>
+                              <div style={{ fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <User size={15} color="#c084fc" style={{ flexShrink: 0 }} /> 
+                                <span>{circle.supervisorName}</span>
+                              </div>
+                              {circle.supervisorId && (
+                                <div style={{ fontSize: '0.68rem', color: '#a855f7', fontFamily: 'monospace', fontWeight: 700, marginTop: 2, paddingLeft: 23 }}>
+                                  {circle.supervisorId}
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '12px 14px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 700 }}>
+                              {circle.supervisorMobile || 'N/A'}
+                            </td>
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <span style={{ background: 'rgba(168, 85, 247, 0.15)', border: '1px solid rgba(168, 85, 247, 0.35)', color: '#c084fc', padding: '4px 10px', borderRadius: 8, fontSize: '0.74rem', fontWeight: 800 }}>
+                                {circle.enumerators.length} HLBs ({uniqueEnumCount} Enums)
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 14px', textAlign: 'center', color: '#38bdf8', fontWeight: 900, fontSize: '0.88rem' }}>
+                              {circleTotalRecs.toLocaleString()}
+                            </td>
+                            <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                              <span style={{
+                                background: circleTotalErrs > 0 ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 197, 94, 0.15)',
+                                border: circleTotalErrs > 0 ? '1px solid #ef4444' : '1px solid rgba(34, 197, 94, 0.3)',
+                                color: circleTotalErrs > 0 ? '#fca5a5' : '#86efac',
+                                padding: '4px 12px',
+                                borderRadius: 12,
+                                fontWeight: 900,
+                                fontSize: '0.76rem'
+                              }}>
+                                {circleTotalErrs} {circleTotalErrs === 1 ? 'error' : 'errors'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* TAB 2: DETAILED CIRCLE & ENUMERATORS BREAKDOWN VIEW (ALWAYS EXPANDED) */}
+              {abstractViewTab === 'DETAILED_ACCORDION' && filteredAbstractReport.map((circle, cIdx) => {
+                const circleTotalRecs = circle.enumerators.reduce((sum, e) => sum + (e.households || e.totalRecords || 0), 0);
+                const circleTotalErrs = circle.enumerators.reduce((sum, e) => sum + (e.errorCount || 0), 0);
+                const uniqueEnumCount = new Set(circle.enumerators.map(e => e.enumId || e.enumName)).size;
 
                 return (
                   <div key={circle.circleNo || cIdx} style={{
@@ -2242,82 +2445,58 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                     gap: 12
                   }}>
                     {/* Supervisor Info Header Row */}
-                    <div 
-                      onClick={() => toggleAbstractCircle(circle.circleNo)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justify: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: 10,
-                        cursor: 'pointer',
-                        userSelect: 'none'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <span style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#fff', fontSize: '0.72rem', fontWeight: 900, padding: '3px 10px', borderRadius: 20 }}>
+                    <div style={{
+                      background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(124, 58, 237, 0.05))',
+                      border: '1px solid rgba(168, 85, 247, 0.25)',
+                      borderRadius: 12,
+                      padding: '10px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justify: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                      userSelect: 'none'
+                    }}>
+                      {/* Left Info Group: Circle No | Supervisor Name & ID | Mobile No */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                        <span style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#fff', fontSize: '0.74rem', fontWeight: 900, padding: '4px 12px', borderRadius: 20, boxShadow: '0 2px 8px rgba(168,85,247,0.4)' }}>
                           {circle.circleNo}
                         </span>
-                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <User size={14} color="#c084fc"/> Supervisor: {circle.supervisorName} {circle.supervisorId ? `(${circle.supervisorId})` : ''}
+                        <span style={{ fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <User size={16} color="#c084fc"/> Supervisor: <span style={{ color: '#ffffff', fontWeight: 900 }}>{circle.supervisorName}</span> {circle.supervisorId ? <span style={{ color: '#a855f7', fontSize: '0.75rem', fontFamily: 'monospace' }}>({circle.supervisorId})</span> : ''}
+                        </span>
+                        <span style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'monospace', background: 'rgba(0,0,0,0.2)', padding: '3px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <Phone size={13} color="#60a5fa"/> {circle.supervisorMobile || 'N/A'}
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'monospace' }}>
-                          <Phone size={12} color="#60a5fa"/> {circle.supervisorMobile}
-                        </span>
-
+                      {/* Right Action Group: Print Circle Button on Far Right */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            printSupervisorAbstractReport([circle]);
-                          }}
+                          onClick={() => printSupervisorAbstractReport([circle])}
                           style={{
-                            background: 'rgba(59, 130, 246, 0.15)',
-                            border: '1px solid rgba(59, 130, 246, 0.4)',
+                            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.15))',
+                            border: '1px solid rgba(59, 130, 246, 0.5)',
                             color: '#60a5fa',
-                            padding: '4px 12px',
+                            padding: '6px 16px',
                             borderRadius: 8,
-                            fontSize: '0.72rem',
-                            fontWeight: 800,
+                            fontSize: '0.76rem',
+                            fontWeight: 900,
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 4
+                            gap: 6,
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 8px rgba(59,130,246,0.2)'
                           }}
                         >
                           <PrinterIcon /> Print Circle
                         </button>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleAbstractCircle(circle.circleNo);
-                          }}
-                          style={{
-                            background: isExpanded ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                            border: isExpanded ? '1px solid rgba(168, 85, 247, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
-                            color: isExpanded ? '#c084fc' : '#f1f5f9',
-                            padding: '4px 12px',
-                            borderRadius: 8,
-                            fontSize: '0.72rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4
-                          }}
-                        >
-                          {isExpanded ? <ChevronUp size={14} color="#c084fc" /> : <ChevronDown size={14} color="#f1f5f9" />}
-                          {isExpanded ? 'Hide' : 'Expand'}
-                        </button>
                       </div>
                     </div>
 
-                    {/* Enumerators Table (Shown ONLY when isExpanded = true) */}
-                    {isExpanded && (
-                      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: 4 }}>
+                    {/* Enumerators Table (Always Visible in Tab 2) */}
+                    <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: 4 }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem' }}>
                           <thead>
                             <tr style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#e9d5ff', borderBottom: '1px solid rgba(168, 85, 247, 0.25)' }}>
@@ -2418,9 +2597,8 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                           </tbody>
                         </table>
                       </div>
-                    )}
-                  </div>
-                );
+                    </div>
+                  );
               })}
             </div>
           </div>
