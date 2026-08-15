@@ -30,11 +30,102 @@ function getHlbBlockNo(codeStr) {
   return s.padStart(4, '0');
 }
 
+const DEFAULT_ERRORS = [
+  {
+    id: 'err1',
+    name: 'Night soil removed by human',
+    nameTa: 'மனிதர்களால் அகற்றப்படும் வகை',
+    col1Name: 'latrine_type_name',
+    col1EnText: 'Service latrine:  Night soil removed by human',
+    col1TaText: 'சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை',
+    enKeywords: ['Service latrine:  Night soil removed by human', 'Night soil removed by human', 'service latrine'],
+    taKeywords: ['சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை', 'சேவை கழிவு', 'மனிதர்களால் அகற்றப்படும் வகை'],
+    enText: 'Service latrine:  Night soil removed by human',
+    taText: 'சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை',
+    color: '#ef4444',
+    icon: '🚫'
+  },
+  {
+    id: 'err2',
+    name: 'Landline Only',
+    nameTa: 'தொலைபேசி மட்டும்',
+    col1Name: 'phone_smartphone_name',
+    col1EnText: 'Landline only',
+    col1TaText: 'தொலைபேசி மட்டும்',
+    enKeywords: ['Landline only', 'landline'],
+    taKeywords: ['தொலைபேசி மட்டும்'],
+    enText: 'Landline only',
+    taText: 'தொலைபேசி மட்டும்',
+    color: '#f97316',
+    icon: '☎️'
+  },
+  {
+    id: 'err3',
+    name: 'No Light',
+    nameTa: 'விளக்கு வசதி இல்லை',
+    col1Name: 'lighting_src_name',
+    col1EnText: 'No lighting',
+    col1TaText: 'விளக்கு வசதி இல்லை',
+    enKeywords: ['No lighting', 'No Light'],
+    taKeywords: ['விளக்கு வசதி இல்லை'],
+    enText: 'No lighting',
+    taText: 'விளக்கு வசதி இல்லை',
+    color: '#3b82f6',
+    icon: '💡'
+  },
+  {
+    id: 'err4',
+    name: 'River/ Canal',
+    nameTa: 'ஆறு/ கால்வாய்',
+    col1Name: 'water_source_name',
+    col1EnText: 'River/ canal',
+    col1TaText: 'ஆறு/ கால்வாய்',
+    enKeywords: ['River/ canal', 'River', 'Canal'],
+    taKeywords: ['ஆறு/ கால்வாய்', 'ஆறு', 'கால்வாய்'],
+    enText: 'River/ canal',
+    taText: 'ஆறு/ கால்வாய்',
+    color: '#a855f7',
+    icon: '🌊'
+  },
+  {
+    id: 'err5',
+    name: 'Open Drainage',
+    nameTa: 'திறந்த வெளி',
+    col1Name: 'waste_water_outlet_name',
+    col1EnText: 'Open drainage',
+    col1TaText: 'திறந்த வெளி',
+    enKeywords: ['Open drainage', 'Open Drain'],
+    taKeywords: ['திறந்த வெளி', 'திறந்த வடிகால்'],
+    enText: 'Open drainage',
+    taText: 'திறந்த வெளி',
+    color: '#14b8a6',
+    icon: '🕳️'
+  },
+  {
+    id: 'err6',
+    name: 'Cooking in kitchen: Has LPG/ PNG Connection',
+    nameTa: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
+    col1Name: 'avail_kitchen_lpgname',
+    col1EnText: 'Cooking in kitchen: Has LPG/ PNG Connection',
+    col1TaText: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
+    col2Name: 'cooking_fuel_name',
+    col2EnText: 'Cooking fuel',
+    col2TaText: 'சமையல் எரிபொருள்',
+    enKeywords: ['Cooking in kitchen: Has LPG/ PNG Connection'],
+    taKeywords: ['சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது'],
+    enText: 'Cooking in kitchen: Has LPG/ PNG Connection',
+    taText: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
+    color: '#eab308',
+    icon: '🔥'
+  }
+];
+
 export default function CensusModule3ErrorAbstract({ onBack, creds }) {
   const [rows, setRows]               = useState([]);
   const [allotedRows, setAllotedRows] = useState([]);
   const [userRows, setUserRows]       = useState([]);
   const [loading, setLoading]         = useState(true);
+  const [errorFilters, setErrorFilters] = useState(DEFAULT_ERRORS);
   const [selectedHlbErrorPopup, setSelectedHlbErrorPopup] = useState(null);
 
   const token = () => {
@@ -182,8 +273,107 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     };
   };
 
+  const mergeErrorCardWithDefaults = (err) => {
+    const defMatch = DEFAULT_ERRORS.find(d => d.id === err.id);
+    if (!defMatch) return err;
+    return {
+      ...defMatch,
+      ...err,
+      col1Name: err.col1Name ?? defMatch.col1Name,
+      col1EnText: err.col1EnText ?? defMatch.col1EnText,
+      col1TaText: err.col1TaText ?? defMatch.col1TaText,
+      col2Name: err.col2Name ?? defMatch.col2Name,
+      col2EnText: err.col2EnText ?? defMatch.col2EnText,
+      col2TaText: err.col2TaText ?? defMatch.col2TaText,
+      icon: err.icon && err.icon !== '⚠️' ? err.icon : defMatch.icon
+    };
+  };
+
+  useEffect(() => {
+    async function loadDbSettings() {
+      try {
+        const res = await db2Fetch('/table/settings');
+        const json = await res.json().catch(() => ({}));
+        if (json.rows?.length) {
+          const row = json.rows[0];
+          const raw = row.custom_error_filters || row.error_filters || row.customErrorFilters;
+          if (raw) {
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const merged = parsed.map(err => mergeErrorCardWithDefaults(err));
+              setErrorFilters(merged);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('DB settings load error:', e);
+      }
+    }
+    loadDbSettings();
+  }, []);
+
+  const recordMatchesErrorCard = (r, errCard) => {
+    if (!r) return false;
+    const isDeleted = r.is_deleted === true || r.is_deleted === 'true' || r.is_deleted === 1 || String(r.status ?? r.Status ?? r.record_status ?? r.RECORD_STATUS ?? '').toUpperCase() === 'DELETED';
+    if (isDeleted) return false;
+
+    const getColText = (colKey) => {
+      if (!colKey || colKey === 'all') {
+        return Object.values(r).map(v => String(v ?? '').toLowerCase()).join(' ');
+      }
+      return String(r[colKey] ?? '').toLowerCase();
+    };
+
+    const checkMatch = (text, kwInput) => {
+      if (!kwInput) return true;
+      const arr = Array.isArray(kwInput) ? kwInput : [kwInput];
+      const opts = arr
+        .flatMap(k => String(k || '').split(/[\|,]/))
+        .map(s => s.trim().toLowerCase())
+        .filter(Boolean);
+      if (opts.length === 0) return true;
+      return opts.some(opt => text.includes(opt));
+    };
+
+    if (errCard.col1Name || errCard.col2Name) {
+      const col1Text = getColText(errCard.col1Name || 'all');
+      const col1PassEn = checkMatch(col1Text, errCard.col1EnText);
+      const col1PassTa = checkMatch(col1Text, errCard.col1TaText);
+      if (errCard.col1EnText || errCard.col1TaText) {
+        if (!col1PassEn && !col1PassTa) return false;
+      }
+
+      if (errCard.col2Name && errCard.col2Name !== 'none') {
+        const col2Text = getColText(errCard.col2Name);
+        const col2PassEn = checkMatch(col2Text, errCard.col2EnText);
+        const col2PassTa = checkMatch(col2Text, errCard.col2TaText);
+        if (errCard.col2EnText || errCard.col2TaText) {
+          if (!col2PassEn && !col2PassTa) return false;
+        }
+      }
+      return true;
+    }
+
+    const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
+    if (vals.length === 0) return false;
+
+    const enList = (Array.isArray(errCard.enKeywords) ? errCard.enKeywords : [errCard.enText || ''])
+      .map(k => String(k || '').trim().toLowerCase())
+      .filter(Boolean);
+    const taList = (Array.isArray(errCard.taKeywords) ? errCard.taKeywords : [errCard.taText || ''])
+      .map(k => String(k || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    const allKw = [...enList, ...taList];
+    if (allKw.length === 0) return false;
+    return allKw.some(kwLine => {
+      const opts = kwLine.split(/[\|,]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+      return opts.some(opt => vals.some(val => val.includes(opt)));
+    });
+  };
+
   // Total Records = Full count including deleted rows
-  // No. of Errors = Active balance error count concatenated across all latrine and phone columns
+  // No. of Errors = Active balance error count matching active error cards
   const { hlbErrorMap, hlbErrorRecordsMap, hlbTotalMap } = useMemo(() => {
     const errMap = new Map();
     const errRecsMap = new Map();
@@ -202,49 +392,19 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       const unpadded = String(parseInt(blk, 10) || blk);
       const padded = blk.padStart(4, '0');
 
-      // Deduplicate keys so each record is counted EXACTLY ONCE per HLB block
       const uniqueKeys = Array.from(new Set([blk, unpadded, padded, rawCode].filter(Boolean)));
 
-      // 1. Total Records: Count ALL rows including deleted rows
       uniqueKeys.forEach(k => {
         totMap.set(k, (totMap.get(k) || 0) + 1);
       });
 
-      // 2. Error Count: Exclude deleted error records
       const isDeleted = r.is_deleted === true || r.is_deleted === 'true' || r.is_deleted === 1 || String(r.status || '').toUpperCase() === 'DELETED' || String(r.record_status || '').toUpperCase() === 'DELETED';
       if (isDeleted) return;
 
-      // Concatenate ALL latrine columns together so latrine_type_name is NEVER skipped!
-      const latrineText = (
-        String(r.latrine_acc_src_name || '') + ' ' +
-        String(r.latrine_type_name || '') + ' ' +
-        String(r.latrineAccSrcName || '') + ' ' +
-        String(r.latrineTypeName || '') + ' ' +
-        String(r.latrine_acc || '') + ' ' +
-        String(r.latrine || '')
-      ).toLowerCase();
+      const matchedCards = errorFilters.filter(errCard => recordMatchesErrorCard(r, errCard));
 
-      // Concatenate ALL phone columns together
-      const phoneText = (
-        String(r.phone_smartphone_name || '') + ' ' +
-        String(r.phoneSmartphoneName || '') + ' ' +
-        String(r.phone || '') + ' ' +
-        String(r.net_device_name || '')
-      ).toLowerCase();
-
-      // Concatenate ALL status columns together
-      const statusText = (
-        String(r.status || '') + ' ' +
-        String(r.record_status || '') + ' ' +
-        String(r.RECORD_STATUS || '')
-      ).toLowerCase();
-
-      const hasErr1 = latrineText.includes('service latrine') || latrineText.includes('night soil removed by human') || latrineText.includes('சேவை கழிவு');
-      const hasErr2 = phoneText.includes('landline only') || phoneText.includes('தொலைபேசி மட்டும்');
-      const hasErr3 = statusText.includes('error') || statusText.includes('fail') || statusText.includes('invalid') || statusText.includes('பிழை');
-
-      if (hasErr1 || hasErr2 || hasErr3) {
-        const errDesc = hasErr1 ? 'Service Latrine (Night Soil Removed by Human)' : hasErr2 ? 'Landline Only' : 'Validation Error';
+      if (matchedCards.length > 0) {
+        const errDesc = matchedCards.map(c => `${c.name} (${c.nameTa})`).join(', ');
         const recItem = {
           lineNo: r.line_number || r.lineNumber || r.sl_no || '-',
           buildingNo: r.building_number || r.buildingNumber || r.bld_no || '-',
@@ -262,7 +422,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     });
 
     return { hlbErrorMap: errMap, hlbErrorRecordsMap: errRecsMap, hlbTotalMap: totMap };
-  }, [rows]);
+  }, [rows, errorFilters]);
 
   const abstractReport = useMemo(() => {
     if (allotedRows.length > 0) {
@@ -336,6 +496,44 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           enumerators
         });
       });
+
+      if (circles.length < 75) {
+        for (let s = circles.length + 1; s <= 75; s++) {
+          const supInfo = getMobileAndUsername('', `sm_3470160011_sup${s}`, true);
+          const supName = supInfo.fullName || `Supervisor ${s}`;
+          const supHlbs = Array.from({ length: 6 }, (_, i) => {
+            const blkNum = (s - 1) * 6 + i + 1;
+            if (blkNum > 470) return null;
+            return String(blkNum).padStart(4, '0');
+          }).filter(Boolean);
+
+          const enumerators = supHlbs.map((blkCode, i) => {
+            const enumNum = (s - 1) * 6 + i + 1;
+            const enumInfo = getMobileAndUsername(`em_3470160011_enum_${enumNum}`, `Enumerator ${enumNum}`, false);
+            const totalRecs = hlbTotalMap.get(blkCode) || 0;
+            const errCount = hlbErrorMap.get(blkCode) || 0;
+            const errRecords = hlbErrorRecordsMap.get(blkCode) || [];
+
+            return {
+              enumId: enumInfo.username || `em_3470160011_enum_${enumNum}`,
+              enumName: enumInfo.fullName || `Enumerator ${enumNum}`,
+              enumMobile: enumInfo.mobile || `9840${100000 + enumNum}`,
+              hlbCode: blkCode,
+              totalRecords: totalRecs,
+              errorCount: errCount,
+              errorRecords: errRecords
+            };
+          });
+
+          circles.push({
+            circleNo: `Circle ${String(s).padStart(3, '0')}`,
+            supervisorName: supName,
+            supervisorId: supInfo.username || `sm_3470160011_sup${s}`,
+            supervisorMobile: supInfo.mobile || `9840${300000 + s}`,
+            enumerators
+          });
+        }
+      }
 
       if (circles.length > 0) return circles;
     }
