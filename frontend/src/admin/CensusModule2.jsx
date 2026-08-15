@@ -419,7 +419,19 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   const [errorFilters, setErrorFilters] = useState(() => {
     try {
       const saved = localStorage.getItem('psk_custom_error_filters');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(err => {
+            const defMatch = DEFAULT_ERRORS.find(d => d.id === err.id);
+            let updatedErr = { ...err };
+            if (defMatch && (!updatedErr.icon || updatedErr.icon === '⚠️')) {
+              updatedErr.icon = defMatch.icon;
+            }
+            return updatedErr;
+          });
+        }
+      }
     } catch (e) {}
     return DEFAULT_ERRORS;
   });
@@ -1522,7 +1534,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
                       <span style={{ fontSize: '0.76rem', fontWeight: 800, color: isSel ? '#ffffff' : '#f1f5f9', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <span>{err.icon}</span> {err.name}
+                        <span>{err.icon && err.icon !== '⚠️' ? err.icon : (DEFAULT_ERRORS.find(d => d.id === err.id)?.icon || err.icon || '⚠️')}</span> {err.name}
                       </span>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
