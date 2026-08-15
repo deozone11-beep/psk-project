@@ -139,6 +139,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
   const [loading, setLoading]         = useState(true);
   const [errorFilters, setErrorFilters] = useState(DEFAULT_ERRORS);
   const [selectedHlbErrorPopup, setSelectedHlbErrorPopup] = useState(null);
+  const [activeViewTab, setActiveViewTab]     = useState('SUPERVISOR_TABLE'); // 'SUPERVISOR_TABLE' | 'DETAILED_ACCORDION'
 
   const dbHlbMap = useMemo(() => {
     const map = new Map();
@@ -651,21 +652,23 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           let isComp = false;
           let seIdUsed = 0;
 
+          const stAllot = String(a.status ?? a.completed ?? a.work_status ?? '').trim().toLowerCase();
+
           if (liveData && liveData.totalRows > 0) {
             hhCount = liveData.totalRows;
             housesCount = liveData.housesSet.size > 0 ? liveData.housesSet.size : liveData.totalRows;
             verCount = liveData.verifiedCount;
             popCount = liveData.totalPop > 0 ? liveData.totalPop : hhCount * 4;
             expHouses = (cData && cData.exp > 0) ? cData.exp : (parseInt(a?.total_expected_census_houses || 0) || Math.max(housesCount, hhCount));
-            isComp = verCount >= hhCount && hhCount > 0;
             seIdUsed = liveData.seIdCount;
+            isComp = (cData && cData.isComp) || stAllot === '1' || stAllot === 'completed' || stAllot === 'true';
           } else if (cData && (cData.hh > 0 || cData.exp > 0)) {
             expHouses = cData.exp;
             housesCount = cData.houses;
             hhCount = cData.hh;
             verCount = cData.ver;
             popCount = cData.pop;
-            isComp = cData.isComp;
+            isComp = cData.isComp || stAllot === '1' || stAllot === 'completed' || stAllot === 'true';
             seIdUsed = cData.seUsed || 0;
           } else if (a) {
             expHouses = parseInt(a.total_expected_census_houses || 0);
@@ -673,8 +676,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
             hhCount = parseInt(a.total_households || 0);
             verCount = parseInt(a.total_household_verified_by_supervisor || 0);
             popCount = parseInt(a.total_population || 0);
-            const stVal = String(a.status ?? a.completed ?? '').toLowerCase();
-            isComp = stVal === '1' || stVal === 'completed' || stVal === 'true';
+            isComp = stAllot === '1' || stAllot === 'completed' || stAllot === 'true';
             seIdUsed = parseInt(a.total_se_id_used || a.total_se_used || a.se_id_used || 0);
           }
 
@@ -813,6 +815,147 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       completedCount: compCount
     };
   }, [abstractReport, chargeRows, hlbErrorMap, uniqueErrorCount]);
+
+  const printSupervisorSummaryOnlyReport = (dataToPrint) => {
+    if (!dataToPrint || dataToPrint.length === 0) return;
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Supervisor Progress Summary Report</title>
+        <style>
+          @page { size: A4 landscape; margin: 10mm; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; background: #fff; }
+          .report-header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px; }
+          .report-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+          .report-sub { font-size: 11px; color: #475569; font-weight: 600; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
+          th { background: #f1f5f9; color: #334155; font-weight: 800; text-align: center; padding: 7px 8px; border: 1px solid #cbd5e1; text-transform: uppercase; font-size: 9px; }
+          td { padding: 7px 8px; border: 1px solid #cbd5e1; color: #1e293b; text-align: center; }
+          tr:nth-child(even) { background: #f8fafc; }
+          .circle-badge { font-weight: 900; background: #7c3aed; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 9.5px; white-space: nowrap; }
+          .err-badge { font-weight: 800; padding: 2px 8px; border-radius: 10px; font-size: 9.5px; display: inline-block; }
+          .has-err { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+          .no-err { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+          .status-badge { display: inline-block; font-weight: 800; padding: 2px 6px; border-radius: 8px; font-size: 9.5px; }
+          .in-prog { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+          .comp { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+          tfoot { display: table-row-group; }
+          tfoot tr { background: #e2e8f0; font-weight: 900; page-break-inside: avoid; }
+          tfoot td { border-top: 2.5px solid #0f172a; font-size: 10px; padding: 8px; }
+          .print-footer { text-align: right; font-size: 9px; color: #94a3b8; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <div class="report-header">
+          <div class="report-title">CENSUS WORK — SUPERVISOR SUMMARY PROGRESS REPORT</div>
+          <div class="report-sub">Generated on ${new Date().toLocaleString()} · Total Supervisors: ${dataToPrint.length}</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px;">S.No</th>
+              <th style="width: 75px;">Circle No</th>
+              <th style="text-align: left;">Supervisor Name &amp; ID</th>
+              <th style="width: 95px; text-align: left;">Mobile No</th>
+              <th style="width: 80px;">Allotted HLBs</th>
+              <th style="width: 90px;">Expected Houses</th>
+              <th style="width: 85px;">Census Houses</th>
+              <th style="width: 85px;">Households</th>
+              <th style="width: 95px;">Verified By Sup</th>
+              <th style="width: 80px;">SE ID Used</th>
+              <th style="width: 90px;">Total Population</th>
+              <th style="width: 80px;">No. of Errors</th>
+              <th style="width: 80px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataToPrint.map((c, i) => {
+              const totExp = c.enumerators.reduce((s, e) => s + (e.expectedHouses || 0), 0);
+              const totCen = c.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0);
+              const totHH  = c.enumerators.reduce((s, e) => s + (e.households || 0), 0);
+              const totVer = c.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0);
+              const totSe  = c.enumerators.reduce((s, e) => s + (e.seIdUsed || 0), 0);
+              const totPop = c.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0);
+              const totErr = c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
+              const compCount = c.enumerators.filter(e => e.isCompleted).length;
+              const isComp = compCount === c.enumerators.length && c.enumerators.length > 0;
+              return `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td><span class="circle-badge">${c.circleNo}</span></td>
+                  <td style="text-align: left; font-weight: 700;">
+                    ${c.supervisorName}<br/>
+                    <span style="font-size: 8.5px; color: #64748b; font-family: monospace;">${c.supervisorId || ''}</span>
+                  </td>
+                  <td style="text-align: left; font-family: monospace; font-weight: 700;">${c.supervisorMobile || 'N/A'}</td>
+                  <td style="font-weight: 700;">${c.enumerators.length} HLBs</td>
+                  <td style="font-weight: 700;">${totExp.toLocaleString()}</td>
+                  <td style="font-weight: 700;">${totCen.toLocaleString()}</td>
+                  <td style="font-weight: 800;">${totHH.toLocaleString()}</td>
+                  <td style="font-weight: 800; color: #0284c7;">${totVer.toLocaleString()}</td>
+                  <td style="font-weight: 800; color: #7c3aed;">${totSe.toLocaleString()}</td>
+                  <td style="font-weight: 800; color: #15803d;">${totPop.toLocaleString()}</td>
+                  <td>
+                    <span class="err-badge ${totErr > 0 ? 'has-err' : 'no-err'}">
+                      ${totErr} ${totErr === 1 ? 'error' : 'errors'}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge ${isComp ? 'comp' : 'in-prog'}">
+                      ${isComp ? 'Completed' : `${compCount}/${c.enumerators.length} Comp`}
+                    </span>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="text-align: left; font-weight: 900;">SUPERVISOR GRAND TOTAL (${dataToPrint.length} Circles)</td>
+              <td style="font-weight: 900;">${overallStats.totalHlbs} HLBs</td>
+              <td style="font-weight: 900;">${overallStats.expectedHouses.toLocaleString()}</td>
+              <td style="font-weight: 900;">${overallStats.censusHouses.toLocaleString()}</td>
+              <td style="font-weight: 900;">${overallStats.households.toLocaleString()}</td>
+              <td style="font-weight: 900; color: #0284c7;">${overallStats.verifiedBySup.toLocaleString()}</td>
+              <td style="font-weight: 900; color: #7c3aed;">${overallStats.totalSeIdUsed.toLocaleString()}</td>
+              <td style="font-weight: 900; color: #15803d;">${overallStats.totalPopulation.toLocaleString()}</td>
+              <td style="font-weight: 900;">
+                <span class="err-badge ${overallStats.errorCount > 0 ? 'has-err' : 'no-err'}">
+                  ${overallStats.errorCount} errors
+                </span>
+              </td>
+              <td style="font-weight: 900;">${overallStats.completedCount}/${overallStats.totalHlbs} Comp</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="print-footer">
+          Supervisor Summary Progress Report — PSK Builders Census Module
+        </div>
+      </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+    }, 500);
+  };
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
@@ -976,10 +1119,16 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
-            onClick={() => printSupervisorAbstractReport(abstractReport)}
+            onClick={() => {
+              if (activeViewTab === 'SUPERVISOR_TABLE') {
+                printSupervisorSummaryOnlyReport(abstractReport);
+              } else {
+                printSupervisorAbstractReport(abstractReport);
+              }
+            }}
             style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 10, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
           >
-            <Printer size={16}/> Print All Supervisors
+            <Printer size={16}/> {activeViewTab === 'SUPERVISOR_TABLE' ? 'Print Supervisors Summary' : 'Print All Supervisors'}
           </button>
         </div>
       </div>
@@ -1185,9 +1334,183 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         </div>
       </div>
 
+      {/* VIEW MODE TABS BAR */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.03)',
+        border: '1px solid rgba(255, 255, 255, 0.09)',
+        borderRadius: 14,
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginBottom: 16
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => setActiveViewTab('SUPERVISOR_TABLE')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: 10,
+              fontWeight: 900,
+              fontSize: '0.82rem',
+              background: activeViewTab === 'SUPERVISOR_TABLE' ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255, 255, 255, 0.05)',
+              color: activeViewTab === 'SUPERVISOR_TABLE' ? '#ffffff' : '#94a3b8',
+              border: activeViewTab === 'SUPERVISOR_TABLE' ? '1px solid #c084fc' : '1px solid rgba(255, 255, 255, 0.1)',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: activeViewTab === 'SUPERVISOR_TABLE' ? '0 4px 14px rgba(168, 85, 247, 0.4)' : 'none'
+            }}
+          >
+            📊 Supervisor Summary Table
+          </button>
+
+          <button
+            onClick={() => setActiveViewTab('DETAILED_ACCORDION')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: 10,
+              fontWeight: 900,
+              fontSize: '0.82rem',
+              background: activeViewTab === 'DETAILED_ACCORDION' ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : 'rgba(255, 255, 255, 0.05)',
+              color: activeViewTab === 'DETAILED_ACCORDION' ? '#ffffff' : '#94a3b8',
+              border: activeViewTab === 'DETAILED_ACCORDION' ? '1px solid #c084fc' : '1px solid rgba(255, 255, 255, 0.1)',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: activeViewTab === 'DETAILED_ACCORDION' ? '0 4px 14px rgba(168, 85, 247, 0.4)' : 'none'
+            }}
+          >
+            📋 Enumerator Wise Details
+          </button>
+        </div>
+      </div>
+
       {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading Census Progress Report...</div>
+      ) : activeViewTab === 'SUPERVISOR_TABLE' ? (
+        /* TAB 1: SUPERVISOR SUMMARY TABLE */
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', borderRadius: 14, border: '1px solid rgba(255, 255, 255, 0.08)', background: 'rgba(255, 255, 255, 0.02)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+            <thead>
+              <tr style={{ background: 'rgba(168, 85, 247, 0.14)', color: '#e9d5ff', borderBottom: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                <th style={{ padding: '12px 10px', textAlign: 'center', width: 45 }}>S.No</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 90 }}>Circle No</th>
+                <th style={{ padding: '12px 14px', textAlign: 'left', minWidth: 180 }}>Supervisor Name &amp; ID</th>
+                <th style={{ padding: '12px 12px', textAlign: 'left', minWidth: 110 }}>Mobile No</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 110 }}>Allotted HLBs</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 120 }}>Expected Houses</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 110 }}>Census Houses</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 110 }}>Households</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 120 }}>Verified By Sup</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 110 }}>Total SE ID Used</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 110 }}>Total Population</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 110 }}>No. of Errors</th>
+                <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: 100 }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {abstractReport.map((circle, idx) => {
+                const totExp = circle.enumerators.reduce((s, e) => s + (e.expectedHouses || 0), 0);
+                const totCen = circle.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0);
+                const totHH  = circle.enumerators.reduce((s, e) => s + (e.households || 0), 0);
+                const totVer = circle.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0);
+                const totSe  = circle.enumerators.reduce((s, e) => s + (e.seIdUsed || 0), 0);
+                const totPop = circle.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0);
+                const totErr = circle.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
+                const compCount = circle.enumerators.filter(e => e.isCompleted).length;
+                const isFullyCompleted = compCount === circle.enumerators.length && circle.enumerators.length > 0;
+
+                return (
+                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)' }}>
+                    <td style={{ padding: '10px 10px', textAlign: 'center', color: '#64748b', fontWeight: 700 }}>{idx + 1}</td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+                      <span style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#fff', fontSize: '0.7rem', fontWeight: 900, padding: '3px 10px', borderRadius: 20 }}>
+                        {circle.circleNo}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px 14px', color: '#f8fafc', fontWeight: 800 }}>
+                      <div>{circle.supervisorName}</div>
+                      {circle.supervisorId && <div style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'monospace' }}>{circle.supervisorId}</div>}
+                    </td>
+                    <td style={{ padding: '10px 12px', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 700 }}>
+                      {circle.supervisorMobile || 'N/A'}
+                    </td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center', color: '#c084fc', fontWeight: 800 }}>
+                      {circle.enumerators.length} HLBs
+                    </td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center', color: '#94a3b8', fontWeight: 700 }}>
+                      {totExp.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center', color: '#cbd5e1', fontWeight: 700 }}>
+                      {totCen.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center', color: '#f8fafc', fontWeight: 800 }}>
+                      {totHH.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center', color: '#38bdf8', fontWeight: 800 }}>
+                      {totVer.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center', color: '#c084fc', fontWeight: 800 }}>
+                      {totSe.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center', color: '#4ade80', fontWeight: 800 }}>
+                      {totPop.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: 12,
+                        fontSize: '0.7rem',
+                        fontWeight: 900,
+                        background: totErr > 0 ? 'rgba(239, 68, 68, 0.18)' : 'rgba(34, 197, 94, 0.18)',
+                        color: totErr > 0 ? '#ef4444' : '#22c55e',
+                        border: totErr > 0 ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(34, 197, 94, 0.4)'
+                      }}>
+                        {totErr} {totErr === 1 ? 'error' : 'errors'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: 12,
+                        fontSize: '0.7rem',
+                        fontWeight: 900,
+                        background: isFullyCompleted ? 'rgba(34, 197, 94, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                        color: isFullyCompleted ? '#22c55e' : '#f59e0b',
+                        border: isFullyCompleted ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(245, 158, 11, 0.4)'
+                      }}>
+                        {isFullyCompleted ? 'Completed' : `${compCount}/${circle.enumerators.length} Comp`}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: 'rgba(168, 85, 247, 0.16)', borderTop: '2px solid #a855f7', fontWeight: 900, color: '#ffffff' }}>
+                <td colSpan="4" style={{ padding: '14px 14px', textAlign: 'left', fontSize: '0.85rem' }}>
+                  SUPERVISOR GRAND TOTAL ({abstractReport.length} Circles)
+                </td>
+                <td style={{ padding: '14px 10px', textAlign: 'center', color: '#c084fc' }}>{overallStats.totalHlbs} HLBs</td>
+                <td style={{ padding: '14px 10px', textAlign: 'center', color: '#94a3b8' }}>{overallStats.expectedHouses.toLocaleString()}</td>
+                <td style={{ padding: '14px 10px', textAlign: 'center', color: '#cbd5e1' }}>{overallStats.censusHouses.toLocaleString()}</td>
+                <td style={{ padding: '14px 10px', textAlign: 'center', color: '#ffffff' }}>{overallStats.households.toLocaleString()}</td>
+                <td style={{ padding: '14px 10px', textAlign: 'center', color: '#38bdf8' }}>{overallStats.verifiedBySup.toLocaleString()}</td>
+                <td style={{ padding: '14px 10px', textAlign: 'center', color: '#c084fc' }}>{overallStats.totalSeIdUsed.toLocaleString()}</td>
+                <td style={{ padding: '14px 10px', textAlign: 'center', color: '#4ade80' }}>{overallStats.totalPopulation.toLocaleString()}</td>
+                <td style={{ padding: '14px 10px', textAlign: 'center', color: '#ef4444' }}>{overallStats.errorCount.toLocaleString()} errors</td>
+                <td style={{ padding: '14px 10px', textAlign: 'center', color: '#f59e0b' }}>{overallStats.completedCount} / {overallStats.totalHlbs} Comp</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       ) : (
+        /* TAB 2: DETAILED ENUMERATOR ACCORDION VIEW */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {abstractReport.map((circle, cIdx) => (
             <div key={cIdx} style={{ background: 'rgba(255, 255, 255, 0.025)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
