@@ -89,7 +89,7 @@ const DEFAULT_ERRORS = [
     enText: 'No lighting',
     taText: 'விளக்கு வசதி இல்லை',
     color: '#3b82f6',
-    icon: '⚠️'
+    icon: '💡'
   },
   {
     id: 'err4',
@@ -100,7 +100,7 @@ const DEFAULT_ERRORS = [
     enText: 'River/ canal',
     taText: 'ஆறு/ கால்வாய்',
     color: '#a855f7',
-    icon: '⚠️'
+    icon: '🌊'
   },
   {
     id: 'err5',
@@ -111,7 +111,7 @@ const DEFAULT_ERRORS = [
     enText: 'Open drainage',
     taText: 'திறந்த வெளி',
     color: '#14b8a6',
-    icon: '⚠️'
+    icon: '🕳️'
   },
   {
     id: 'err6',
@@ -126,7 +126,7 @@ const DEFAULT_ERRORS = [
     enText: 'Cooking in kitchen: Has LPG/ PNG Connection',
     taText: 'சமையலறையில் சமைத்தல்: LPG/PNG இணைப்பு உள்ளது',
     color: '#eab308',
-    icon: '⚠️'
+    icon: '🔥'
   }
 ];
 
@@ -437,10 +437,12 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
           if (raw) {
             const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (Array.isArray(parsed) && parsed.length > 0) {
-              const defaultErr3 = DEFAULT_ERRORS.find(d => d.id === 'err3');
               const merged = parsed.map(err => {
+                const defMatch = DEFAULT_ERRORS.find(d => d.id === err.id);
+                let updatedErr = { ...err };
                 if (err.id === 'err3') {
-                  return {
+                  const defaultErr3 = DEFAULT_ERRORS.find(d => d.id === 'err3');
+                  updatedErr = {
                     ...defaultErr3,
                     ...err,
                     col1Name: err.col1Name || defaultErr3.col1Name,
@@ -451,7 +453,10 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                     col2TaText: err.col2TaText || defaultErr3.col2TaText,
                   };
                 }
-                return err;
+                if (defMatch && (!updatedErr.icon || updatedErr.icon === '⚠️')) {
+                  updatedErr.icon = defMatch.icon;
+                }
+                return updatedErr;
               });
               setErrorFilters(merged);
               localStorage.setItem('psk_custom_error_filters', JSON.stringify(merged));
@@ -2451,6 +2456,17 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                   type="text"
                   value={editingErrCard.nameTa || ''}
                   onChange={e => setEditingErrCard(prev => ({ ...prev, nameTa: e.target.value }))}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: '0.84rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.74rem', color: '#c084fc', fontWeight: 800, display: 'block', marginBottom: 4 }}>Card Icon (ஐகான் - Emoji)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 🚫, ☎️, 💡, 🌊, 🕳️, 🔥"
+                  value={editingErrCard.icon || '⚠️'}
+                  onChange={e => setEditingErrCard(prev => ({ ...prev, icon: e.target.value }))}
                   style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: '0.84rem' }}
                 />
               </div>
