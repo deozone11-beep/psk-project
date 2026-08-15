@@ -124,6 +124,67 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     loadData();
   }, []);
 
+  const recordMatchesErrorCard = (r, errCard) => {
+    if (!r) return false;
+    const isDeleted = r.is_deleted === true || r.is_deleted === 'true' || r.is_deleted === 1 ||
+                      String(r.status ?? r.Status ?? r.record_status ?? r.RECORD_STATUS ?? r.delete_status ?? r.deleted ?? '').toLowerCase().trim().includes('delete');
+    if (isDeleted) return false;
+
+    const getColText = (colKey) => {
+      if (!colKey || colKey === 'all') {
+        return Object.values(r).map(v => String(v ?? '').toLowerCase()).join(' ');
+      }
+      return String(r[colKey] ?? '').toLowerCase();
+    };
+
+    const checkMatch = (text, kwInput) => {
+      if (!kwInput) return true;
+      const arr = Array.isArray(kwInput) ? kwInput : [kwInput];
+      const opts = arr
+        .flatMap(k => String(k || '').split(/[\|,]/))
+        .map(s => s.trim().toLowerCase())
+        .filter(Boolean);
+      if (opts.length === 0) return true;
+      return opts.some(opt => text.includes(opt));
+    };
+
+    if (errCard.col1Name || errCard.col2Name) {
+      const col1Text = getColText(errCard.col1Name || 'all');
+      const col1PassEn = checkMatch(col1Text, errCard.col1EnText);
+      const col1PassTa = checkMatch(col1Text, errCard.col1TaText);
+      if (errCard.col1EnText || errCard.col1TaText) {
+        if (!col1PassEn && !col1PassTa) return false;
+      }
+
+      if (errCard.col2Name && errCard.col2Name !== 'none') {
+        const col2Text = getColText(errCard.col2Name);
+        const col2PassEn = checkMatch(col2Text, errCard.col2EnText);
+        const col2PassTa = checkMatch(col2Text, errCard.col2TaText);
+        if (errCard.col2EnText || errCard.col2TaText) {
+          if (!col2PassEn && !col2PassTa) return false;
+        }
+      }
+      return true;
+    }
+
+    const vals = Object.values(r).map(v => String(v ?? '').toLowerCase());
+    if (vals.length === 0) return false;
+
+    const enList = (Array.isArray(errCard.enKeywords) ? errCard.enKeywords : [errCard.enText || ''])
+      .map(k => String(k || '').trim().toLowerCase())
+      .filter(Boolean);
+    const taList = (Array.isArray(errCard.taKeywords) ? errCard.taKeywords : [errCard.taText || ''])
+      .map(k => String(k || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    const allKw = [...enList, ...taList];
+    if (allKw.length === 0) return false;
+    return allKw.some(kwLine => {
+      const opts = kwLine.split(/[\|,]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+      return opts.some(opt => vals.some(val => val.includes(opt)));
+    });
+  };
+
   const getMobileAndUsername = (userId, personName, isSupervisor = false) => {
     const uId = String(userId || '').trim().toLowerCase();
     const pName = String(personName || '').trim().toLowerCase();
@@ -214,41 +275,14 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       const unpadded = String(parseInt(blk, 10) || blk);
       const padded = blk.padStart(4, '0');
 
-      // 2. Error Count: Exclude deleted error records
-      const isDeleted = r.is_deleted === true || r.is_deleted === 'true' || r.is_deleted === 1 || String(r.status || '').toUpperCase() === 'DELETED' || String(r.record_status || '').toUpperCase() === 'DELETED';
+      const isDeleted = r.is_deleted === true || r.is_deleted === 'true' || r.is_deleted === 1 ||
+                        String(r.status ?? r.Status ?? r.record_status ?? r.RECORD_STATUS ?? r.delete_status ?? r.deleted ?? '').toLowerCase().trim().includes('delete');
       if (isDeleted) return;
 
-      // Concatenate ALL latrine columns together so latrine_type_name is NEVER skipped!
-      const latrineText = (
-        String(r.latrine_acc_src_name || '') + ' ' +
-        String(r.latrine_type_name || '') + ' ' +
-        String(r.latrineAccSrcName || '') + ' ' +
-        String(r.latrineTypeName || '') + ' ' +
-        String(r.latrine_acc || '') + ' ' +
-        String(r.latrine || '')
-      ).toLowerCase();
+      const matchedCards = errorFilters.filter(errCard => recordMatchesErrorCard(r, errCard));
 
-      // Concatenate ALL phone columns together
-      const phoneText = (
-        String(r.phone_smartphone_name || '') + ' ' +
-        String(r.phoneSmartphoneName || '') + ' ' +
-        String(r.phone || '') + ' ' +
-        String(r.net_device_name || '')
-      ).toLowerCase();
-
-      // Concatenate ALL status columns together
-      const statusText = (
-        String(r.status || '') + ' ' +
-        String(r.record_status || '') + ' ' +
-        String(r.RECORD_STATUS || '')
-      ).toLowerCase();
-
-      const hasErr1 = latrineText.includes('service latrine') || latrineText.includes('night soil removed by human') || latrineText.includes('சேவை கழிவு');
-      const hasErr2 = phoneText.includes('landline only') || phoneText.includes('தொலைபேசி மட்டும்');
-      const hasErr3 = statusText.includes('error') || statusText.includes('fail') || statusText.includes('invalid') || statusText.includes('பிழை');
-
-      if (hasErr1 || hasErr2 || hasErr3) {
-        const errDesc = hasErr1 ? 'Service Latrine (Night Soil Removed by Human)' : hasErr2 ? 'Landline Only' : 'Validation Error';
+      if (matchedCards.length > 0) {
+        const errDesc = matchedCards.map(c => `${c.name} (${c.nameTa})`).join(', ');
         const recItem = {
           lineNo: r.line_number || r.lineNumber || r.sl_no || '-',
           buildingNo: r.building_number || r.buildingNumber || r.bld_no || '-',
@@ -268,7 +302,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     });
 
     return { hlbErrorMap: errMap, hlbErrorRecordsMap: errRecsMap };
-  }, [rows]);
+  }, [rows, errorFilters]);
 
   const liveHlbMetricsMap = useMemo(() => {
     const map = new Map();
