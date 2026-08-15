@@ -62,6 +62,9 @@ const DEFAULT_ERRORS = [
     id: 'err1',
     name: 'Night soil removed by human',
     nameTa: 'மனிதர்களால் அகற்றப்படும் வகை',
+    col1Name: 'latrine_type_name',
+    col1EnText: 'Service latrine:  Night soil removed by human',
+    col1TaText: 'சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை',
     enKeywords: ['Service latrine:  Night soil removed by human', 'Night soil removed by human', 'service latrine'],
     taKeywords: ['சேவை கழிவு:  கழிவு - மனிதர்களால் அகற்றப்படும் வகை', 'சேவை கழிவு', 'மனிதர்களால் அகற்றப்படும் வகை'],
     enText: 'Service latrine:  Night soil removed by human',
@@ -73,6 +76,9 @@ const DEFAULT_ERRORS = [
     id: 'err2',
     name: 'Landline Only',
     nameTa: 'தொலைபேசி மட்டும்',
+    col1Name: 'phone_smartphone_name',
+    col1EnText: 'Landline only',
+    col1TaText: 'தொலைபேசி மட்டும்',
     enKeywords: ['Landline only', 'landline'],
     taKeywords: ['தொலைபேசி மட்டும்'],
     enText: 'Landline only',
@@ -84,6 +90,9 @@ const DEFAULT_ERRORS = [
     id: 'err3',
     name: 'No Light',
     nameTa: 'விளக்கு வசதி இல்லை',
+    col1Name: 'lighting_src_name',
+    col1EnText: 'No lighting',
+    col1TaText: 'விளக்கு வசதி இல்லை',
     enKeywords: ['No lighting', 'No Light'],
     taKeywords: ['விளக்கு வசதி இல்லை'],
     enText: 'No lighting',
@@ -95,6 +104,9 @@ const DEFAULT_ERRORS = [
     id: 'err4',
     name: 'River/ Canal',
     nameTa: 'ஆறு/ கால்வாய்',
+    col1Name: 'water_source_name',
+    col1EnText: 'River/ canal',
+    col1TaText: 'ஆறு/ கால்வாய்',
     enKeywords: ['River/ canal', 'River', 'Canal'],
     taKeywords: ['ஆறு/ கால்வாய்', 'ஆறு', 'கால்வாய்'],
     enText: 'River/ canal',
@@ -106,6 +118,9 @@ const DEFAULT_ERRORS = [
     id: 'err5',
     name: 'Open Drainage',
     nameTa: 'திறந்த வெளி',
+    col1Name: 'waste_water_outlet_name',
+    col1EnText: 'Open drainage',
+    col1TaText: 'திறந்த வெளி',
     enKeywords: ['Open drainage', 'Open Drain'],
     taKeywords: ['திறந்த வெளி', 'திறந்த வடிகால்'],
     enText: 'Open drainage',
@@ -416,20 +431,29 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     return false;
   }, []);
 
+  const mergeErrorCardWithDefaults = (err) => {
+    const defMatch = DEFAULT_ERRORS.find(d => d.id === err.id);
+    if (!defMatch) return err;
+    return {
+      ...defMatch,
+      ...err,
+      col1Name: err.col1Name || defMatch.col1Name,
+      col1EnText: err.col1EnText || defMatch.col1EnText,
+      col1TaText: err.col1TaText || defMatch.col1TaText,
+      col2Name: err.col2Name || defMatch.col2Name,
+      col2EnText: err.col2EnText || defMatch.col2EnText,
+      col2TaText: err.col2TaText || defMatch.col2TaText,
+      icon: err.icon && err.icon !== '⚠️' ? err.icon : defMatch.icon
+    };
+  };
+
   const [errorFilters, setErrorFilters] = useState(() => {
     try {
       const saved = localStorage.getItem('psk_custom_error_filters');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(err => {
-            const defMatch = DEFAULT_ERRORS.find(d => d.id === err.id);
-            let updatedErr = { ...err };
-            if (defMatch && (!updatedErr.icon || updatedErr.icon === '⚠️')) {
-              updatedErr.icon = defMatch.icon;
-            }
-            return updatedErr;
-          });
+          return parsed.map(err => mergeErrorCardWithDefaults(err));
         }
       }
     } catch (e) {}
@@ -449,27 +473,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
           if (raw) {
             const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
             if (Array.isArray(parsed) && parsed.length > 0) {
-              const merged = parsed.map(err => {
-                const defMatch = DEFAULT_ERRORS.find(d => d.id === err.id);
-                let updatedErr = { ...err };
-                if (err.id === 'err3') {
-                  const defaultErr3 = DEFAULT_ERRORS.find(d => d.id === 'err3');
-                  updatedErr = {
-                    ...defaultErr3,
-                    ...err,
-                    col1Name: err.col1Name || defaultErr3.col1Name,
-                    col1EnText: err.col1EnText || defaultErr3.col1EnText,
-                    col1TaText: err.col1TaText || defaultErr3.col1TaText,
-                    col2Name: err.col2Name || defaultErr3.col2Name,
-                    col2EnText: err.col2EnText || defaultErr3.col2EnText,
-                    col2TaText: err.col2TaText || defaultErr3.col2TaText,
-                  };
-                }
-                if (defMatch && (!updatedErr.icon || updatedErr.icon === '⚠️')) {
-                  updatedErr.icon = defMatch.icon;
-                }
-                return updatedErr;
-              });
+              const merged = parsed.map(err => mergeErrorCardWithDefaults(err));
               setErrorFilters(merged);
               localStorage.setItem('psk_custom_error_filters', JSON.stringify(merged));
             }
