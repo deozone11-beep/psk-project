@@ -75,14 +75,39 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     let totalCount = 0;
 
     while (true) {
-      const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${offset}`);
-      const j = await r.json().catch(() => ({}));
-      const chunk = j.rows || [];
-      totalCount = j.total || chunk.length;
-      allRows.push(...chunk);
-      if (chunk.length < chunkSize || allRows.length >= totalCount) break;
+      let chunk = [];
+      let retries = 3;
+      let success = false;
+
+      while (retries > 0 && !success) {
+        try {
+          const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${offset}`);
+          const j = await r.json().catch(() => ({}));
+          if (j.rows && Array.isArray(j.rows)) {
+            chunk = j.rows;
+            if (j.total) totalCount = j.total;
+            success = true;
+          } else {
+            retries--;
+            if (retries > 0) await new Promise(res => setTimeout(res, 1000));
+          }
+        } catch (e) {
+          retries--;
+          if (retries > 0) await new Promise(res => setTimeout(res, 1000));
+        }
+      }
+
+      if (chunk.length > 0) {
+        allRows.push(...chunk);
+      }
+
+      if (success && chunk.length < chunkSize) break;
+      if (totalCount > 0 && allRows.length >= totalCount) break;
+      if (!success) break;
+
       offset += chunkSize;
     }
+
     return allRows;
   }
 

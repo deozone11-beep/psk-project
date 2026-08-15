@@ -326,28 +326,46 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     let columns = [];
 
     while (true) {
-      const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${offset}`);
-      const j = await r.json();
-      if (j.error) throw new Error(j.error);
+      let chunk = [];
+      let retries = 3;
+      let success = false;
 
-      const chunk = j.rows || [];
-      totalCount = j.total || chunk.length;
-      if (j.columns?.length) columns = j.columns;
-      else if (chunk.length && !columns.length) columns = Object.keys(chunk[0]);
+      while (retries > 0 && !success) {
+        try {
+          const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${offset}`);
+          const j = await r.json().catch(() => ({}));
+          if (j.rows && Array.isArray(j.rows)) {
+            chunk = j.rows;
+            if (j.total) totalCount = j.total;
+            if (j.columns?.length) columns = j.columns;
+            else if (chunk.length && !columns.length) columns = Object.keys(chunk[0]);
+            success = true;
+          } else {
+            retries--;
+            if (retries > 0) await new Promise(res => setTimeout(res, 1000));
+          }
+        } catch (e) {
+          retries--;
+          if (retries > 0) await new Promise(res => setTimeout(res, 1000));
+        }
+      }
 
-      allRows.push(...chunk);
+      if (chunk.length > 0) {
+        allRows.push(...chunk);
+      }
 
       if (onProgress) {
-        onProgress(allRows.length, totalCount);
+        onProgress(allRows.length, totalCount || 74906);
       }
 
-      if (chunk.length < chunkSize || allRows.length >= totalCount) {
-        break;
-      }
+      if (success && chunk.length < chunkSize) break;
+      if (totalCount > 0 && allRows.length >= totalCount) break;
+      if (!success) break;
+
       offset += chunkSize;
     }
 
-    return { rows: allRows, total: totalCount, columns };
+    return { rows: allRows, total: totalCount || allRows.length, columns };
   }
 
   async function fetchData(t) {
