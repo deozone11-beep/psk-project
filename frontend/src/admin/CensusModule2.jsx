@@ -447,18 +447,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     };
   };
 
-  const [errorFilters, setErrorFilters] = useState(() => {
-    try {
-      const saved = localStorage.getItem('psk_custom_error_filters');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(err => mergeErrorCardWithDefaults(err));
-        }
-      }
-    } catch (e) {}
-    return DEFAULT_ERRORS;
-  });
+  const [errorFilters, setErrorFilters] = useState(DEFAULT_ERRORS);
 
   const [editingErrCard, setEditingErrCard] = useState(null);
 
@@ -475,18 +464,18 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
             if (Array.isArray(parsed) && parsed.length > 0) {
               const merged = parsed.map(err => mergeErrorCardWithDefaults(err));
               setErrorFilters(merged);
-              localStorage.setItem('psk_custom_error_filters', JSON.stringify(merged));
             }
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('DB settings load error:', e);
+      }
     }
     loadDbSettings();
   }, []);
 
   const saveErrorFiltersToDB = async (newFilters) => {
     setErrorFilters(newFilters);
-    localStorage.setItem('psk_custom_error_filters', JSON.stringify(newFilters));
     try {
       await db2Fetch('/table/settings', {
         method: 'POST',
@@ -497,7 +486,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
         })
       });
     } catch (e) {
-      console.warn('DB settings save fallback:', e);
+      console.warn('DB settings save error:', e);
     }
   };
 

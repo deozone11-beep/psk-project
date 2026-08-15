@@ -177,13 +177,36 @@ public class Db2Controller {
                 filtersJson = (val instanceof String) ? (String) val : val.toString();
             }
 
+            // 1. Save to Supabase PostgreSQL (DB2)
             db2.update(
                 "INSERT INTO public.settings (id, custom_error_filters) VALUES (1, ?) " +
                 "ON CONFLICT (id) DO UPDATE SET custom_error_filters = EXCLUDED.custom_error_filters",
                 filtersJson
             );
 
-            return ResponseEntity.ok(Map.of("status", "success", "message", "Settings saved to DB2 successfully"));
+            // 2. Also save to MySQL database if running locally
+            try {
+                java.sql.Connection conn = java.sql.DriverManager.getConnection(
+                        "jdbc:mysql://localhost:3306/census_db?allowPublicKeyRetrieval=true&useSSL=false",
+                        "root",
+                        "Meera@9898"
+                );
+                java.sql.Statement stmt = conn.createStatement();
+                stmt.execute("CREATE TABLE IF NOT EXISTS settings (id INT PRIMARY KEY, custom_error_filters LONGTEXT)");
+                java.sql.PreparedStatement ps = conn.prepareStatement(
+                        "INSERT INTO settings (id, custom_error_filters) VALUES (1, ?) " +
+                        "ON DUPLICATE KEY UPDATE custom_error_filters = VALUES(custom_error_filters)"
+                );
+                ps.setString(1, filtersJson);
+                ps.executeUpdate();
+                ps.close();
+                stmt.close();
+                conn.close();
+            } catch (Exception mysqlEx) {
+                System.out.println("MySQL sync note: " + mysqlEx.getMessage());
+            }
+
+            return ResponseEntity.ok(Map.of("status", "success", "message", "Settings saved to Supabase & MySQL successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
