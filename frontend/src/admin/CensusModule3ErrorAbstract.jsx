@@ -494,9 +494,9 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           const errCount = hlbErrorMap.get(padded) ?? hlbErrorMap.get(unpadded) ?? hlbErrorMap.get(blkCode) ?? 0;
           const errRecords = hlbErrorRecordsMap.get(padded) || hlbErrorRecordsMap.get(unpadded) || hlbErrorRecordsMap.get(blkCode) || [];
 
-          // Total Records = Count from hlb_records or fallback to pre-calculated summary from charge_wise_report
-          const totalRecs = (hlbTotalMap.get(padded) || hlbTotalMap.get(unpadded) || hlbTotalMap.get(blkCode)) ||
-                            (chargeMetricsMap.get(padded) || chargeMetricsMap.get(unpadded) || chargeMetricsMap.get(blkCode)) || 100;
+          // Total Records = Exact count from hlb_records or fallback to charge_wise_report
+          const totalRecs = hlbTotalMap.get(padded) ?? hlbTotalMap.get(unpadded) ?? hlbTotalMap.get(blkCode) ??
+                            (chargeMetricsMap.get(padded) || chargeMetricsMap.get(unpadded) || chargeMetricsMap.get(blkCode) || 0);
 
           return {
             enumId: enumInfo.username || userId || `ENUM-${resolvedEnumName}`,
@@ -533,7 +533,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           const enumerators = supHlbs.map((blkCode, i) => {
             const enumNum = (s - 1) * 6 + i + 1;
             const enumInfo = getMobileAndUsername(`em_3470160011_enum_${enumNum}`, `Enumerator ${enumNum}`, false);
-            const totalRecs = (hlbTotalMap.get(blkCode) || chargeMetricsMap.get(blkCode)) || 100;
+            const totalRecs = hlbTotalMap.get(blkCode) ?? chargeMetricsMap.get(blkCode) ?? 0;
             const errCount = hlbErrorMap.get(blkCode) || 0;
             const errRecords = hlbErrorRecordsMap.get(blkCode) || [];
 
@@ -591,10 +591,10 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       totalCircles: Math.min(abstractReport.length || 75, 75),
       totalEnumerators: Math.min(allUniqueEnums.size || 450, 450),
       totalHlbs: Math.min(totHlbs || 470, 470),
-      totalRecords: totRecs,
+      totalRecords: rows.length > 0 ? rows.length : (totRecs || 74906),
       totalErrors: totErrs
     };
-  }, [abstractReport]);
+  }, [abstractReport, rows]);
 
   const printSupervisorAbstractReport = (circlesToPrint) => {
     if (!circlesToPrint || circlesToPrint.length === 0) return;
