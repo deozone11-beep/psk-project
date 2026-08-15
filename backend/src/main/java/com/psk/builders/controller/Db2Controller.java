@@ -49,6 +49,9 @@ public class Db2Controller {
                     "id INT PRIMARY KEY, " +
                     "custom_error_filters TEXT" +
                     ")");
+            try {
+                db2.execute("ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS custom_error_filters TEXT");
+            } catch (Exception ignore) {}
 
             List<Map<String, Object>> rows = db2.queryForList("SELECT * FROM public.settings LIMIT 1");
             return ResponseEntity.ok(Map.of(
@@ -195,6 +198,9 @@ public class Db2Controller {
                     "id INT PRIMARY KEY, " +
                     "custom_error_filters TEXT" +
                     ")");
+            try {
+                db2.execute("ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS custom_error_filters TEXT");
+            } catch (Exception ignore) {}
 
             String filtersJson = null;
             if (body.containsKey("custom_error_filters")) {
