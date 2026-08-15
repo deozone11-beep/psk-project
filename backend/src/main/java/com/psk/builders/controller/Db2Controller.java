@@ -40,6 +40,34 @@ public class Db2Controller {
     }
 
     // ------------------------------------------------------------------ //
+    // GET /api/admin/db2/table/settings  –  fetch custom admin settings
+    // ------------------------------------------------------------------ //
+    @GetMapping("/table/settings")
+    public ResponseEntity<?> getSettings() {
+        try {
+            db2.execute("CREATE TABLE IF NOT EXISTS public.settings (" +
+                    "id INT PRIMARY KEY, " +
+                    "custom_error_filters TEXT" +
+                    ")");
+
+            List<Map<String, Object>> rows = db2.queryForList("SELECT * FROM public.settings LIMIT 1");
+            return ResponseEntity.ok(Map.of(
+                    "table", "settings",
+                    "total", rows.size(),
+                    "columns", List.of("id", "custom_error_filters"),
+                    "rows", rows
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of(
+                    "table", "settings",
+                    "total", 0,
+                    "columns", List.of("id", "custom_error_filters"),
+                    "rows", List.of()
+            ));
+        }
+    }
+
+    // ------------------------------------------------------------------ //
     // GET /api/admin/db2/table/{name}?limit=500&offset=0  –  fetch rows
     // ------------------------------------------------------------------ //
     @GetMapping("/table/{tableName}")
