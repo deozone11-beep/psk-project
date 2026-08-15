@@ -4,7 +4,7 @@ import {
   CheckSquare, Square, Database, AlertCircle,
   ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, FilterX, Table2, Maximize2, Minimize2, ExternalLink, Copy, Check,
   User, Phone, ShieldCheck, FileText, AlertTriangle, Sparkles, Printer,
-  Edit2, Plus, Trash2, Save
+  Edit2, Plus, Trash2, Save, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -225,6 +225,30 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   const [selectedErrorIds, setSelectedErrorIds]   = useState(new Set());
   const [showAbstractModal, setShowAbstractModal] = useState(initialShowAbstract);
   const [selectedHlbErrorPopup, setSelectedHlbErrorPopup] = useState(null);
+
+  const [expandedAbstractCircles, setExpandedAbstractCircles] = useState(new Set());
+  const [abstractSearchQuery, setAbstractSearchQuery]         = useState('');
+
+  const toggleAbstractCircle = (circleNo) => {
+    setExpandedAbstractCircles(prev => {
+      const next = new Set(prev);
+      if (next.has(circleNo)) {
+        next.delete(circleNo);
+      } else {
+        next.add(circleNo);
+      }
+      return next;
+    });
+  };
+
+  const expandAllAbstractCircles = (report) => {
+    const allNos = (report || []).map(c => c.circleNo);
+    setExpandedAbstractCircles(new Set(allNos));
+  };
+
+  const collapseAllAbstractCircles = () => {
+    setExpandedAbstractCircles(new Set());
+  };
 
   const [allotedRows, setAllotedRows] = useState([]);
   const [chargeRows, setChargeRows]   = useState([]);
@@ -2122,180 +2146,282 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
               </div>
             </div>
 
-            {/* Modal Content / Abstract List */}
+            {/* Modal Content / Abstract List with Collapsible Accordion UI */}
             <div style={{ padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
-              {abstractReport.map((circle, cIdx) => (
-                <div key={cIdx} style={{
-                  background: 'rgba(255, 255, 255, 0.025)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: 14,
-                  padding: 16,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12
-                }}>
-                  {/* Supervisor Info Header */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#fff', fontSize: '0.72rem', fontWeight: 900, padding: '3px 10px', borderRadius: 20 }}>
-                        {circle.circleNo}
-                      </span>
-                      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <User size={14} color="#c084fc"/> Supervisor: {circle.supervisorName}
-                        </span>
-                        {circle.supervisorId && (
-                          <span style={{ fontSize: '0.66rem', color: '#a855f7', fontFamily: 'monospace', fontWeight: 700 }}>
-                            {circle.supervisorId}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'monospace' }}>
-                        <Phone size={12} color="#60a5fa"/> {circle.supervisorMobile}
-                      </span>
-                      <button
-                        onClick={() => printSupervisorAbstractReport([circle])}
-                        style={{
-                          background: 'rgba(59, 130, 246, 0.15)',
-                          border: '1px solid rgba(59, 130, 246, 0.4)',
-                          color: '#60a5fa',
-                          padding: '3px 10px',
-                          borderRadius: 8,
-                          fontSize: '0.72rem',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4
-                        }}
-                        title="Print report for this Supervisor Circle only"
-                      >
-                        <PrinterIcon /> Print Circle
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Enumerators Table */}
-                  <div style={{ overflowX: 'auto', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem', tableLayout: 'auto' }}>
-                      <thead>
-                        <tr style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#e9d5ff', borderBottom: '1px solid rgba(168, 85, 247, 0.25)' }}>
-                          <th style={{ padding: '10px 12px', textAlign: 'left', verticalAlign: 'middle', minWidth: 170, whiteSpace: 'nowrap' }}>Enumerator Name &amp; ID</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'left', verticalAlign: 'middle', minWidth: 110, whiteSpace: 'nowrap' }}>Mobile No</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'center', verticalAlign: 'middle', minWidth: 110, whiteSpace: 'nowrap' }}>Allotted HLB Code</th>
-                          {reportMode === 'ERROR_BASE' ? (
-                            <th style={{ padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', minWidth: 120 }}>Total Records</th>
-                          ) : (
-                            <>
-                              <th style={{ padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', minWidth: 135, lineHeight: 1.3 }}>Total Number of Expected Census Houses</th>
-                              <th style={{ padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', minWidth: 135, lineHeight: 1.3 }}>Total Number of Census Households</th>
-                              <th style={{ padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', minWidth: 135, lineHeight: 1.3 }}>Households Verified By Supervisor</th>
-                              <th style={{ padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', minWidth: 95, whiteSpace: 'nowrap' }}>Total Population</th>
-                            </>
-                          )}
-                          <th style={{ padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', minWidth: 100, whiteSpace: 'nowrap' }}>No. of Errors</th>
-                          {reportMode !== 'ERROR_BASE' && (
-                            <th style={{ padding: '10px 10px', textAlign: 'center', verticalAlign: 'middle', minWidth: 105, whiteSpace: 'nowrap' }}>Status</th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {circle.enumerators.map((enumItem, eIdx) => (
-                          <tr key={eIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <td style={{ padding: '10px 12px', color: '#f1f5f9', fontWeight: 700, verticalAlign: 'middle' }}>
-                              <div style={{ fontSize: '0.82rem' }}>{enumItem.enumName}</div>
-                              <div style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'monospace', marginTop: 2 }}>{enumItem.enumId}</div>
-                            </td>
-                            <td style={{ padding: '10px 12px', color: '#94a3b8', fontFamily: 'monospace', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                              {enumItem.enumMobile}
-                            </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                              <span 
-                                onClick={() => { clickHlb(enumItem.hlbCode); setShowAbstractModal(false); }}
-                                style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc', padding: '3px 10px', borderRadius: 8, fontWeight: 800, fontFamily: 'monospace', cursor: 'pointer' }}
-                                title="Click to view &amp; filter this HLB block"
-                              >
-                                HLB {enumItem.hlbCode}
-                              </span>
-                            </td>
-                            {reportMode === 'ERROR_BASE' ? (
-                              <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f1f5f9', fontWeight: 800, verticalAlign: 'middle' }}>
-                                {enumItem.households.toLocaleString()}
-                              </td>
-                            ) : (
-                              <>
-                                <td style={{ padding: '10px 12px', textAlign: 'center', color: '#94a3b8', fontWeight: 700, verticalAlign: 'middle' }}>
-                                  {enumItem.expectedHouses.toLocaleString()}
-                                </td>
-                                <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f1f5f9', fontWeight: 800, verticalAlign: 'middle' }}>
-                                  {enumItem.households.toLocaleString()}
-                                </td>
-                                <td style={{ padding: '10px 12px', textAlign: 'center', color: '#38bdf8', fontWeight: 800, verticalAlign: 'middle' }}>
-                                  {enumItem.verifiedBySup.toLocaleString()}
-                                </td>
-                                <td style={{ padding: '10px 12px', textAlign: 'center', color: '#a7f3d0', fontWeight: 800, verticalAlign: 'middle' }}>
-                                  {enumItem.totalPopulation.toLocaleString()}
-                                </td>
-                              </>
-                            )}
-                            <td style={{ padding: '10px 12px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                              <span 
-                                onClick={() => {
-                                  if (enumItem.errorCount > 0 || (enumItem.errorRecords && enumItem.errorRecords.length > 0)) {
-                                    setSelectedHlbErrorPopup({
-                                      hlbCode: enumItem.hlbCode,
-                                      supervisorName: circle.supervisorName,
-                                      circleNo: circle.circleNo,
-                                      enumName: enumItem.enumName,
-                                      enumMobile: enumItem.enumMobile,
-                                      records: enumItem.errorRecords || []
-                                    });
-                                  }
-                                }}
-                                style={{
-                                  background: enumItem.errorCount > 0 ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.15)',
-                                  border: enumItem.errorCount > 0 ? '1px solid #ef4444' : '1px solid rgba(34,197,94,0.3)',
-                                  color: enumItem.errorCount > 0 ? '#fca5a5' : '#86efac',
-                                  padding: '4px 12px',
-                                  borderRadius: 12,
-                                  fontWeight: 900,
-                                  fontSize: '0.74rem',
-                                  whiteSpace: 'nowrap',
-                                  display: 'inline-block',
-                                  cursor: (enumItem.errorCount > 0 || (enumItem.errorRecords && enumItem.errorRecords.length > 0)) ? 'pointer' : 'default'
-                                }}
-                                title={enumItem.errorCount > 0 ? "Click to view detailed error records popup for this HLB" : "No errors detected"}
-                              >
-                                {enumItem.errorCount} {enumItem.errorCount === 1 ? 'error' : 'errors'}
-                              </span>
-                            </td>
-                            {reportMode !== 'ERROR_BASE' && (
-                              <td style={{ padding: '10px 12px', textAlign: 'center', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                                <span style={{
-                                  background: enumItem.isCompleted ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.2)',
-                                  color: enumItem.isCompleted ? '#4ade80' : '#fbbf24',
-                                  border: enumItem.isCompleted ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(245,158,11,0.4)',
-                                  padding: '4px 12px',
-                                  borderRadius: 12,
-                                  fontSize: '0.74rem',
-                                  fontWeight: 900,
-                                  whiteSpace: 'nowrap',
-                                  display: 'inline-block'
-                                }}>
-                                  {enumItem.isCompleted ? 'Completed' : 'In progress'}
-                                </span>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+              {/* Filter & Expand/Collapse Controls Bar */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.09)',
+                borderRadius: 14,
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 10
+              }}>
+                <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 420 }}>
+                  <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search Supervisor, Circle No, Enumerator or HLB Code..."
+                    value={abstractSearchQuery}
+                    onChange={(e) => setAbstractSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: 8,
+                      padding: '7px 10px 7px 32px',
+                      color: '#f8fafc',
+                      fontSize: '0.8rem',
+                      outline: 'none'
+                    }}
+                  />
+                  {abstractSearchQuery && (
+                    <X
+                      size={14}
+                      color="#94a3b8"
+                      onClick={() => setAbstractSearchQuery('')}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer' }}
+                    />
+                  )}
                 </div>
-              ))}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    onClick={() => expandAllAbstractCircles(filteredAbstractReport)}
+                    style={{
+                      background: 'rgba(168, 85, 247, 0.15)',
+                      border: '1px solid rgba(168, 85, 247, 0.4)',
+                      color: '#c084fc',
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      fontSize: '0.76rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <Maximize2 size={13} /> Expand All ({filteredAbstractReport.length})
+                  </button>
+                  <button
+                    onClick={collapseAllAbstractCircles}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#94a3b8',
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      fontSize: '0.76rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <Minimize2 size={13} /> Collapse All
+                  </button>
+                </div>
+              </div>
+
+              {filteredAbstractReport.map((circle, cIdx) => {
+                const isExpanded = expandedAbstractCircles.has(circle.circleNo);
+
+                return (
+                  <div key={circle.circleNo || cIdx} style={{
+                    background: 'rgba(255, 255, 255, 0.025)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 14,
+                    padding: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12
+                  }}>
+                    {/* Supervisor Info Header Row */}
+                    <div 
+                      onClick={() => toggleAbstractCircle(circle.circleNo)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justify: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 10,
+                        cursor: 'pointer',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <span style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#fff', fontSize: '0.72rem', fontWeight: 900, padding: '3px 10px', borderRadius: 20 }}>
+                          {circle.circleNo}
+                        </span>
+                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <User size={14} color="#c084fc"/> Supervisor: {circle.supervisorName} {circle.supervisorId ? `(${circle.supervisorId})` : ''}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'monospace' }}>
+                          <Phone size={12} color="#60a5fa"/> {circle.supervisorMobile}
+                        </span>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            printSupervisorAbstractReport([circle]);
+                          }}
+                          style={{
+                            background: 'rgba(59, 130, 246, 0.15)',
+                            border: '1px solid rgba(59, 130, 246, 0.4)',
+                            color: '#60a5fa',
+                            padding: '4px 12px',
+                            borderRadius: 8,
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <PrinterIcon /> Print Circle
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleAbstractCircle(circle.circleNo);
+                          }}
+                          style={{
+                            background: isExpanded ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                            border: isExpanded ? '1px solid rgba(168, 85, 247, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
+                            color: isExpanded ? '#c084fc' : '#f1f5f9',
+                            padding: '4px 12px',
+                            borderRadius: 8,
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          {isExpanded ? <ChevronUp size={14} color="#c084fc" /> : <ChevronDown size={14} color="#f1f5f9" />}
+                          {isExpanded ? 'Hide' : 'Expand'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Enumerators Table (Shown ONLY when isExpanded = true) */}
+                    {isExpanded && (
+                      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: 4 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem' }}>
+                          <thead>
+                            <tr style={{ background: 'rgba(168, 85, 247, 0.12)', color: '#e9d5ff', borderBottom: '1px solid rgba(168, 85, 247, 0.25)' }}>
+                              <th style={{ padding: '10px 12px', textAlign: 'left', minWidth: 170 }}>Enumerator Name &amp; ID</th>
+                              <th style={{ padding: '10px 12px', textAlign: 'left', minWidth: 110 }}>Mobile No</th>
+                              <th style={{ padding: '10px 12px', textAlign: 'center', minWidth: 110 }}>Allotted HLB Code</th>
+                              {reportMode === 'ERROR_BASE' ? (
+                                <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>Total Records</th>
+                              ) : (
+                                <>
+                                  <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Total Number of Expected Census Houses</th>
+                                  <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Total Number of Census Households</th>
+                                  <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 135, lineHeight: 1.3 }}>Households Verified By Supervisor</th>
+                                  <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 95, whiteSpace: 'nowrap' }}>Total Population</th>
+                                </>
+                              )}
+                              <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 120 }}>No. of Errors</th>
+                              {reportMode !== 'ERROR_BASE' && (
+                                <th style={{ padding: '10px 10px', textAlign: 'center', minWidth: 105, whiteSpace: 'nowrap' }}>Status</th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {circle.enumerators.map((enumItem, eIdx) => (
+                              <tr key={eIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                <td style={{ padding: '10px 12px', color: '#f1f5f9', fontWeight: 700 }}>
+                                  <div style={{ fontSize: '0.82rem' }}>{enumItem.enumName}</div>
+                                  <div style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'monospace' }}>{enumItem.enumId}</div>
+                                </td>
+                                <td style={{ padding: '10px 12px', color: '#94a3b8', fontFamily: 'monospace' }}>{enumItem.enumMobile}</td>
+                                <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                  <span 
+                                    onClick={() => { clickHlb(enumItem.hlbCode); setShowAbstractModal(false); }}
+                                    style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.35)', color: '#c084fc', padding: '3px 10px', borderRadius: 8, fontWeight: 800, fontFamily: 'monospace', cursor: 'pointer' }}
+                                  >
+                                    HLB {String(enumItem.hlbCode).padStart(4, '0')}
+                                  </span>
+                                </td>
+                                {reportMode === 'ERROR_BASE' ? (
+                                  <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f1f5f9', fontWeight: 800 }}>
+                                    {enumItem.households || enumItem.totalRecords || 0}
+                                  </td>
+                                ) : (
+                                  <>
+                                    <td style={{ padding: '10px 12px', textAlign: 'center', color: '#94a3b8', fontWeight: 700 }}>{enumItem.expectedHouses.toLocaleString()}</td>
+                                    <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f1f5f9', fontWeight: 800 }}>{enumItem.households.toLocaleString()}</td>
+                                    <td style={{ padding: '10px 12px', textAlign: 'center', color: '#38bdf8', fontWeight: 800 }}>{enumItem.verifiedBySup.toLocaleString()}</td>
+                                    <td style={{ padding: '10px 12px', textAlign: 'center', color: '#a7f3d0', fontWeight: 800 }}>{enumItem.totalPopulation.toLocaleString()}</td>
+                                  </>
+                                )}
+                                <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                  <span 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (enumItem.errorCount > 0) {
+                                        setSelectedHlbErrorPopup({
+                                          hlbCode: String(enumItem.hlbCode).padStart(4, '0'),
+                                          supervisorName: circle.supervisorName,
+                                          enumName: enumItem.enumName,
+                                          enumMobile: enumItem.enumMobile,
+                                          records: enumItem.errorRecords || []
+                                        });
+                                      }
+                                    }}
+                                    style={{
+                                      background: enumItem.errorCount > 0 ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.15)',
+                                      border: enumItem.errorCount > 0 ? '1px solid #ef4444' : '1px solid rgba(34,197,94,0.3)',
+                                      color: enumItem.errorCount > 0 ? '#fca5a5' : '#86efac',
+                                      padding: '4px 12px',
+                                      borderRadius: 12,
+                                      fontWeight: 900,
+                                      fontSize: '0.74rem',
+                                      whiteSpace: 'nowrap',
+                                      display: 'inline-block',
+                                      cursor: enumItem.errorCount > 0 ? 'pointer' : 'default'
+                                    }}
+                                  >
+                                    {enumItem.errorCount} {enumItem.errorCount === 1 ? 'error' : 'errors'}
+                                  </span>
+                                </td>
+                                {reportMode !== 'ERROR_BASE' && (
+                                  <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                    <span style={{
+                                      background: enumItem.isCompleted ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
+                                      border: enumItem.isCompleted ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(245,158,11,0.3)',
+                                      color: enumItem.isCompleted ? '#86efac' : '#fde047',
+                                      padding: '3px 10px',
+                                      borderRadius: 10,
+                                      fontSize: '0.72rem',
+                                      fontWeight: 800
+                                    }}>
+                                      {enumItem.isCompleted ? 'Completed' : 'In Progress'}
+                                    </span>
+                                  </td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

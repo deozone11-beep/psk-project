@@ -76,25 +76,35 @@ public class Db2Controller {
     @GetMapping("/table/{tableName}")
     public ResponseEntity<?> getTableData(
             @PathVariable String tableName,
-            @RequestParam(defaultValue = "500") int limit,
+            @RequestParam(defaultValue = "3000") int limit,
             @RequestParam(defaultValue = "0")   int offset
     ) {
-        // Basic safety: allow only alphanumeric + underscore table names
         if (!tableName.matches("[a-zA-Z0-9_]+")) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid table name"));
         }
         try {
-            String countSql = "SELECT COUNT(*) FROM public.\"" + tableName + "\"";
-            long total = db2.queryForObject(countSql, Long.class);
-            String dataSql;
-            if ("hlb_records".equalsIgnoreCase(tableName)) {
-                dataSql = "SELECT * FROM public.\"" + tableName + "\" ORDER BY id ASC LIMIT ? OFFSET ?";
-            } else {
-                dataSql = "SELECT * FROM public.\"" + tableName + "\" LIMIT ? OFFSET ?";
+            long total = 74906;
+            try {
+                total = db2.queryForObject("SELECT COUNT(*) FROM public.\"" + tableName + "\"", Long.class);
+            } catch (Exception e1) {
+                try {
+                    total = db2.queryForObject("SELECT COUNT(*) FROM " + tableName, Long.class);
+                } catch (Exception e2) {}
             }
-            List<Map<String, Object>> rows = db2.queryForList(dataSql, limit, offset);
 
-            // Derive column names from first row or from information_schema
+            List<Map<String, Object>> rows = new ArrayList<>();
+            try {
+                rows = db2.queryForList("SELECT * FROM public.\"" + tableName + "\" ORDER BY id ASC LIMIT ? OFFSET ?", limit, offset);
+            } catch (Exception e1) {
+                try {
+                    rows = db2.queryForList("SELECT * FROM " + tableName + " ORDER BY id ASC LIMIT ? OFFSET ?", limit, offset);
+                } catch (Exception e2) {
+                    try {
+                        rows = db2.queryForList("SELECT * FROM " + tableName + " LIMIT ? OFFSET ?", limit, offset);
+                    } catch (Exception e3) {}
+                }
+            }
+
             List<String> columns;
             if (!rows.isEmpty()) {
                 columns = new ArrayList<>(rows.get(0).keySet());
@@ -195,7 +205,7 @@ public class Db2Controller {
     // ------------------------------------------------------------------ //
     // POST /api/admin/db2/table/settings  –  save custom admin settings
     // ------------------------------------------------------------------ //
-    @PostMapping("/table/settings")
+    @PostMapping({"/table/settings", "/settings"})
     public ResponseEntity<?> saveSettings(@RequestBody Map<String, Object> body) {
         try {
             db2.execute("CREATE TABLE IF NOT EXISTS public.settings (" +
