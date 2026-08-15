@@ -357,8 +357,17 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       const result = await fetchAllRowsInChunks(t, 3000, (loaded, total) => {
         setLoadingProgress(`Loading ${loaded.toLocaleString()} / ${total.toLocaleString()} rows...`);
       });
-      setRows(result.rows || []);
-      setTotal(result.total || 0);
+      const uniqueRows = [];
+      const seen = new Set();
+      (result.rows || []).forEach(r => {
+        const idKey = r.id != null ? String(r.id) : `${r.hlb_code}_${r.line_number}_${r.building_number}_${r.census_house_num}_${r.household_number}`;
+        if (!seen.has(idKey)) {
+          seen.add(idKey);
+          uniqueRows.push(r);
+        }
+      });
+      setRows(uniqueRows);
+      setTotal(uniqueRows.length);
       setDbColumns(result.columns || []);
     } catch(e) { setError('Data load failed: ' + e.message); setRows([]); }
     finally { setLoading(false); setLoadingProgress(''); }
