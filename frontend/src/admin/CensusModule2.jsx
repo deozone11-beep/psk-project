@@ -437,12 +437,12 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     return {
       ...defMatch,
       ...err,
-      col1Name: err.col1Name || defMatch.col1Name,
-      col1EnText: err.col1EnText || defMatch.col1EnText,
-      col1TaText: err.col1TaText || defMatch.col1TaText,
-      col2Name: err.col2Name || defMatch.col2Name,
-      col2EnText: err.col2EnText || defMatch.col2EnText,
-      col2TaText: err.col2TaText || defMatch.col2TaText,
+      col1Name: err.col1Name ?? defMatch.col1Name,
+      col1EnText: err.col1EnText ?? defMatch.col1EnText,
+      col1TaText: err.col1TaText ?? defMatch.col1TaText,
+      col2Name: err.col2Name ?? defMatch.col2Name,
+      col2EnText: err.col2EnText ?? defMatch.col2EnText,
+      col2TaText: err.col2TaText ?? defMatch.col2TaText,
       icon: err.icon && err.icon !== '⚠️' ? err.icon : defMatch.icon
     };
   };
@@ -2567,19 +2567,20 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                 onClick={() => {
                   const updated = errorFilters.map(err => {
                     if (err.id === editingErrCard.id) {
-                      const cleanEn = (editingErrCard.enKeywords || []).filter(k => k.trim().length > 0);
-                      const cleanTa = (editingErrCard.taKeywords || []).filter(k => k.trim().length > 0);
-                      const cleanEx = (editingErrCard.excludeKeywords || [])
-                        .flatMap(k => String(k || '').split(/[\|,]/))
-                        .map(k => k.trim())
-                        .filter(Boolean);
+                      const col1En = editingErrCard.col1EnText ?? '';
+                      const col1Ta = editingErrCard.col1TaText ?? '';
+                      const col2En = editingErrCard.col2EnText ?? '';
+                      const col2Ta = editingErrCard.col2TaText ?? '';
                       return {
                         ...editingErrCard,
-                        enKeywords: cleanEn.length > 0 ? cleanEn : [editingErrCard.name || ''],
-                        taKeywords: cleanTa.length > 0 ? cleanTa : [editingErrCard.nameTa || ''],
-                        excludeKeywords: cleanEx,
-                        enText: cleanEn[0] || editingErrCard.name || '',
-                        taText: cleanTa[0] || editingErrCard.nameTa || ''
+                        col1EnText: col1En,
+                        col1TaText: col1Ta,
+                        col2EnText: col2En,
+                        col2TaText: col2Ta,
+                        enKeywords: col1En ? [col1En] : (editingErrCard.enKeywords || [editingErrCard.name || '']),
+                        taKeywords: col1Ta ? [col1Ta] : (editingErrCard.taKeywords || [editingErrCard.nameTa || '']),
+                        enText: col1En || editingErrCard.enText || editingErrCard.name || '',
+                        taText: col1Ta || editingErrCard.taText || editingErrCard.nameTa || ''
                       };
                     }
                     return err;
