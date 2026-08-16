@@ -1,0 +1,1214 @@
+[
+  {
+    "ward": "001",
+    "zone": "01",
+    "buildingsCount": 4250,
+    "fileName": "ward_001.json"
+  },
+  {
+    "ward": "002",
+    "zone": "01",
+    "buildingsCount": 3590,
+    "fileName": "ward_002.json"
+  },
+  {
+    "ward": "003",
+    "zone": "01",
+    "buildingsCount": 3839,
+    "fileName": "ward_003.json"
+  },
+  {
+    "ward": "004",
+    "zone": "01",
+    "buildingsCount": 5090,
+    "fileName": "ward_004.json"
+  },
+  {
+    "ward": "005",
+    "zone": "01",
+    "buildingsCount": 3641,
+    "fileName": "ward_005.json"
+  },
+  {
+    "ward": "006",
+    "zone": "01",
+    "buildingsCount": 5410,
+    "fileName": "ward_006.json"
+  },
+  {
+    "ward": "007",
+    "zone": "01",
+    "buildingsCount": 7216,
+    "fileName": "ward_007.json"
+  },
+  {
+    "ward": "008",
+    "zone": "01",
+    "buildingsCount": 2439,
+    "fileName": "ward_008.json"
+  },
+  {
+    "ward": "009",
+    "zone": "01",
+    "buildingsCount": 2615,
+    "fileName": "ward_009.json"
+  },
+  {
+    "ward": "010",
+    "zone": "01",
+    "buildingsCount": 3010,
+    "fileName": "ward_010.json"
+  },
+  {
+    "ward": "011",
+    "zone": "01",
+    "buildingsCount": 2743,
+    "fileName": "ward_011.json"
+  },
+  {
+    "ward": "012",
+    "zone": "01",
+    "buildingsCount": 2757,
+    "fileName": "ward_012.json"
+  },
+  {
+    "ward": "013",
+    "zone": "01",
+    "buildingsCount": 2739,
+    "fileName": "ward_013.json"
+  },
+  {
+    "ward": "014",
+    "zone": "01",
+    "buildingsCount": 1728,
+    "fileName": "ward_014.json"
+  },
+  {
+    "ward": "015",
+    "zone": "02",
+    "buildingsCount": 4577,
+    "fileName": "ward_015.json"
+  },
+  {
+    "ward": "016",
+    "zone": "02",
+    "buildingsCount": 7076,
+    "fileName": "ward_016.json"
+  },
+  {
+    "ward": "017",
+    "zone": "02",
+    "buildingsCount": 3193,
+    "fileName": "ward_017.json"
+  },
+  {
+    "ward": "018",
+    "zone": "02",
+    "buildingsCount": 3078,
+    "fileName": "ward_018.json"
+  },
+  {
+    "ward": "019",
+    "zone": "02",
+    "buildingsCount": 10203,
+    "fileName": "ward_019.json"
+  },
+  {
+    "ward": "020",
+    "zone": "02",
+    "buildingsCount": 2220,
+    "fileName": "ward_020.json"
+  },
+  {
+    "ward": "021",
+    "zone": "02",
+    "buildingsCount": 1739,
+    "fileName": "ward_021.json"
+  },
+  {
+    "ward": "022",
+    "zone": "02",
+    "buildingsCount": 2764,
+    "fileName": "ward_022.json"
+  },
+  {
+    "ward": "023",
+    "zone": "03",
+    "buildingsCount": 8478,
+    "fileName": "ward_023.json"
+  },
+  {
+    "ward": "024",
+    "zone": "03",
+    "buildingsCount": 4399,
+    "fileName": "ward_024.json"
+  },
+  {
+    "ward": "025",
+    "zone": "03",
+    "buildingsCount": 5023,
+    "fileName": "ward_025.json"
+  },
+  {
+    "ward": "026",
+    "zone": "03",
+    "buildingsCount": 4802,
+    "fileName": "ward_026.json"
+  },
+  {
+    "ward": "027",
+    "zone": "03",
+    "buildingsCount": 6343,
+    "fileName": "ward_027.json"
+  },
+  {
+    "ward": "028",
+    "zone": "03",
+    "buildingsCount": 3684,
+    "fileName": "ward_028.json"
+  },
+  {
+    "ward": "029",
+    "zone": "03",
+    "buildingsCount": 6092,
+    "fileName": "ward_029.json"
+  },
+  {
+    "ward": "030",
+    "zone": "03",
+    "buildingsCount": 5783,
+    "fileName": "ward_030.json"
+  },
+  {
+    "ward": "031",
+    "zone": "03",
+    "buildingsCount": 4967,
+    "fileName": "ward_031.json"
+  },
+  {
+    "ward": "032",
+    "zone": "03",
+    "buildingsCount": 15149,
+    "fileName": "ward_032.json"
+  },
+  {
+    "ward": "033",
+    "zone": "03",
+    "buildingsCount": 3478,
+    "fileName": "ward_033.json"
+  },
+  {
+    "ward": "034",
+    "zone": "04",
+    "buildingsCount": 9526,
+    "fileName": "ward_034.json"
+  },
+  {
+    "ward": "035",
+    "zone": "04",
+    "buildingsCount": 10000,
+    "fileName": "ward_035.json"
+  },
+  {
+    "ward": "036",
+    "zone": "04",
+    "buildingsCount": 7450,
+    "fileName": "ward_036.json"
+  },
+  {
+    "ward": "037",
+    "zone": "04",
+    "buildingsCount": 7298,
+    "fileName": "ward_037.json"
+  },
+  {
+    "ward": "038",
+    "zone": "04",
+    "buildingsCount": 4926,
+    "fileName": "ward_038.json"
+  },
+  {
+    "ward": "039",
+    "zone": "04",
+    "buildingsCount": 3410,
+    "fileName": "ward_039.json"
+  },
+  {
+    "ward": "040",
+    "zone": "04",
+    "buildingsCount": 3516,
+    "fileName": "ward_040.json"
+  },
+  {
+    "ward": "041",
+    "zone": "04",
+    "buildingsCount": 5916,
+    "fileName": "ward_041.json"
+  },
+  {
+    "ward": "042",
+    "zone": "04",
+    "buildingsCount": 3572,
+    "fileName": "ward_042.json"
+  },
+  {
+    "ward": "043",
+    "zone": "04",
+    "buildingsCount": 4233,
+    "fileName": "ward_043.json"
+  },
+  {
+    "ward": "044",
+    "zone": "04",
+    "buildingsCount": 5720,
+    "fileName": "ward_044.json"
+  },
+  {
+    "ward": "045",
+    "zone": "04",
+    "buildingsCount": 6220,
+    "fileName": "ward_045.json"
+  },
+  {
+    "ward": "046",
+    "zone": "04",
+    "buildingsCount": 3679,
+    "fileName": "ward_046.json"
+  },
+  {
+    "ward": "047",
+    "zone": "04",
+    "buildingsCount": 4713,
+    "fileName": "ward_047.json"
+  },
+  {
+    "ward": "048",
+    "zone": "04",
+    "buildingsCount": 2752,
+    "fileName": "ward_048.json"
+  },
+  {
+    "ward": "049",
+    "zone": "05",
+    "buildingsCount": 3359,
+    "fileName": "ward_049.json"
+  },
+  {
+    "ward": "050",
+    "zone": "05",
+    "buildingsCount": 3522,
+    "fileName": "ward_050.json"
+  },
+  {
+    "ward": "051",
+    "zone": "05",
+    "buildingsCount": 2266,
+    "fileName": "ward_051.json"
+  },
+  {
+    "ward": "052",
+    "zone": "05",
+    "buildingsCount": 2795,
+    "fileName": "ward_052.json"
+  },
+  {
+    "ward": "053",
+    "zone": "05",
+    "buildingsCount": 2474,
+    "fileName": "ward_053.json"
+  },
+  {
+    "ward": "054",
+    "zone": "05",
+    "buildingsCount": 2787,
+    "fileName": "ward_054.json"
+  },
+  {
+    "ward": "055",
+    "zone": "05",
+    "buildingsCount": 2666,
+    "fileName": "ward_055.json"
+  },
+  {
+    "ward": "056",
+    "zone": "05",
+    "buildingsCount": 2497,
+    "fileName": "ward_056.json"
+  },
+  {
+    "ward": "057",
+    "zone": "05",
+    "buildingsCount": 3207,
+    "fileName": "ward_057.json"
+  },
+  {
+    "ward": "058",
+    "zone": "05",
+    "buildingsCount": 3501,
+    "fileName": "ward_058.json"
+  },
+  {
+    "ward": "059",
+    "zone": "05",
+    "buildingsCount": 3358,
+    "fileName": "ward_059.json"
+  },
+  {
+    "ward": "060",
+    "zone": "05",
+    "buildingsCount": 2528,
+    "fileName": "ward_060.json"
+  },
+  {
+    "ward": "061",
+    "zone": "05",
+    "buildingsCount": 2785,
+    "fileName": "ward_061.json"
+  },
+  {
+    "ward": "062",
+    "zone": "05",
+    "buildingsCount": 2774,
+    "fileName": "ward_062.json"
+  },
+  {
+    "ward": "063",
+    "zone": "05",
+    "buildingsCount": 3041,
+    "fileName": "ward_063.json"
+  },
+  {
+    "ward": "064",
+    "zone": "06",
+    "buildingsCount": 5954,
+    "fileName": "ward_064.json"
+  },
+  {
+    "ward": "065",
+    "zone": "06",
+    "buildingsCount": 8494,
+    "fileName": "ward_065.json"
+  },
+  {
+    "ward": "066",
+    "zone": "06",
+    "buildingsCount": 4989,
+    "fileName": "ward_066.json"
+  },
+  {
+    "ward": "067",
+    "zone": "06",
+    "buildingsCount": 5301,
+    "fileName": "ward_067.json"
+  },
+  {
+    "ward": "068",
+    "zone": "06",
+    "buildingsCount": 5316,
+    "fileName": "ward_068.json"
+  },
+  {
+    "ward": "069",
+    "zone": "06",
+    "buildingsCount": 4266,
+    "fileName": "ward_069.json"
+  },
+  {
+    "ward": "070",
+    "zone": "06",
+    "buildingsCount": 4974,
+    "fileName": "ward_070.json"
+  },
+  {
+    "ward": "071",
+    "zone": "06",
+    "buildingsCount": 4325,
+    "fileName": "ward_071.json"
+  },
+  {
+    "ward": "072",
+    "zone": "06",
+    "buildingsCount": 4833,
+    "fileName": "ward_072.json"
+  },
+  {
+    "ward": "073",
+    "zone": "06",
+    "buildingsCount": 3508,
+    "fileName": "ward_073.json"
+  },
+  {
+    "ward": "074",
+    "zone": "06",
+    "buildingsCount": 3239,
+    "fileName": "ward_074.json"
+  },
+  {
+    "ward": "075",
+    "zone": "06",
+    "buildingsCount": 3649,
+    "fileName": "ward_075.json"
+  },
+  {
+    "ward": "076",
+    "zone": "06",
+    "buildingsCount": 3400,
+    "fileName": "ward_076.json"
+  },
+  {
+    "ward": "077",
+    "zone": "06",
+    "buildingsCount": 2996,
+    "fileName": "ward_077.json"
+  },
+  {
+    "ward": "078",
+    "zone": "06",
+    "buildingsCount": 3194,
+    "fileName": "ward_078.json"
+  },
+  {
+    "ward": "079",
+    "zone": "07",
+    "buildingsCount": 8299,
+    "fileName": "ward_079.json"
+  },
+  {
+    "ward": "080",
+    "zone": "07",
+    "buildingsCount": 6378,
+    "fileName": "ward_080.json"
+  },
+  {
+    "ward": "081",
+    "zone": "07",
+    "buildingsCount": 5200,
+    "fileName": "ward_081.json"
+  },
+  {
+    "ward": "082",
+    "zone": "07",
+    "buildingsCount": 11100,
+    "fileName": "ward_082.json"
+  },
+  {
+    "ward": "083",
+    "zone": "07",
+    "buildingsCount": 10906,
+    "fileName": "ward_083.json"
+  },
+  {
+    "ward": "084",
+    "zone": "07",
+    "buildingsCount": 6903,
+    "fileName": "ward_084.json"
+  },
+  {
+    "ward": "085",
+    "zone": "07",
+    "buildingsCount": 5732,
+    "fileName": "ward_085.json"
+  },
+  {
+    "ward": "086",
+    "zone": "07",
+    "buildingsCount": 10872,
+    "fileName": "ward_086.json"
+  },
+  {
+    "ward": "087",
+    "zone": "07",
+    "buildingsCount": 3727,
+    "fileName": "ward_087.json"
+  },
+  {
+    "ward": "088",
+    "zone": "07",
+    "buildingsCount": 3719,
+    "fileName": "ward_088.json"
+  },
+  {
+    "ward": "089",
+    "zone": "07",
+    "buildingsCount": 3421,
+    "fileName": "ward_089.json"
+  },
+  {
+    "ward": "090",
+    "zone": "07",
+    "buildingsCount": 2839,
+    "fileName": "ward_090.json"
+  },
+  {
+    "ward": "091",
+    "zone": "07",
+    "buildingsCount": 6182,
+    "fileName": "ward_091.json"
+  },
+  {
+    "ward": "092",
+    "zone": "07",
+    "buildingsCount": 4403,
+    "fileName": "ward_092.json"
+  },
+  {
+    "ward": "093",
+    "zone": "07",
+    "buildingsCount": 5443,
+    "fileName": "ward_093.json"
+  },
+  {
+    "ward": "094",
+    "zone": "08",
+    "buildingsCount": 7420,
+    "fileName": "ward_094.json"
+  },
+  {
+    "ward": "095",
+    "zone": "08",
+    "buildingsCount": 6134,
+    "fileName": "ward_095.json"
+  },
+  {
+    "ward": "096",
+    "zone": "08",
+    "buildingsCount": 1577,
+    "fileName": "ward_096.json"
+  },
+  {
+    "ward": "097",
+    "zone": "08",
+    "buildingsCount": 4182,
+    "fileName": "ward_097.json"
+  },
+  {
+    "ward": "098",
+    "zone": "08",
+    "buildingsCount": 4497,
+    "fileName": "ward_098.json"
+  },
+  {
+    "ward": "099",
+    "zone": "08",
+    "buildingsCount": 4129,
+    "fileName": "ward_099.json"
+  },
+  {
+    "ward": "100",
+    "zone": "08",
+    "buildingsCount": 4637,
+    "fileName": "ward_100.json"
+  },
+  {
+    "ward": "101",
+    "zone": "08",
+    "buildingsCount": 4188,
+    "fileName": "ward_101.json"
+  },
+  {
+    "ward": "102",
+    "zone": "08",
+    "buildingsCount": 4052,
+    "fileName": "ward_102.json"
+  },
+  {
+    "ward": "103",
+    "zone": "08",
+    "buildingsCount": 4929,
+    "fileName": "ward_103.json"
+  },
+  {
+    "ward": "104",
+    "zone": "08",
+    "buildingsCount": 5102,
+    "fileName": "ward_104.json"
+  },
+  {
+    "ward": "105",
+    "zone": "08",
+    "buildingsCount": 6047,
+    "fileName": "ward_105.json"
+  },
+  {
+    "ward": "106",
+    "zone": "08",
+    "buildingsCount": 4944,
+    "fileName": "ward_106.json"
+  },
+  {
+    "ward": "107",
+    "zone": "08",
+    "buildingsCount": 4387,
+    "fileName": "ward_107.json"
+  },
+  {
+    "ward": "108",
+    "zone": "08",
+    "buildingsCount": 3010,
+    "fileName": "ward_108.json"
+  },
+  {
+    "ward": "109",
+    "zone": "09",
+    "buildingsCount": 4095,
+    "fileName": "ward_109.json"
+  },
+  {
+    "ward": "110",
+    "zone": "09",
+    "buildingsCount": 3229,
+    "fileName": "ward_110.json"
+  },
+  {
+    "ward": "111",
+    "zone": "09",
+    "buildingsCount": 2734,
+    "fileName": "ward_111.json"
+  },
+  {
+    "ward": "112",
+    "zone": "09",
+    "buildingsCount": 3899,
+    "fileName": "ward_112.json"
+  },
+  {
+    "ward": "113",
+    "zone": "09",
+    "buildingsCount": 3491,
+    "fileName": "ward_113.json"
+  },
+  {
+    "ward": "114",
+    "zone": "09",
+    "buildingsCount": 2920,
+    "fileName": "ward_114.json"
+  },
+  {
+    "ward": "115",
+    "zone": "09",
+    "buildingsCount": 3428,
+    "fileName": "ward_115.json"
+  },
+  {
+    "ward": "116",
+    "zone": "09",
+    "buildingsCount": 3404,
+    "fileName": "ward_116.json"
+  },
+  {
+    "ward": "117",
+    "zone": "09",
+    "buildingsCount": 1514,
+    "fileName": "ward_117.json"
+  },
+  {
+    "ward": "118",
+    "zone": "09",
+    "buildingsCount": 3580,
+    "fileName": "ward_118.json"
+  },
+  {
+    "ward": "119",
+    "zone": "09",
+    "buildingsCount": 3502,
+    "fileName": "ward_119.json"
+  },
+  {
+    "ward": "120",
+    "zone": "09",
+    "buildingsCount": 2868,
+    "fileName": "ward_120.json"
+  },
+  {
+    "ward": "121",
+    "zone": "09",
+    "buildingsCount": 2279,
+    "fileName": "ward_121.json"
+  },
+  {
+    "ward": "122",
+    "zone": "09",
+    "buildingsCount": 2064,
+    "fileName": "ward_122.json"
+  },
+  {
+    "ward": "123",
+    "zone": "09",
+    "buildingsCount": 4344,
+    "fileName": "ward_123.json"
+  },
+  {
+    "ward": "124",
+    "zone": "09",
+    "buildingsCount": 4164,
+    "fileName": "ward_124.json"
+  },
+  {
+    "ward": "125",
+    "zone": "09",
+    "buildingsCount": 3388,
+    "fileName": "ward_125.json"
+  },
+  {
+    "ward": "126",
+    "zone": "09",
+    "buildingsCount": 2395,
+    "fileName": "ward_126.json"
+  },
+  {
+    "ward": "127",
+    "zone": "10",
+    "buildingsCount": 7352,
+    "fileName": "ward_127.json"
+  },
+  {
+    "ward": "128",
+    "zone": "10",
+    "buildingsCount": 5995,
+    "fileName": "ward_128.json"
+  },
+  {
+    "ward": "129",
+    "zone": "10",
+    "buildingsCount": 4882,
+    "fileName": "ward_129.json"
+  },
+  {
+    "ward": "130",
+    "zone": "10",
+    "buildingsCount": 4217,
+    "fileName": "ward_130.json"
+  },
+  {
+    "ward": "131",
+    "zone": "10",
+    "buildingsCount": 3375,
+    "fileName": "ward_131.json"
+  },
+  {
+    "ward": "132",
+    "zone": "10",
+    "buildingsCount": 3121,
+    "fileName": "ward_132.json"
+  },
+  {
+    "ward": "133",
+    "zone": "10",
+    "buildingsCount": 2929,
+    "fileName": "ward_133.json"
+  },
+  {
+    "ward": "134",
+    "zone": "10",
+    "buildingsCount": 2851,
+    "fileName": "ward_134.json"
+  },
+  {
+    "ward": "135",
+    "zone": "10",
+    "buildingsCount": 3823,
+    "fileName": "ward_135.json"
+  },
+  {
+    "ward": "136",
+    "zone": "10",
+    "buildingsCount": 2932,
+    "fileName": "ward_136.json"
+  },
+  {
+    "ward": "137",
+    "zone": "10",
+    "buildingsCount": 7212,
+    "fileName": "ward_137.json"
+  },
+  {
+    "ward": "138",
+    "zone": "10",
+    "buildingsCount": 4921,
+    "fileName": "ward_138.json"
+  },
+  {
+    "ward": "139",
+    "zone": "10",
+    "buildingsCount": 3520,
+    "fileName": "ward_139.json"
+  },
+  {
+    "ward": "140",
+    "zone": "10",
+    "buildingsCount": 3468,
+    "fileName": "ward_140.json"
+  },
+  {
+    "ward": "141",
+    "zone": "10",
+    "buildingsCount": 2629,
+    "fileName": "ward_141.json"
+  },
+  {
+    "ward": "142",
+    "zone": "10",
+    "buildingsCount": 4398,
+    "fileName": "ward_142.json"
+  },
+  {
+    "ward": "143",
+    "zone": "11",
+    "buildingsCount": 4941,
+    "fileName": "ward_143.json"
+  },
+  {
+    "ward": "144",
+    "zone": "11",
+    "buildingsCount": 5544,
+    "fileName": "ward_144.json"
+  },
+  {
+    "ward": "145",
+    "zone": "11",
+    "buildingsCount": 4746,
+    "fileName": "ward_145.json"
+  },
+  {
+    "ward": "146",
+    "zone": "11",
+    "buildingsCount": 7206,
+    "fileName": "ward_146.json"
+  },
+  {
+    "ward": "147",
+    "zone": "11",
+    "buildingsCount": 6417,
+    "fileName": "ward_147.json"
+  },
+  {
+    "ward": "148",
+    "zone": "11",
+    "buildingsCount": 5678,
+    "fileName": "ward_148.json"
+  },
+  {
+    "ward": "149",
+    "zone": "11",
+    "buildingsCount": 4738,
+    "fileName": "ward_149.json"
+  },
+  {
+    "ward": "150",
+    "zone": "11",
+    "buildingsCount": 6602,
+    "fileName": "ward_150.json"
+  },
+  {
+    "ward": "151",
+    "zone": "11",
+    "buildingsCount": 3807,
+    "fileName": "ward_151.json"
+  },
+  {
+    "ward": "152",
+    "zone": "11",
+    "buildingsCount": 4644,
+    "fileName": "ward_152.json"
+  },
+  {
+    "ward": "153",
+    "zone": "11",
+    "buildingsCount": 5557,
+    "fileName": "ward_153.json"
+  },
+  {
+    "ward": "154",
+    "zone": "11",
+    "buildingsCount": 3559,
+    "fileName": "ward_154.json"
+  },
+  {
+    "ward": "155",
+    "zone": "11",
+    "buildingsCount": 4802,
+    "fileName": "ward_155.json"
+  },
+  {
+    "ward": "156",
+    "zone": "12",
+    "buildingsCount": 6998,
+    "fileName": "ward_156.json"
+  },
+  {
+    "ward": "157",
+    "zone": "12",
+    "buildingsCount": 3581,
+    "fileName": "ward_157.json"
+  },
+  {
+    "ward": "158",
+    "zone": "12",
+    "buildingsCount": 2029,
+    "fileName": "ward_158.json"
+  },
+  {
+    "ward": "159",
+    "zone": "12",
+    "buildingsCount": 494,
+    "fileName": "ward_159.json"
+  },
+  {
+    "ward": "160",
+    "zone": "12",
+    "buildingsCount": 1716,
+    "fileName": "ward_160.json"
+  },
+  {
+    "ward": "161",
+    "zone": "12",
+    "buildingsCount": 2049,
+    "fileName": "ward_161.json"
+  },
+  {
+    "ward": "162",
+    "zone": "12",
+    "buildingsCount": 2572,
+    "fileName": "ward_162.json"
+  },
+  {
+    "ward": "163",
+    "zone": "12",
+    "buildingsCount": 2767,
+    "fileName": "ward_163.json"
+  },
+  {
+    "ward": "164",
+    "zone": "12",
+    "buildingsCount": 2086,
+    "fileName": "ward_164.json"
+  },
+  {
+    "ward": "165",
+    "zone": "12",
+    "buildingsCount": 2961,
+    "fileName": "ward_165.json"
+  },
+  {
+    "ward": "166",
+    "zone": "12",
+    "buildingsCount": 3049,
+    "fileName": "ward_166.json"
+  },
+  {
+    "ward": "167",
+    "zone": "12",
+    "buildingsCount": 2811,
+    "fileName": "ward_167.json"
+  },
+  {
+    "ward": "168",
+    "zone": "13",
+    "buildingsCount": 5202,
+    "fileName": "ward_168.json"
+  },
+  {
+    "ward": "169",
+    "zone": "13",
+    "buildingsCount": 3753,
+    "fileName": "ward_169.json"
+  },
+  {
+    "ward": "170",
+    "zone": "13",
+    "buildingsCount": 3776,
+    "fileName": "ward_170.json"
+  },
+  {
+    "ward": "171",
+    "zone": "13",
+    "buildingsCount": 4765,
+    "fileName": "ward_171.json"
+  },
+  {
+    "ward": "172",
+    "zone": "13",
+    "buildingsCount": 4135,
+    "fileName": "ward_172.json"
+  },
+  {
+    "ward": "173",
+    "zone": "13",
+    "buildingsCount": 5206,
+    "fileName": "ward_173.json"
+  },
+  {
+    "ward": "174",
+    "zone": "13",
+    "buildingsCount": 3896,
+    "fileName": "ward_174.json"
+  },
+  {
+    "ward": "175",
+    "zone": "13",
+    "buildingsCount": 7310,
+    "fileName": "ward_175.json"
+  },
+  {
+    "ward": "176",
+    "zone": "13",
+    "buildingsCount": 6423,
+    "fileName": "ward_176.json"
+  },
+  {
+    "ward": "177",
+    "zone": "13",
+    "buildingsCount": 7075,
+    "fileName": "ward_177.json"
+  },
+  {
+    "ward": "178",
+    "zone": "13",
+    "buildingsCount": 5570,
+    "fileName": "ward_178.json"
+  },
+  {
+    "ward": "179",
+    "zone": "13",
+    "buildingsCount": 4406,
+    "fileName": "ward_179.json"
+  },
+  {
+    "ward": "180",
+    "zone": "13",
+    "buildingsCount": 4942,
+    "fileName": "ward_180.json"
+  },
+  {
+    "ward": "181",
+    "zone": "14",
+    "buildingsCount": 4341,
+    "fileName": "ward_181.json"
+  },
+  {
+    "ward": "182",
+    "zone": "14",
+    "buildingsCount": 5430,
+    "fileName": "ward_182.json"
+  },
+  {
+    "ward": "183",
+    "zone": "14",
+    "buildingsCount": 5159,
+    "fileName": "ward_183.json"
+  },
+  {
+    "ward": "184",
+    "zone": "14",
+    "buildingsCount": 12807,
+    "fileName": "ward_184.json"
+  },
+  {
+    "ward": "185",
+    "zone": "14",
+    "buildingsCount": 3418,
+    "fileName": "ward_185.json"
+  },
+  {
+    "ward": "186",
+    "zone": "14",
+    "buildingsCount": 7151,
+    "fileName": "ward_186.json"
+  },
+  {
+    "ward": "187",
+    "zone": "14",
+    "buildingsCount": 2697,
+    "fileName": "ward_187.json"
+  },
+  {
+    "ward": "188",
+    "zone": "14",
+    "buildingsCount": 10433,
+    "fileName": "ward_188.json"
+  },
+  {
+    "ward": "189",
+    "zone": "14",
+    "buildingsCount": 8173,
+    "fileName": "ward_189.json"
+  },
+  {
+    "ward": "190",
+    "zone": "14",
+    "buildingsCount": 8015,
+    "fileName": "ward_190.json"
+  },
+  {
+    "ward": "191",
+    "zone": "14",
+    "buildingsCount": 6149,
+    "fileName": "ward_191.json"
+  },
+  {
+    "ward": "192",
+    "zone": "15",
+    "buildingsCount": 6598,
+    "fileName": "ward_192.json"
+  },
+  {
+    "ward": "193",
+    "zone": "15",
+    "buildingsCount": 4517,
+    "fileName": "ward_193.json"
+  },
+  {
+    "ward": "194",
+    "zone": "15",
+    "buildingsCount": 11682,
+    "fileName": "ward_194.json"
+  },
+  {
+    "ward": "195",
+    "zone": "15",
+    "buildingsCount": 5287,
+    "fileName": "ward_195.json"
+  },
+  {
+    "ward": "196",
+    "zone": "15",
+    "buildingsCount": 2764,
+    "fileName": "ward_196.json"
+  },
+  {
+    "ward": "197",
+    "zone": "15",
+    "buildingsCount": 7224,
+    "fileName": "ward_197.json"
+  },
+  {
+    "ward": "198",
+    "zone": "15",
+    "buildingsCount": 4577,
+    "fileName": "ward_198.json"
+  },
+  {
+    "ward": "199",
+    "zone": "15",
+    "buildingsCount": 6492,
+    "fileName": "ward_199.json"
+  },
+  {
+    "ward": "200",
+    "zone": "15",
+    "buildingsCount": 3657,
+    "fileName": "ward_200.json"
+  },
+  {
+    "ward": "76186",
+    "zone": "13",
+    "buildingsCount": 1,
+    "fileName": "ward_76186.json"
+  },
+  {
+    "ward": "097",
+    "zone": "15",
+    "buildingsCount": 1,
+    "fileName": "ward_097.json"
+  }
+]

@@ -157,7 +157,18 @@ export default function CensusWorkTab({ creds }) {
   const landscapeMapContainerRef = useRef(null);
   const landscapeLeafletRef = useRef(null);
   const gdbGeoJsonLayerRef = useRef(null);
+  const gccZonesLayerRef = useRef(null);
+  const gccWardsLayerRef = useRef(null);
+  const gccOuterLayerRef = useRef(null);
+  const gccBuildingsLayerRef = useRef(null);
+  const loadedBuildingWards = useRef(new Set());
+  const gccWardsDataRef = useRef([]);
+
   const [showGdbPolygons, setShowGdbPolygons] = useState(true);
+  const [showGccZones, setShowGccZones] = useState(false);
+  const [showGccWards, setShowGccWards] = useState(false);
+  const [showGccOuter, setShowGccOuter] = useState(false);
+  const [showGccBuildings, setShowGccBuildings] = useState(false);
   const [gdbSummaryData, setGdbSummaryData] = useState([]);
   const [showBlockPrintModal, setShowBlockPrintModal] = useState(false);
   const [blockToPrint, setBlockToPrint] = useState(null);
@@ -265,6 +276,203 @@ export default function CensusWorkTab({ creds }) {
       })
       .sort((a, b) => parseInt(a.blockNo, 10) - parseInt(b.blockNo, 10));
   }, [gdbSummaryData, selectedFilterZone, selectedFilterWard]);
+
+  function handleSelectZoneFilter(zoneVal) {
+    setSelectedFilterZone(zoneVal);
+    setSelectedFilterWard('');
+    setSelectedFilterBlock('');
+
+    if (zoneVal && gccZonesLayerRef.current && hlbLeafletRef.current) {
+      gccZonesLayerRef.current.eachLayer(layer => {
+        const pZone = String(layer.feature?.properties?.Zone || '');
+        if (pZone === String(parseInt(zoneVal, 10)) || pZone === zoneVal) {
+          try {
+            hlbLeafletRef.current.fitBounds(layer.getBounds(), { padding: [30, 30] });
+            layer.openPopup();
+          } catch(e){}
+        }
+      });
+    }
+  }
+
+  async function loadBuildingsForWard(wardVal) {
+    if (!wardVal || !hlbLeafletRef.current) return;
+    const cleanW = String(parseInt(wardVal, 10)).padStart(3, '0');
+    if (loadedBuildingWards.current.has(cleanW)) return;
+    loadedBuildingWards.current.add(cleanW);
+
+    try {
+      const res = await fetch(`/gcc_buildings/ward_${cleanW}.json`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !data.features || data.features.length === 0) return;
+
+      if (!gccBuildingsLayerRef.current) {
+        gccBuildingsLayerRef.current = L.layerGroup();
+        if (showGccBuildings) {
+          gccBuildingsLayerRef.current.addTo(hlbLeafletRef.current);
+        }
+      }
+
+      const wardBuildingLayer = L.geoJSON(data, {
+        style: (feature) => {
+          const usage = String(feature.properties?.building_used_as || '').toLowerCase();
+          const isCommercial = usage.includes('commercial') || usage.includes('shop');
+          const isApt = String(feature.properties?.build_type || '').toLowerCase().includes('apartment') || usage.includes('flat');
+          
+          return {
+            color: isCommercial ? '#f59e0b' : isApt ? '#8b5cf6' : '#2563eb',
+            weight: 1.8,
+            opacity: 1,
+            fillColor: isCommercial ? '#fbbf24' : isApt ? '#c084fc' : '#60a5fa',
+            fillOpacity: 0.5
+          };
+        },
+        onEachFeature: (feature, layer) => {
+          const props = feature.properties || {};
+          const gisId = props.gcc_gis_id || 'Building';
+          const doorNo = props.door_new_no || props.door_old_no || '-';
+          const road = props.road_name || 'Road';
+          const usage = props.building_used_as || 'Residential';
+          const bType = props.build_type || 'Independent Building';
+          const area = props.drone_area_in_sqft ? `${Math.round(props.drone_area_in_sqft)} sq.ft` : '-';
+          const floors = props.gcc_max_floor || '-';
+          const locality = props.area_name || props.locality || 'Chennai';
+
+          layer.bindPopup(`
+            <div style="font-family:sans-serif; padding:6px; min-width:210px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #2563eb; padding-bottom:4px; margin-bottom:6px;">
+                <h4 style="margin:0; color:#2563eb; font-size:0.95rem; font-weight:800;">🏠 Door No: ${doorNo}</h4>
+                <span style="background:#dbeafe; color:#1e40af; font-size:0.75rem; font-weight:700; padding:2px 6px; border-radius:4px;">${usage}</span>
+              </div>
+              <p style="margin:3px 0; font-size:0.8rem; color:#334155;"><b>GIS ID:</b> ${gisId}</p>
+              <p style="margin:3px 0; font-size:0.8rem; color:#334155;"><b>Street:</b> ${road}</p>
+              <p style="margin:3px 0; font-size:0.8rem; color:#334155;"><b>Locality:</b> ${locality}</p>
+              <p style="margin:3px 0; font-size:0.8rem; color:#334155;"><b>Type:</b> ${bType}</p>
+              <p style="margin:3px 0; font-size:0.8rem; color:#0f766e;"><b>📐 Drone Roof Area:</b> ${area}</p>
+              <p style="margin:3px 0; font-size:0.8rem; color:#334155;"><b>Floors:</b> ${floors}</p>
+            </div>
+          `);
+
+          layer.on({
+            mouseover: (e) => {
+              e.target.setStyle({ weight: 3.5, color: '#ef4444', fillColor: '#f87171', fillOpacity: 0.85 });
+            },
+            mouseout: (e) => {
+              wardBuildingLayer.resetStyle(e.target);
+            }
+          });
+        }
+      });
+
+      gccBuildingsLayerRef.current.addLayer(wardBuildingLayer);
+    } catch (e) {
+      console.error('Error loading ward buildings:', e);
+    }
+  }
+
+  function loadBuildingsInViewport() {
+    if (!hlbLeafletRef.current) return;
+    const mapBounds = hlbLeafletRef.current.getBounds();
+    if (gccWardsDataRef.current && gccWardsDataRef.current.length > 0) {
+      const visibleWards = gccWardsDataRef.current.filter(w => {
+        return w.bounds && typeof w.bounds.intersects === 'function' && mapBounds.intersects(w.bounds);
+      });
+      if (visibleWards.length > 0) {
+        visibleWards.forEach(w => loadBuildingsForWard(w.wardNo));
+        return;
+      }
+    }
+    
+    // Fallback: match based on center coordinate
+    const c = hlbLeafletRef.current.getCenter();
+    if (gccWardsDataRef.current && gccWardsDataRef.current.length > 0) {
+      const closest = [...gccWardsDataRef.current].sort((a, b) => {
+        const distA = Math.hypot(a.lat - c.lat, a.lng - c.lng);
+        const distB = Math.hypot(b.lat - c.lat, b.lng - c.lng);
+        return distA - distB;
+      }).slice(0, 4);
+      closest.forEach(w => loadBuildingsForWard(w.wardNo));
+    } else {
+      // Default initial wards around central Chennai / Maduravoyal
+      ['144', '145', '148', '152', '091'].forEach(w => loadBuildingsForWard(w));
+    }
+  }
+
+  function toggleGccBuildings() {
+    if (!hlbLeafletRef.current) return;
+    if (!gccBuildingsLayerRef.current) {
+      gccBuildingsLayerRef.current = L.layerGroup().addTo(hlbLeafletRef.current);
+    }
+
+    if (showGccBuildings) {
+      hlbLeafletRef.current.removeLayer(gccBuildingsLayerRef.current);
+      setShowGccBuildings(false);
+    } else {
+      gccBuildingsLayerRef.current.addTo(hlbLeafletRef.current);
+      setShowGccBuildings(true);
+      if (selectedFilterWard) {
+        loadBuildingsForWard(selectedFilterWard);
+      } else {
+        loadBuildingsInViewport();
+      }
+    }
+  }
+
+  function handleSelectWardFilter(wardVal) {
+    setSelectedFilterWard(wardVal);
+    setSelectedFilterBlock('');
+
+    if (wardVal) {
+      if (showGccBuildings) {
+        loadBuildingsForWard(wardVal);
+      }
+      if (gccWardsLayerRef.current && hlbLeafletRef.current) {
+        gccWardsLayerRef.current.eachLayer(layer => {
+          const pWard = String(layer.feature?.properties?.Ward || '');
+          if (pWard === String(parseInt(wardVal, 10)) || pWard === wardVal) {
+            try {
+              hlbLeafletRef.current.fitBounds(layer.getBounds(), { padding: [30, 30] });
+              layer.openPopup();
+            } catch(e){}
+          }
+        });
+      }
+    }
+  }
+
+  function toggleGccZones() {
+    if (gccZonesLayerRef.current && hlbLeafletRef.current) {
+      if (showGccZones) {
+        hlbLeafletRef.current.removeLayer(gccZonesLayerRef.current);
+      } else {
+        gccZonesLayerRef.current.addTo(hlbLeafletRef.current);
+      }
+      setShowGccZones(!showGccZones);
+    }
+  }
+
+  function toggleGccWards() {
+    if (gccWardsLayerRef.current && hlbLeafletRef.current) {
+      if (showGccWards) {
+        hlbLeafletRef.current.removeLayer(gccWardsLayerRef.current);
+      } else {
+        gccWardsLayerRef.current.addTo(hlbLeafletRef.current);
+      }
+      setShowGccWards(!showGccWards);
+    }
+  }
+
+  function toggleGccOuter() {
+    if (gccOuterLayerRef.current && hlbLeafletRef.current) {
+      if (showGccOuter) {
+        hlbLeafletRef.current.removeLayer(gccOuterLayerRef.current);
+      } else {
+        gccOuterLayerRef.current.addTo(hlbLeafletRef.current);
+      }
+      setShowGccOuter(!showGccOuter);
+    }
+  }
 
   function handleSelectBlockFromFilter(uniqueKey) {
     setSelectedFilterBlock(uniqueKey);
@@ -527,7 +735,7 @@ export default function CensusWorkTab({ creds }) {
 
       hlbLeafletRef.current = map;
 
-      // Automatically load official HLB_Polys.gdb GeoJSON (9,269 Census Block Polygons)
+      // 1. Automatically load official HLB_Polys.gdb GeoJSON (9,269 Census Block Polygons)
       fetch('/hlb_polys.json')
         .then(res => res.json())
         .then(data => {
@@ -573,11 +781,182 @@ export default function CensusWorkTab({ creds }) {
                 }
               });
             }
-          }).addTo(map);
+          });
 
           gdbGeoJsonLayerRef.current = geoLayer;
+          if (showGdbPolygons) {
+            geoLayer.addTo(hlbLeafletRef.current);
+          }
         })
         .catch(err => console.error('Error loading HLB GDB GeoJSON:', err));
+
+      // 2. Automatically load GCC Zones (15 Zones)
+      fetch('/gcc_boundaries/gcc_zones.json')
+        .then(res => res.json())
+        .then(data => {
+          if (!hlbLeafletRef.current) return;
+          const zonesLayer = L.geoJSON(data, {
+            style: () => ({
+              color: '#d97706', // Amber border
+              weight: 3,
+              opacity: 0.9,
+              fillColor: '#f59e0b',
+              fillOpacity: 0.08
+            }),
+            onEachFeature: (feature, layer) => {
+              const props = feature.properties || {};
+              const zoneNo = props.Zone || props.zone || '-';
+
+              // Centered Permanent Zone Badge in the middle of polygon
+              layer.bindTooltip(`
+                <div class="gccZoneCenteredBadge">
+                  <span class="gccBadgeTitle">Zone ${zoneNo}</span>
+                </div>
+              `, {
+                permanent: true,
+                direction: 'center',
+                className: 'gccZoneTooltipWrapper'
+              });
+
+              layer.bindPopup(`
+                <div style="font-family:sans-serif; padding:6px; min-width:180px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #d97706; padding-bottom:4px; margin-bottom:6px;">
+                    <h4 style="margin:0; color:#d97706; font-size:0.95rem; font-weight:800;">🏢 GCC Zone ${zoneNo}</h4>
+                    <span style="background:#fef3c7; color:#92400e; font-size:0.75rem; font-weight:700; padding:2px 6px; border-radius:4px;">Zone ${zoneNo}</span>
+                  </div>
+                  <p style="margin:3px 0; font-size:0.8rem; color:#3c4043;"><b>Authority:</b> Greater Chennai Corporation</p>
+                  <p style="margin:3px 0; font-size:0.8rem; color:#3c4043;"><b>Zone No:</b> Zone ${zoneNo}</p>
+                </div>
+              `);
+              layer.on({
+                mouseover: (e) => {
+                  e.target.setStyle({ weight: 4, color: '#b45309', fillOpacity: 0.22 });
+                },
+                mouseout: (e) => {
+                  zonesLayer.resetStyle(e.target);
+                }
+              });
+            }
+          });
+          gccZonesLayerRef.current = zonesLayer;
+          if (showGccZones) {
+            zonesLayer.addTo(hlbLeafletRef.current);
+          }
+        })
+        .catch(err => console.error('Error loading GCC Zones GeoJSON:', err));
+
+      // 3. Automatically load GCC Wards (200 Wards + AC Details)
+      fetch('/gcc_boundaries/gcc_wards.json')
+        .then(res => res.json())
+        .then(data => {
+          if (!hlbLeafletRef.current) return;
+          const wardList = [];
+          const wardsLayer = L.geoJSON(data, {
+            style: () => ({
+              color: '#0891b2', // Cyan border
+              weight: 2,
+              opacity: 0.85,
+              fillColor: '#06b6d4',
+              fillOpacity: 0.08
+            }),
+            onEachFeature: (feature, layer) => {
+              const props = feature.properties || {};
+              const wardNo = props.Ward || props.ward || '-';
+              const zoneNo = props.Zone || props.zone || '-';
+              const acName = props.AC_Name || props.ac_name || 'Chennai';
+              const acNo = props.AC_No || props.ac_no || '-';
+
+              const b = layer.getBounds();
+              const center = b.getCenter();
+              wardList.push({
+                wardNo: String(wardNo),
+                zoneNo: String(zoneNo),
+                acName: String(acName),
+                acNo: String(acNo),
+                lat: center.lat,
+                lng: center.lng,
+                bounds: b
+              });
+
+              // Centered Permanent Ward & AC Badge in the middle of polygon
+              layer.bindTooltip(`
+                <div class="gccWardCenteredBadge">
+                  <span class="gccWardBadgeNo">Ward ${wardNo}</span>
+                  <span class="gccWardBadgeAc">${acName}</span>
+                </div>
+              `, {
+                permanent: true,
+                direction: 'center',
+                className: 'gccWardTooltipWrapper'
+              });
+
+              layer.bindPopup(`
+                <div style="font-family:sans-serif; padding:6px; min-width:210px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #0891b2; padding-bottom:4px; margin-bottom:6px;">
+                    <h4 style="margin:0; color:#0891b2; font-size:0.95rem; font-weight:800;">🏛️ GCC Ward ${wardNo}</h4>
+                    <span style="background:#cffafe; color:#155e75; font-size:0.75rem; font-weight:700; padding:2px 6px; border-radius:4px;">Zone ${zoneNo}</span>
+                  </div>
+                  <p style="margin:3px 0; font-size:0.8rem; color:#3c4043;"><b>Ward Number:</b> Ward ${wardNo}</p>
+                  <p style="margin:3px 0; font-size:0.8rem; color:#3c4043;"><b>Zone:</b> Zone ${zoneNo}</p>
+                  <p style="margin:4px 0 2px 0; font-size:0.8rem; color:#0f766e;"><b>Assembly Constituency:</b><br/>${acName} (AC #${acNo})</p>
+                </div>
+              `);
+              layer.on({
+                mouseover: (e) => {
+                  e.target.setStyle({ weight: 3.5, color: '#0e7490', fillOpacity: 0.25 });
+                },
+                mouseout: (e) => {
+                  wardsLayer.resetStyle(e.target);
+                }
+              });
+            }
+          });
+          gccWardsLayerRef.current = wardsLayer;
+          gccWardsDataRef.current = wardList;
+          if (showGccWards) {
+            wardsLayer.addTo(hlbLeafletRef.current);
+          }
+          if (showGccBuildings) {
+            loadBuildingsInViewport();
+          }
+        })
+        .catch(err => console.error('Error loading GCC Wards GeoJSON:', err));
+
+      // Auto-load visible ward buildings on map pan/zoom
+      map.on('moveend', () => {
+        if (showGccBuildings) {
+          loadBuildingsInViewport();
+        }
+      });
+
+      // 4. Automatically load GCC Outer Boundary
+      fetch('/gcc_boundaries/gcc_outer.json')
+        .then(res => res.json())
+        .then(data => {
+          if (!hlbLeafletRef.current) return;
+          const outerLayer = L.geoJSON(data, {
+            style: () => ({
+              color: '#dc2626',
+              weight: 3.5,
+              dashArray: '6, 6',
+              opacity: 0.9,
+              fillOpacity: 0
+            }),
+            onEachFeature: (feature, layer) => {
+              layer.bindPopup(`
+                <div style="font-family:sans-serif; padding:4px;">
+                  <h4 style="margin:0; color:#dc2626; font-size:0.92rem; font-weight:700;">🏛️ Greater Chennai Corporation (GCC)</h4>
+                  <p style="margin:2px 0; font-size:0.78rem; color:#475569;">Official 2023 Outer City Boundary</p>
+                </div>
+              `);
+            }
+          });
+          gccOuterLayerRef.current = outerLayer;
+          if (showGccOuter) {
+            outerLayer.addTo(hlbLeafletRef.current);
+          }
+        })
+        .catch(err => console.error('Error loading GCC Outer GeoJSON:', err));
 
       setTimeout(() => {
         if (hlbLeafletRef.current) {
@@ -612,7 +991,7 @@ export default function CensusWorkTab({ creds }) {
           wNo.endsWith(cleanNum) ||
           (cleanNum.length >= 2 && (bNo.includes(cleanNum) || wNo.includes(cleanNum) || landmark.includes(cleanNum)))
         );
-      }).slice(0, 6);
+      }).slice(0, 4);
 
       matchedBlocks.forEach(b => {
         results.push({
@@ -623,6 +1002,36 @@ export default function CensusWorkTab({ creds }) {
           isGdbBlock: true,
           blockId: b.blockNo,
           wardNo: b.wardNo
+        });
+      });
+    }
+
+    // Step 1.5: Search Official GCC Wards (200 Wards) & Assembly Constituencies (e.g. Saidapet, Velachery, Mylapore)
+    if (gccWardsDataRef.current && gccWardsDataRef.current.length > 0) {
+      const cleanNum = q.replace(/^(ward|zone|ac|hlb|\s)+/gi, '').trim();
+      const matchedWards = gccWardsDataRef.current.filter(w => {
+        const wNo = w.wardNo.toLowerCase();
+        const zNo = w.zoneNo.toLowerCase();
+        const ac = w.acName.toLowerCase();
+        return (
+          wNo === cleanNum ||
+          ac.includes(q) ||
+          (cleanNum.length >= 2 && wNo.includes(cleanNum)) ||
+          `ward ${wNo}`.includes(q) ||
+          `zone ${zNo}` === q
+        );
+      }).slice(0, 4);
+
+      matchedWards.forEach(w => {
+        results.push({
+          title: `🏛️ GCC Ward #${w.wardNo} - ${w.acName}`,
+          subtitle: `Zone ${w.zoneNo} | Assembly Constituency: ${w.acName} (AC #${w.acNo})`,
+          lat: w.lat,
+          lng: w.lng,
+          bounds: w.bounds,
+          isGccWard: true,
+          wardNo: w.wardNo,
+          zoneNo: w.zoneNo
         });
       });
     }
@@ -716,7 +1125,11 @@ export default function CensusWorkTab({ creds }) {
     });
 
     if (hlbLeafletRef.current) {
-      hlbLeafletRef.current.flyTo([targetLat, targetLng], 17, { duration: 1.2 });
+      if (item.bounds && typeof item.bounds.isValid === 'function' && item.bounds.isValid()) {
+        hlbLeafletRef.current.fitBounds(item.bounds, { padding: [40, 40], maxZoom: 17 });
+      } else {
+        hlbLeafletRef.current.flyTo([targetLat, targetLng], 17, { duration: 1.2 });
+      }
       
       // Google Red Pin Marker
       const googlePinIcon = L.divIcon({
@@ -1398,7 +1811,7 @@ export default function CensusWorkTab({ creds }) {
 
           {/* ---- FULL TOOLBAR: Basemap + Search + Filters (single row) ---- */}
           <div className="hlbBasemapBar">
-            {/* Left: Polygon toggle + basemap buttons */}
+            {/* Left: Layer Toggles + basemap buttons */}
             <button 
               className={`hlbBasemapBtn ${showGdbPolygons ? 'activePoly' : ''}`}
               onClick={() => {
@@ -1411,8 +1824,37 @@ export default function CensusWorkTab({ creds }) {
                   setShowGdbPolygons(!showGdbPolygons);
                 }
               }}
+              title="Toggle Census Block Boundaries"
             >
-              📍 HLB Polygons (9,269)
+              📍 HLB Blocks (9,269)
+            </button>
+            <button 
+              className={`hlbBasemapBtn ${showGccZones ? 'activeZone' : ''}`}
+              onClick={toggleGccZones}
+              title="Toggle Official GCC Zones (1-15)"
+            >
+              🏢 GCC Zones (1-15)
+            </button>
+            <button 
+              className={`hlbBasemapBtn ${showGccWards ? 'activeWard' : ''}`}
+              onClick={toggleGccWards}
+              title="Toggle Official GCC Wards (200 Wards + AC details)"
+            >
+              🏛️ GCC Wards (200)
+            </button>
+            <button 
+              className={`hlbBasemapBtn ${showGccOuter ? 'activeOuter' : ''}`}
+              onClick={toggleGccOuter}
+              title="Toggle GCC Outer City Boundary"
+            >
+              🗺️ GCC Border
+            </button>
+            <button 
+              className={`hlbBasemapBtn ${showGccBuildings ? 'activeBuilding' : ''}`}
+              onClick={toggleGccBuildings}
+              title="Toggle Drone Survey Building Roof Footprints (9.32 Lakh Buildings)"
+            >
+              🏠 Drone Buildings
             </button>
             <div className="hlbBasemapDivider" />
             {[
@@ -1441,7 +1883,7 @@ export default function CensusWorkTab({ creds }) {
                 <input
                   type="text"
                   className="hlbBarSearchInput"
-                  placeholder="Search Ward, Block or Places..."
+                  placeholder="Search Ward, AC, Block or Places..."
                   value={locationQuery}
                   onChange={(e) => setLocationQuery(e.target.value)}
                 />
@@ -1453,10 +1895,10 @@ export default function CensusWorkTab({ creds }) {
                   {isSearching ? <RefreshCw size={12} className="spin" /> : 'Go'}
                 </button>
                 {suggestions.length > 0 && (
-                  <div className="googleSearchSuggestionsDropdown" style={{ top: '38px', left: 0, minWidth: '300px' }}>
+                  <div className="googleSearchSuggestionsDropdown" style={{ top: '38px', left: 0, minWidth: '320px' }}>
                     {suggestions.map((item, idx) => (
                       <div key={idx} className="googleSearchSuggestionItem" onClick={() => selectPlaceItem(item)}>
-                        <MapPin size={14} color="#ea4335" style={{ flexShrink: 0 }} />
+                        <MapPin size={14} color={item.isGccWard ? '#0891b2' : '#ea4335'} style={{ flexShrink: 0 }} />
                         <div style={{ overflow: 'hidden' }}>
                           <p className="googleSearchSuggestionTitle">{item.title || (item.display_name ? item.display_name.split(',')[0] : 'Location')}</p>
                           <p className="googleSearchSuggestionSubtitle">{item.subtitle || item.display_name || ''}</p>
@@ -1477,11 +1919,7 @@ export default function CensusWorkTab({ creds }) {
               <select
                 className="hlbBarSelect"
                 value={selectedFilterZone}
-                onChange={(e) => {
-                  setSelectedFilterZone(e.target.value);
-                  setSelectedFilterWard('');
-                  setSelectedFilterBlock('');
-                }}
+                onChange={(e) => handleSelectZoneFilter(e.target.value)}
               >
                 <option value="">All Zones</option>
                 {availableZones.map(z => (
@@ -1491,10 +1929,7 @@ export default function CensusWorkTab({ creds }) {
               <select
                 className="hlbBarSelect"
                 value={selectedFilterWard}
-                onChange={(e) => {
-                  setSelectedFilterWard(e.target.value);
-                  setSelectedFilterBlock('');
-                }}
+                onChange={(e) => handleSelectWardFilter(e.target.value)}
               >
                 <option value="">-- Ward --</option>
                 {availableWards.map(w => (

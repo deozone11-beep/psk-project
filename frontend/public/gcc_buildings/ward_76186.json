@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "ward_76186",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "gcc_gis_id": "N-186-23-00071", "zone_number": "13", "ward_number": "76186", "road_name": "Brindavan Nagar 4th Cross Street", "building_used_as": "Vacant Land", "build_type": "Vacant Land", "door_new_no": "0", "door_old_no": "0", "drone_area_in_sqft": 14122.9, "gcc_max_floor": null, "area_name": "Puzhuthivakkam(N186)", "locality": "Brindavan Street(N186)" }, "geometry": { "type": "MultiPolygon", "coordinates": [ [ [ [ 80.212882275671404, 12.970838765015388 ], [ 80.213002388209844, 12.970735246009726 ], [ 80.212993423273815, 12.970725470759227 ], [ 80.212941448662249, 12.970666936859311 ], [ 80.212985349213568, 12.970632623341322 ], [ 80.213035304861577, 12.970689643832602 ], [ 80.213044690358501, 12.970698787415783 ], [ 80.213206084243552, 12.970559690017636 ], [ 80.213121108518081, 12.97037477087625 ], [ 80.21291618717261, 12.97041371528964 ], [ 80.212930247011684, 12.970489727492128 ], [ 80.21281404492062, 12.970511943005915 ], [ 80.212882275671404, 12.970838765015388 ] ] ] ] } }
+]
+}

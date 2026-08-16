@@ -3386,12 +3386,131 @@ body .modalContent .modalClose:hover {
   border: 1px solid rgba(26,115,232,0.5);
 }
 
+.hlbBasemapBtn.activeZone {
+  background: rgba(217, 119, 6, 0.25);
+  color: #fbbf24;
+  border: 1px solid rgba(217, 119, 6, 0.6);
+}
+
+.hlbBasemapBtn.activeWard {
+  background: rgba(8, 145, 178, 0.25);
+  color: #38bdf8;
+  border: 1px solid rgba(8, 145, 178, 0.6);
+}
+
+.hlbBasemapBtn.activeOuter {
+  background: rgba(220, 38, 38, 0.25);
+  color: #f87171;
+  border: 1px solid rgba(220, 38, 38, 0.6);
+}
+
+.hlbBasemapBtn.activeBuilding {
+  background: rgba(37, 99, 235, 0.25);
+  color: #93c5fd;
+  border: 1px solid rgba(37, 99, 235, 0.6);
+}
+
 .hlbBasemapDivider {
   width: 1px;
   height: 20px;
   background: rgba(255,255,255,0.15);
   margin: 0 6px;
   flex-shrink: 0;
+}
+
+/* ===== GCC & HLB CENTERED MAP LABELS ===== */
+.gccZoneTooltipWrapper.leaflet-tooltip,
+.gccWardTooltipWrapper.leaflet-tooltip,
+.gccHlbTooltipWrapper.leaflet-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+.gccZoneTooltipWrapper.leaflet-tooltip::before,
+.gccWardTooltipWrapper.leaflet-tooltip::before,
+.gccHlbTooltipWrapper.leaflet-tooltip::before {
+  display: none !important;
+}
+
+.gccZoneCenteredBadge {
+  background: rgba(15, 23, 42, 0.88);
+  border: 1.5px solid #f59e0b;
+  color: #fbbf24;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  text-align: center;
+}
+
+.gccWardCenteredBadge {
+  background: rgba(15, 23, 42, 0.88);
+  border: 1.2px solid #06b6d4;
+  color: #e2e8f0;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  text-align: center;
+}
+
+.gccWardBadgeNo {
+  color: #38bdf8;
+  font-weight: 800;
+  font-size: 0.74rem;
+}
+
+.gccWardBadgeAc {
+  color: #cbd5e1;
+  font-size: 0.62rem;
+  font-weight: 600;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gccHlbCenteredBadge {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid #3b82f6;
+  color: #ffffff;
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.hlbBadgeNo {
+  color: #60a5fa;
+  font-weight: 800;
+  font-size: 0.7rem;
+}
+
+.hlbBadgeSub {
+  color: #94a3b8;
+  font-size: 0.6rem;
+  font-weight: 600;
 }
 
 /* ===== IN-BAR FILTER GROUP (right side of basemap toolbar) ===== */
