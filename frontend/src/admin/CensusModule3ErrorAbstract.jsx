@@ -661,63 +661,34 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
   }, [abstractReport, searchQuery]);
 
   const triggerUniversalPrint = (htmlContent) => {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
-      
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(htmlContent);
-      doc.close();
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.left = '-9999px';
+    iframe.style.top = '-9999px';
+    iframe.style.width = '1024px';
+    iframe.style.height = '1400px';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
 
-      setTimeout(() => {
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    setTimeout(() => {
+      try {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        }, 2000);
-      }, 500);
-    } else {
-      const win = window.open('', '_blank');
-      if (!win) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
-        const doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
-        setTimeout(() => {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          setTimeout(() => {
-            if (document.body.contains(iframe)) document.body.removeChild(iframe);
-          }, 2000);
-        }, 500);
-        return;
+      } catch (err) {
+        console.warn('Print error:', err);
       }
-      win.document.open();
-      win.document.write(htmlContent);
-      win.document.close();
       setTimeout(() => {
-        win.focus();
-        win.print();
-      }, 500);
-    }
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 3000);
+    }, 600);
   };
 
   const printSupervisorSummaryOnlyReport = (reportData) => {
@@ -796,19 +767,17 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                 </tr>
               `;
             }).join('')}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="4" style="text-align: left; font-weight: 900; vertical-align: middle;">GRAND TOTAL (${dataToPrint.length} Supervisors)</td>
-              <td style="text-align: center; font-weight: 900; vertical-align: middle;">${grandTotalHLBs} HLBs</td>
-              <td style="text-align: center; font-weight: 900; color: #0284c7; vertical-align: middle;">${grandTotalRecs.toLocaleString()}</td>
-              <td style="text-align: center; vertical-align: middle;">
+            <tr style="background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important;">
+              <td colspan="4" style="text-align: left; font-weight: 900; border-top: 2px solid #0f172a; vertical-align: middle;">GRAND TOTAL (${dataToPrint.length} Supervisors)</td>
+              <td style="text-align: center; font-weight: 900; border-top: 2px solid #0f172a; vertical-align: middle;">${grandTotalHLBs} HLBs</td>
+              <td style="text-align: center; font-weight: 900; color: #0284c7; border-top: 2px solid #0f172a; vertical-align: middle;">${grandTotalRecs.toLocaleString()}</td>
+              <td style="text-align: center; border-top: 2px solid #0f172a; vertical-align: middle;">
                 <span class="err-badge ${grandTotalErrs > 0 ? 'has-err' : 'no-err'}">
                   ${grandTotalErrs} errors
                 </span>
               </td>
             </tr>
-          </tfoot>
+          </tbody>
         </table>
 
         <div class="print-footer">
@@ -823,12 +792,6 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
   const downloadSupervisorSummaryPDF = (reportData) => {
     const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
     if (!dataToPrint || dataToPrint.length === 0) return;
-
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      printSupervisorSummaryOnlyReport(dataToPrint);
-      return;
-    }
 
     import('html2pdf.js').then(module => {
       const html2pdf = module.default || module;
@@ -890,8 +853,6 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                 </tr>
               `;
             }).join('')}
-          </tbody>
-          <tfoot>
             <tr style="background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important;">
               <td colspan="4" style="text-align: left; padding: 7px 6px; border-top: 2px solid #0f172a; vertical-align: middle;">GRAND TOTAL (${dataToPrint.length} Supervisors)</td>
               <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${grandTotalHLBs} HLBs</td>
@@ -902,7 +863,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                 </span>
               </td>
             </tr>
-          </tfoot>
+          </tbody>
         </table>
       `;
 
@@ -910,7 +871,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         margin: [8, 8, 8, 8],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 1.5, useCORS: true, logging: false },
+        html2canvas: { scale: 1, useCORS: true, logging: false, windowWidth: 1024 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
@@ -924,12 +885,6 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
   const downloadDetailedBreakdownPDF = (reportData) => {
     const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
     if (!dataToPrint || dataToPrint.length === 0) return;
-
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      printSupervisorAbstractReport(dataToPrint);
-      return;
-    }
 
     import('html2pdf.js').then(module => {
       const html2pdf = module.default || module;
@@ -996,7 +951,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         margin: [8, 8, 8, 8],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 1.5, useCORS: true, logging: false },
+        html2canvas: { scale: 1, useCORS: true, logging: false, windowWidth: 1024 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
@@ -1085,8 +1040,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           .no-err { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
           .hlb-code { font-weight: 800; background: #e2e8f0; padding: 2px 6px; borderRadius: 4px; }
           .print-footer { text-align: right; font-size: 10px; color: #94a3b8; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px; }
-          tfoot tr { background: #e2e8f0; font-weight: 800; }
-          tfoot td { border-top: 2px solid #0f172a; font-size: 10px; }
+          .total-row { background: #e2e8f0; font-weight: 800; }
+          .total-row td { border-top: 2px solid #0f172a; font-size: 10px; }
         </style>
       </head>
       <body>

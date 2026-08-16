@@ -893,63 +893,34 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
   };
 
   const triggerUniversalPrint = (htmlContent) => {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
-      
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(htmlContent);
-      doc.close();
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.left = '-9999px';
+    iframe.style.top = '-9999px';
+    iframe.style.width = '1024px';
+    iframe.style.height = '1400px';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
 
-      setTimeout(() => {
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    setTimeout(() => {
+      try {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        }, 2000);
-      }, 500);
-    } else {
-      const win = window.open('', '_blank');
-      if (!win) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
-        const doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
-        setTimeout(() => {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          setTimeout(() => {
-            if (document.body.contains(iframe)) document.body.removeChild(iframe);
-          }, 2000);
-        }, 500);
-        return;
+      } catch (err) {
+        console.warn('Print error:', err);
       }
-      win.document.open();
-      win.document.write(htmlContent);
-      win.document.close();
       setTimeout(() => {
-        win.focus();
-        win.print();
-      }, 500);
-    }
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 3000);
+    }, 600);
   };
 
   const printSupervisorSummaryOnlyReport = (dataToPrint) => {
@@ -1217,12 +1188,6 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
     if (!dataToPrint || dataToPrint.length === 0) return;
 
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      printSupervisorSummaryOnlyReport(dataToPrint);
-      return;
-    }
-
     import('html2pdf.js').then(module => {
       const html2pdf = module.default || module;
       const now = new Date();
@@ -1302,8 +1267,6 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                 </tr>
               `;
             }).join('')}
-          </tbody>
-          <tfoot>
             <tr style="background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important;">
               <td colspan="4" style="text-align: left; padding: 7px 6px; border-top: 2px solid #0f172a; vertical-align: middle;">SUPERVISOR GRAND TOTAL (${dataToPrint.length} Circles)</td>
               <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.totalHlbs} HLBs</td>
@@ -1320,7 +1283,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
               </td>
               <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${overallStats.completedCount}/${overallStats.totalHlbs} Comp</td>
             </tr>
-          </tfoot>
+          </tbody>
         </table>
       `;
 
@@ -1328,7 +1291,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         margin: [8, 8, 8, 8],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 1, useCORS: true, logging: false, windowWidth: 1024 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
@@ -1337,136 +1300,6 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     }).catch(err => {
       console.warn('html2pdf error:', err);
       printSupervisorSummaryOnlyReport(abstractReport);
-    });
-  };
-
-  const downloadDetailedBreakdownPDF = (reportData) => {
-    const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
-    if (!dataToPrint || dataToPrint.length === 0) return;
-
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      printSupervisorAbstractReport(dataToPrint);
-      return;
-    }
-
-    import('html2pdf.js').then(module => {
-      const html2pdf = module.default || module;
-      const now = new Date();
-      const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
-      const filename = `Census_Supervisor_Enumerator_Detailed_Progress_Report_${dateStr}.pdf`;
-      const formattedDateTime = now.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-
-      let circleCardsHtml = dataToPrint.map(c => {
-        const uniqueCount = new Set(c.enumerators.map(e => e.enumId || e.enumName)).size;
-        return `
-          <div style="border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 14px; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden;">
-            <div style="background: #f1f5f9; padding: 6px 10px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background: #991b1b; color: #fff; font-weight: 900; font-size: 8.5px; padding: 3px 8px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; vertical-align: middle;">${c.circleNo}</span>
-                <span style="font-size: 11px; font-weight: 800; color: #0f172a;">Supervisor: ${c.supervisorName} ${c.supervisorId ? `(${c.supervisorId})` : ''}</span>
-              </div>
-              <div style="font-size: 9.5px; color: #475569; font-weight: 700;">📞 ${c.supervisorMobile || 'N/A'}</div>
-            </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed;">
-              <thead>
-                <tr style="background: #1e293b; color: #ffffff; page-break-inside: avoid !important; break-inside: avoid !important;">
-                  <th style="width: 20%; text-align: left; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Enumerator Name &amp; ID</th>
-                  <th style="width: 12%; text-align: left; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Mobile No</th>
-                  <th style="width: 10%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">HLB Code</th>
-                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Exp Houses</th>
-                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Cen Houses</th>
-                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Households</th>
-                  <th style="width: 9%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Verified By Sup</th>
-                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">SE ID Used</th>
-                  <th style="width: 9%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Population</th>
-                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Errors</th>
-                  <th style="width: 8%; padding: 6px 4px; border: 1px solid #334155; text-align: center; vertical-align: middle;">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${c.enumerators.map(e => `
-                  <tr style="page-break-inside: avoid !important; break-inside: avoid !important;">
-                    <td style="text-align: left; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;"><b>${e.enumName}</b><br/><span style="font-size: 8px; color: #64748b; font-family: monospace;">${e.enumId || ''}</span></td>
-                    <td style="text-align: left; font-family: monospace; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.enumMobile || 'N/A'}</td>
-                    <td style="text-align: center; font-family: monospace; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">HLB ${String(e.hlbCode).padStart(4, '0')}</td>
-                    <td style="text-align: center; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.expectedHouses}</td>
-                    <td style="text-align: center; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.censusHouses}</td>
-                    <td style="text-align: center; font-weight: 800; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.households}</td>
-                    <td style="text-align: center; font-weight: 800; color: #0284c7; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.verifiedBySup}</td>
-                    <td style="text-align: center; font-weight: 800; color: #7c3aed; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.seIdUsed || 0}</td>
-                    <td style="text-align: center; font-weight: 800; color: #15803d; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.totalPopulation}</td>
-                    <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
-                      <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${e.errorCount > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
-                        ${e.errorCount}
-                      </span>
-                    </td>
-                    <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
-                      <span style="font-weight: 800; padding: 2px 6px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${e.isCompleted ? 'background: #dcfce7; color: #166534; border: 1px solid #86efac;' : 'background: #fef3c7; color: #92400e; border: 1px solid #fde68a;'}">
-                        ${e.isCompleted ? 'Completed' : 'In progress'}
-                      </span>
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-              <tfoot>
-                <tr style="background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important;">
-                  <td style="text-align: left; padding: 6px; border-top: 2px solid #0f172a; vertical-align: middle;">SUPERVISOR TOTAL (${uniqueCount} Enums)</td>
-                  <td style="text-align: left; padding: 6px; border-top: 2px solid #0f172a; vertical-align: middle;">-</td>
-                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.length} HLBs</td>
-                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.expectedHouses || 0), 0)}</td>
-                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.censusHouses || 0), 0)}</td>
-                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.households || 0), 0)}</td>
-                  <td style="text-align: center; color: #0284c7; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.verifiedBySup || 0), 0)}</td>
-                  <td style="text-align: center; color: #7c3aed; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.seIdUsed || 0), 0)}</td>
-                  <td style="text-align: center; color: #15803d; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${c.enumerators.reduce((s, e) => s + (e.totalPopulation || 0), 0)}</td>
-                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">
-                    <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0) > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
-                      ${c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0)} errors
-                    </span>
-                  </td>
-                  <td style="text-align: center; padding: 6px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">
-                    <span style="font-weight: 800; padding: 2px 6px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${c.enumerators.filter(e => e.isCompleted).length === c.enumerators.length ? 'background: #dcfce7; color: #166534; border: 1px solid #86efac;' : 'background: #fef3c7; color: #92400e; border: 1px solid #fde68a;'}">
-                      ${c.enumerators.filter(e => e.isCompleted).length}/${c.enumerators.length} Comp
-                    </span>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        `;
-      }).join('');
-
-      const container = document.createElement('div');
-      container.style.padding = '0';
-      container.style.margin = '0';
-      container.style.background = '#ffffff';
-      container.style.color = '#0f172a';
-      container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      container.style.width = '100%';
-      container.style.boxSizing = 'border-box';
-
-      container.innerHTML = `
-        <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px;">
-          <h2 style="font-size: 15px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR &amp; ENUMERATOR DETAILED PROGRESS REPORT</h2>
-          <div style="font-size: 9px; color: #64748b; margin-top: 3px; font-weight: 600;">Generated Date &amp; Time: ${formattedDateTime} · Total Supervisors: ${dataToPrint.length}</div>
-        </div>
-        ${circleCardsHtml}
-      `;
-
-      const opt = {
-        margin: [8, 8, 8, 8],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
-
-      html2pdf().set(opt).from(container).save();
-    }).catch(err => {
-      console.warn('html2pdf error:', err);
-      printSupervisorAbstractReport(abstractReport);
     });
   };
 
