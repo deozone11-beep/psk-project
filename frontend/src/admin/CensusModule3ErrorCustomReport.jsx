@@ -949,6 +949,12 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
   };
 
   const downloadDirectPDF = () => {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      printMatrixReport();
+      return;
+    }
+
     import('html2pdf.js').then(module => {
       const html2pdf = module.default || module;
       const now = new Date();
@@ -1021,12 +1027,12 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
         margin: [8, 8, 8, 8],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
-      html2pdf().set(opt).from(container).save();
+      html2pdf().set(opt).from(container).save().catch(() => printMatrixReport());
     }).catch(err => {
       console.warn('html2pdf error, printing instead:', err);
       printMatrixReport();

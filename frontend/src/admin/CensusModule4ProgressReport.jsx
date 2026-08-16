@@ -1217,6 +1217,12 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
     if (!dataToPrint || dataToPrint.length === 0) return;
 
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      printSupervisorSummaryOnlyReport(dataToPrint);
+      return;
+    }
+
     import('html2pdf.js').then(module => {
       const html2pdf = module.default || module;
       const now = new Date();
@@ -1327,7 +1333,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
-      html2pdf().set(opt).from(container).save();
+      html2pdf().set(opt).from(container).save().catch(() => printSupervisorSummaryOnlyReport(dataToPrint));
     }).catch(err => {
       console.warn('html2pdf error:', err);
       printSupervisorSummaryOnlyReport(abstractReport);
@@ -1337,6 +1343,12 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
   const downloadDetailedBreakdownPDF = (reportData) => {
     const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
     if (!dataToPrint || dataToPrint.length === 0) return;
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      printSupervisorAbstractReport(dataToPrint);
+      return;
+    }
 
     import('html2pdf.js').then(module => {
       const html2pdf = module.default || module;

@@ -824,6 +824,12 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
     if (!dataToPrint || dataToPrint.length === 0) return;
 
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      printSupervisorSummaryOnlyReport(dataToPrint);
+      return;
+    }
+
     import('html2pdf.js').then(module => {
       const html2pdf = module.default || module;
       const now = new Date();
@@ -904,21 +910,26 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         margin: [8, 8, 8, 8],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
-      html2pdf().set(opt).from(container).save();
-    }).catch(err => {
-      console.warn('html2pdf error:', err);
-      printSupervisorSummaryOnlyReport(filteredReport);
+      html2pdf().set(opt).from(container).save().catch(() => printSupervisorSummaryOnlyReport(dataToPrint));
+    }).catch(() => {
+      printSupervisorSummaryOnlyReport(dataToPrint);
     });
   };
 
   const downloadDetailedBreakdownPDF = (reportData) => {
     const dataToPrint = reportData && reportData.length > 0 ? reportData : abstractReport;
     if (!dataToPrint || dataToPrint.length === 0) return;
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      printSupervisorAbstractReport(dataToPrint);
+      return;
+    }
 
     import('html2pdf.js').then(module => {
       const html2pdf = module.default || module;
@@ -985,12 +996,14 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         margin: [8, 8, 8, 8],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
-      html2pdf().set(opt).from(container).save();
+      html2pdf().set(opt).from(container).save().catch(() => printSupervisorAbstractReport(dataToPrint));
+    }).catch(() => {
+      printSupervisorAbstractReport(dataToPrint);
     });
   };
 
