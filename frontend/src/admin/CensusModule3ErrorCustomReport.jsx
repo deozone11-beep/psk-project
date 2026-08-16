@@ -920,8 +920,10 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
   };
 
   const downloadDirectPDF = () => {
-    import('html2pdf.js').then(module => {
-      const html2pdf = module.default || module;
+    Promise.all([import('jspdf'), import('html2canvas')]).then(async ([jspdfModule, html2canvasModule]) => {
+      const { jsPDF } = jspdfModule;
+      const html2canvas = html2canvasModule.default || html2canvasModule;
+
       const now = new Date();
       const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
       const filename = `Census_6Errors_Userwise_Report_${dateStr}.pdf`;
@@ -932,17 +934,17 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
 
       const formattedDateTime = now.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-      // Dynamic row-based packing for A4 Landscape
+      // Dynamic height packing for A4 Landscape (Packs 3-5 cards per page up to 660px, cutting page count in half with 0 empty wasted space)
       const pages = [];
       let currentPageCards = [];
-      let currentHeight = 55; // Top header height
+      let currentHeight = 45;
 
       filteredReport.forEach(c => {
-        const cardHeight = 34 + (c.enumerators.length * 28);
-        if (currentPageCards.length > 0 && (currentHeight + cardHeight > 670)) {
+        const cardHeight = 55 + (c.enumerators.length * 28);
+        if (currentPageCards.length > 0 && (currentHeight + cardHeight > 660)) {
           pages.push(currentPageCards);
           currentPageCards = [c];
-          currentHeight = 55 + cardHeight;
+          currentHeight = 45 + cardHeight;
         } else {
           currentPageCards.push(c);
           currentHeight += cardHeight;
@@ -953,78 +955,98 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
       }
 
       const totalPages = pages.length;
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+      const pdfWidth = 297;
+      const pdfHeight = 210;
 
-      let pagesHtml = '';
-      pages.forEach((pageCards, pageIdx) => {
-        pagesHtml += `
-          <div style="width: 1122px; padding: 18px 24px 18px 24px; box-sizing: border-box; background: #ffffff; page-break-after: ${pageIdx < totalPages - 1 ? 'always' : 'auto'}; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f172a;">
-            <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 6px; margin-bottom: 10px;">
-              <h2 style="font-size: 14px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — 6 ERRORS USER-WISE SUPERVISOR &amp; ENUMERATOR ABSTRACT REPORT</h2>
-              <table style="width: 100%; font-size: 8.5px; color: #64748b; margin-top: 2px; font-weight: 600; border: none; border-collapse: collapse;">
-                <tr>
-                  <td style="text-align: left; border: none; padding: 0;">Generated: ${formattedDateTime} · Filter: ${activeFilterNames}</td>
-                  <td style="text-align: center; border: none; padding: 0; font-weight: 800; color: #991b1b;">Page ${pageIdx + 1} of ${totalPages}</td>
-                  <td style="text-align: right; border: none; padding: 0;">Total Supervisors: ${filteredReport.length}</td>
-                </tr>
+      for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+        const pageCards = pages[pageIdx];
+        const pageContainer = document.createElement('div');
+        pageContainer.style.position = 'fixed';
+        pageContainer.style.left = '-9999px';
+        pageContainer.style.top = '0px';
+        pageContainer.style.width = '1122px';
+        pageContainer.style.minHeight = '794px';
+        pageContainer.style.maxHeight = '794px';
+        pageContainer.style.padding = '16px 20px';
+        pageContainer.style.boxSizing = 'border-box';
+        pageContainer.style.background = '#ffffff';
+        pageContainer.style.color = '#0f172a';
+        pageContainer.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+        pageContainer.innerHTML = `
+          <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 4px; margin-bottom: 8px;">
+            <h2 style="font-size: 13px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — 6 ERRORS USER-WISE SUPERVISOR &amp; ENUMERATOR ABSTRACT REPORT</h2>
+            <table style="width: 100%; font-size: 8px; color: #64748b; margin-top: 2px; font-weight: 600; border: none; border-collapse: collapse;">
+              <tr>
+                <td style="text-align: left; border: none; padding: 0;">Generated: ${formattedDateTime} · Filter: ${activeFilterNames}</td>
+                <td style="text-align: center; border: none; padding: 0; font-weight: 800; color: #991b1b;">Page ${pageIdx + 1} of ${totalPages}</td>
+                <td style="text-align: right; border: none; padding: 0;">Total Supervisors: ${filteredReport.length}</td>
+              </tr>
+            </table>
+          </div>
+
+          ${pageCards.map(c => `
+            <div style="margin-bottom: 8px; border: 1px solid #cbd5e1; border-radius: 5px; overflow: hidden; background: #ffffff;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 8px; table-layout: fixed;">
+                <thead>
+                  <tr style="background: #1e293b; color: #ffffff;">
+                    <th style="width: 14%; text-align: left; padding: 4px 5px; border: 1px solid #334155;">Supervisor Circle</th>
+                    <th style="width: 20%; text-align: left; padding: 4px 5px; border: 1px solid #334155;">Enumerator (User Name &amp; Phone)</th>
+                    <th style="width: 7%; padding: 4px 3px; border: 1px solid #334155; text-align: center;">HLB Code</th>
+                    <th style="width: 7%; padding: 4px 3px; border: 1px solid #334155; text-align: center;">Total Recs</th>
+                    <th style="width: 7.5%; padding: 4px 3px; border: 1px solid #334155; text-align: center;">Err 1<br/>Night Soil</th>
+                    <th style="width: 7.5%; padding: 4px 3px; border: 1px solid #334155; text-align: center;">Err 2<br/>Landline</th>
+                    <th style="width: 7.5%; padding: 4px 3px; border: 1px solid #334155; text-align: center;">Err 3<br/>No Light</th>
+                    <th style="width: 7.5%; padding: 4px 3px; border: 1px solid #334155; text-align: center;">Err 4<br/>River/Canal</th>
+                    <th style="width: 7.5%; padding: 4px 3px; border: 1px solid #334155; text-align: center;">Err 5<br/>Open Drain</th>
+                    <th style="width: 7.5%; padding: 4px 3px; border: 1px solid #334155; text-align: center;">Err 6<br/>LPG/PNG</th>
+                    <th style="width: 6.5%; padding: 4px 3px; border: 1px solid #334155; text-align: center;">Total Errors</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${c.enumerators.map((e, idx) => `
+                    <tr>
+                      ${idx === 0 ? `<td rowspan="${c.enumerators.length}" style="vertical-align:top; font-weight:bold; background:#f8fafc; padding:5px; border:1px solid #cbd5e1;"><span style="font-weight:900; background:#991b1b; color:#fff; padding:2px 6px; border-radius:6px; font-size:7.5px;">${c.circleNo}</span><br/><br/><b>${c.supervisorName}</b><br/><small style="color:#64748b;">📞 ${c.supervisorMobile || 'N/A'}</small></td>` : ''}
+                      <td style="padding:3px 5px; border:1px solid #cbd5e1;"><b>${e.enumName}</b><br/><small style="color:#64748b;">${e.enumId} | 📞 ${e.enumMobile || 'N/A'}</small></td>
+                      <td style="text-align:center; font-family:monospace; font-weight:bold; padding:3px; border:1px solid #cbd5e1;">${e.hlbCode}</td>
+                      <td style="text-align:center; font-weight:700; padding:3px; border:1px solid #cbd5e1;">${e.totalRecords}</td>
+                      <td style="text-align:center; padding:3px; border:1px solid #cbd5e1; ${e.err1 > 0 ? 'background:#fee2e2; color:#b91c1c; font-weight:bold;' : 'color:#94a3b8;'}">${e.err1}</td>
+                      <td style="text-align:center; padding:3px; border:1px solid #cbd5e1; ${e.err2 > 0 ? 'background:#ffedd5; color:#c2410c; font-weight:bold;' : 'color:#94a3b8;'}">${e.err2}</td>
+                      <td style="text-align:center; padding:3px; border:1px solid #cbd5e1; ${e.err3 > 0 ? 'background:#dbeafe; color:#1d4ed8; font-weight:bold;' : 'color:#94a3b8;'}">${e.err3}</td>
+                      <td style="text-align:center; padding:3px; border:1px solid #cbd5e1; ${e.err4 > 0 ? 'background:#f3e8ff; color:#6b21a8; font-weight:bold;' : 'color:#94a3b8;'}">${e.err4}</td>
+                      <td style="text-align:center; padding:3px; border:1px solid #cbd5e1; ${e.err5 > 0 ? 'background:#ccfbf1; color:#0f766e; font-weight:bold;' : 'color:#94a3b8;'}">${e.err5}</td>
+                      <td style="text-align:center; padding:3px; border:1px solid #cbd5e1; ${e.err6 > 0 ? 'background:#fef9c3; color:#a16207; font-weight:bold;' : 'color:#94a3b8;'}">${e.err6}</td>
+                      <td style="text-align:center; padding:3px; border:1px solid #cbd5e1; ${e.totalErrors > 0 ? 'background:#fee2e2; color:#991b1b; font-weight:bold;' : 'background:#f8fafc; color:#64748b;'}">${e.totalErrors}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
               </table>
             </div>
-
-            ${pageCards.map(c => `
-              <div style="margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: #ffffff;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 8.5px; table-layout: fixed;">
-                  <thead>
-                    <tr style="background: #1e293b; color: #ffffff;">
-                      <th style="width: 14%; text-align: left; padding: 5px 6px; border: 1px solid #334155;">Supervisor Circle</th>
-                      <th style="width: 20%; text-align: left; padding: 5px 6px; border: 1px solid #334155;">Enumerator (User Name &amp; Phone)</th>
-                      <th style="width: 7%; padding: 5px 4px; border: 1px solid #334155; text-align: center;">HLB Code</th>
-                      <th style="width: 7%; padding: 5px 4px; border: 1px solid #334155; text-align: center;">Total Recs</th>
-                      <th style="width: 7.5%; padding: 5px 4px; border: 1px solid #334155; text-align: center;">Err 1<br/>Night Soil</th>
-                      <th style="width: 7.5%; padding: 5px 4px; border: 1px solid #334155; text-align: center;">Err 2<br/>Landline</th>
-                      <th style="width: 7.5%; padding: 5px 4px; border: 1px solid #334155; text-align: center;">Err 3<br/>No Light</th>
-                      <th style="width: 7.5%; padding: 5px 4px; border: 1px solid #334155; text-align: center;">Err 4<br/>River/Canal</th>
-                      <th style="width: 7.5%; padding: 5px 4px; border: 1px solid #334155; text-align: center;">Err 5<br/>Open Drain</th>
-                      <th style="width: 7.5%; padding: 5px 4px; border: 1px solid #334155; text-align: center;">Err 6<br/>LPG/PNG</th>
-                      <th style="width: 6.5%; padding: 5px 4px; border: 1px solid #334155; text-align: center;">Total Errors</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${c.enumerators.map((e, idx) => `
-                      <tr>
-                        ${idx === 0 ? `<td rowspan="${c.enumerators.length}" style="vertical-align:top; font-weight:bold; background:#f8fafc; padding:6px; border:1px solid #cbd5e1;"><span style="font-weight:900; background:#991b1b; color:#fff; padding:2px 7px; border-radius:8px; font-size:8.5px;">${c.circleNo}</span><br/><br/><b>${c.supervisorName}</b><br/><small style="color:#64748b;">📞 ${c.supervisorMobile || 'N/A'}</small></td>` : ''}
-                        <td style="padding:4px 6px; border:1px solid #cbd5e1;"><b>${e.enumName}</b><br/><small style="color:#64748b;">${e.enumId} | 📞 ${e.enumMobile || 'N/A'}</small></td>
-                        <td style="text-align:center; font-family:monospace; font-weight:bold; padding:4px; border:1px solid #cbd5e1;">${e.hlbCode}</td>
-                        <td style="text-align:center; font-weight:700; padding:4px; border:1px solid #cbd5e1;">${e.totalRecords}</td>
-                        <td style="text-align:center; padding:4px; border:1px solid #cbd5e1; ${e.err1 > 0 ? 'background:#fee2e2; color:#b91c1c; font-weight:bold;' : 'color:#94a3b8;'}">${e.err1}</td>
-                        <td style="text-align:center; padding:4px; border:1px solid #cbd5e1; ${e.err2 > 0 ? 'background:#ffedd5; color:#c2410c; font-weight:bold;' : 'color:#94a3b8;'}">${e.err2}</td>
-                        <td style="text-align:center; padding:4px; border:1px solid #cbd5e1; ${e.err3 > 0 ? 'background:#dbeafe; color:#1d4ed8; font-weight:bold;' : 'color:#94a3b8;'}">${e.err3}</td>
-                        <td style="text-align:center; padding:4px; border:1px solid #cbd5e1; ${e.err4 > 0 ? 'background:#f3e8ff; color:#6b21a8; font-weight:bold;' : 'color:#94a3b8;'}">${e.err4}</td>
-                        <td style="text-align:center; padding:4px; border:1px solid #cbd5e1; ${e.err5 > 0 ? 'background:#ccfbf1; color:#0f766e; font-weight:bold;' : 'color:#94a3b8;'}">${e.err5}</td>
-                        <td style="text-align:center; padding:4px; border:1px solid #cbd5e1; ${e.err6 > 0 ? 'background:#fef9c3; color:#a16207; font-weight:bold;' : 'color:#94a3b8;'}">${e.err6}</td>
-                        <td style="text-align:center; padding:4px; border:1px solid #cbd5e1; ${e.totalErrors > 0 ? 'background:#fee2e2; color:#991b1b; font-weight:bold;' : 'background:#f8fafc; color:#64748b;'}">${e.totalErrors}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              </div>
-            `).join('')}
-          </div>
+          `).join('')}
         `;
-      });
 
-      const opt = {
-        margin: 0,
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 1122 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-        pagebreak: { mode: ['css'] }
-      };
+        document.body.appendChild(pageContainer);
+        const canvas = await html2canvas(pageContainer, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          width: 1122,
+          height: 794,
+          windowWidth: 1122
+        });
+        document.body.removeChild(pageContainer);
 
-      html2pdf().set(opt).from(pagesHtml).save().catch(err => {
-        console.error('html2pdf save error:', err);
-      });
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        if (pageIdx > 0) {
+          pdf.addPage('a4', 'landscape');
+        }
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      }
+
+      pdf.save(filename);
     }).catch(err => {
-      console.error('html2pdf import error:', err);
+      console.error('PDF export error:', err);
     });
   };
 

@@ -804,14 +804,14 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       const grandTotalErrs = dataToPrint.reduce((s, c) => s + c.enumerators.reduce((es, e) => es + (e.errorCount || 0), 0), 0);
       const formattedDateTime = now.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-      const ROWS_PER_PAGE = 22;
+      const ROWS_PER_PAGE = 20;
       const totalPages = Math.ceil(dataToPrint.length / ROWS_PER_PAGE);
 
       let pagesHtml = '';
       for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
         const chunk = dataToPrint.slice(pageIdx * ROWS_PER_PAGE, (pageIdx + 1) * ROWS_PER_PAGE);
         pagesHtml += `
-          <div style="width: 794px; padding: 20px 24px 20px 24px; box-sizing: border-box; background: #ffffff; page-break-after: ${pageIdx < totalPages - 1 ? 'always' : 'auto'}; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f172a;">
+          <div style="width: 794px; max-height: 1080px; overflow: hidden; padding: 18px 24px 18px 24px; box-sizing: border-box; background: #ffffff; page-break-after: ${pageIdx < totalPages - 1 ? 'always' : 'auto'}; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f172a;">
             <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 6px; margin-bottom: 10px;">
               <h2 style="font-size: 14px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR ABSTRACT SUMMARY REPORT</h2>
               <table style="width: 100%; font-size: 8.5px; color: #64748b; margin-top: 3px; font-weight: 600; border: none; border-collapse: collapse;">
@@ -910,8 +910,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       let currentHeight = 55; // Top header height
 
       dataToPrint.forEach(c => {
-        const cardHeight = 36 + (c.enumerators.length * 28);
-        if (currentPageCards.length > 0 && (currentHeight + cardHeight > 940)) {
+        const cardHeight = 65 + (c.enumerators.length * 30);
+        if (currentPageCards.length > 0 && (currentHeight + cardHeight > 880)) {
           pages.push(currentPageCards);
           currentPageCards = [c];
           currentHeight = 55 + cardHeight;
@@ -929,7 +929,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       let pagesHtml = '';
       pages.forEach((pageCards, pageIdx) => {
         pagesHtml += `
-          <div style="width: 794px; padding: 20px 24px 20px 24px; box-sizing: border-box; background: #ffffff; page-break-after: ${pageIdx < totalPages - 1 ? 'always' : 'auto'}; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f172a;">
+          <div style="width: 794px; max-height: 1080px; overflow: hidden; padding: 18px 24px 18px 24px; box-sizing: border-box; background: #ffffff; page-break-after: ${pageIdx < totalPages - 1 ? 'always' : 'auto'}; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f172a;">
             <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 6px; margin-bottom: 12px;">
               <h2 style="font-size: 14px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR &amp; ENUMERATOR DETAILED ERROR REPORT</h2>
               <table style="width: 100%; font-size: 8.5px; color: #64748b; margin-top: 3px; font-weight: 600; border: none; border-collapse: collapse;">
