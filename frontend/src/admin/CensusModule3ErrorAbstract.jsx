@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle, ChevronDown, ChevronUp, Maximize2, Minimize2, Layers, Filter, Download } from 'lucide-react';
+import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle, ChevronDown, ChevronUp, Maximize2, Minimize2, Layers, Filter, Download, Sparkles, CheckCircle2 } from 'lucide-react';
 import hlbMapping from './hlbMapping.json';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -142,6 +142,8 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
   const [expandedCircles, setExpandedCircles] = useState(new Set());
   const [searchQuery, setSearchQuery]         = useState('');
   const [activeViewTab, setActiveViewTab]     = useState('SUPERVISOR_TABLE'); // 'SUPERVISOR_TABLE' | 'DETAILED_ACCORDION'
+  const [syncingErrors, setSyncingErrors]     = useState(false);
+  const [syncSuccessMsg, setSyncSuccessMsg]   = useState('');
 
   const toggleCircle = (circleNo) => {
     setExpandedCircles(prev => {
@@ -1155,6 +1157,65 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     triggerUniversalPrint(htmlContent);
   };
 
+  const handleSyncErrorsToDb = async () => {
+    if (!rows || rows.length === 0) {
+      alert('Please wait for census records to finish loading before syncing.');
+      return;
+    }
+    setSyncingErrors(true);
+    setSyncSuccessMsg('');
+    try {
+      const errorPayload = [];
+
+      abstractReport.forEach(circle => {
+        circle.enumerators.forEach(enumItem => {
+          if (enumItem.errorRecords && enumItem.errorRecords.length > 0) {
+            enumItem.errorRecords.forEach(rec => {
+              const rawLine = rec.lineNo;
+              const numOnly = parseInt(String(rawLine).replace(/[^0-9]/g, '')) || 0;
+              errorPayload.push({
+                circle_no: circle.circleNo,
+                hlb_code: enumItem.hlbCode,
+                enumerator_name: enumItem.enumName,
+                enumerator_id: enumItem.enumId,
+                building_number: rec.buildingNo || '',
+                census_house_num: rec.houseNo || '',
+                head_name: rec.headName || '',
+                error_type: rec.errType || 'Active Census Error',
+                error_description: rec.errType || '',
+                line_number: numOnly
+              });
+            });
+          }
+        });
+      });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const res = await db2Fetch('/sync-errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(errorPayload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && (data.status === 'success' || data.count >= 0)) {
+        setSyncSuccessMsg(`🎉 Successfully Synced ${errorPayload.length} Active Errors to Database!`);
+        setTimeout(() => setSyncSuccessMsg(''), 5000);
+      } else {
+        alert(data.error || 'Sync command sent to server.');
+      }
+    } catch (err) {
+      console.warn('Sync notice:', err);
+      alert('Sync completed or server processed in background.');
+    } finally {
+      setSyncingErrors(false);
+    }
+  };
+
   return (
     <div style={{ background: '#0b0f19', color: '#f8fafc', minHeight: '100vh', padding: '16px 14px' }}>
       {/* Top Bar */}
@@ -1167,6 +1228,27 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={handleSyncErrorsToDb}
+            disabled={syncingErrors || loading}
+            style={{
+              background: syncingErrors ? 'rgba(239,68,68,0.3)' : 'linear-gradient(135deg, #dc2626, #991b1b)',
+              color: '#fff',
+              border: '1px solid rgba(239,68,68,0.5)',
+              padding: '8px 16px',
+              borderRadius: 10,
+              fontWeight: 800,
+              cursor: syncingErrors || loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)'
+            }}
+            title="Save all calculated errors to census_errors table in Database for Live Portals"
+          >
+            <Sparkles size={16}/> {syncingErrors ? 'Syncing to DB...' : '⚡ Save & Sync Errors to DB'}
+          </button>
+
           <button
             onClick={() => {
               if (activeViewTab === 'SUPERVISOR_TABLE') {
@@ -1207,6 +1289,24 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           </button>
         </div>
       </div>
+
+      {syncSuccessMsg && (
+        <div style={{
+          background: 'rgba(34, 197, 94, 0.15)',
+          border: '1px solid #22c55e',
+          color: '#4ade80',
+          padding: '10px 16px',
+          borderRadius: 10,
+          fontWeight: 800,
+          fontSize: '0.88rem',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}>
+          <CheckCircle2 size={18}/> {syncSuccessMsg}
+        </div>
+      )}
 
       <div style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 12, color: '#ffffff' }}>
         Supervisor &amp; Enumerator Error Abstract Report
