@@ -226,7 +226,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         remainingOffsets.push(off);
       }
 
-      const BATCH_SIZE = 4;
+      const BATCH_SIZE = 2;
       for (let i = 0; i < remainingOffsets.length; i += BATCH_SIZE) {
         const batchOffsets = remainingOffsets.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(
@@ -238,8 +238,10 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                 const data = await res.json().catch(() => ({}));
                 if (data.rows && Array.isArray(data.rows)) return data.rows;
                 chunkRetries--;
+                await new Promise(res => setTimeout(res, 150));
               } catch (err) {
                 chunkRetries--;
+                await new Promise(res => setTimeout(res, 150));
               }
             }
             return [];
@@ -252,6 +254,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
             if (onChunk) onChunk(rowsChunk, allRows.length, totalCount);
           }
         });
+        await new Promise(res => setTimeout(res, 50));
       }
     }
 

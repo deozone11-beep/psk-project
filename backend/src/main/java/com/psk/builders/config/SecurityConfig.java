@@ -90,7 +90,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/forgot-password", "/api/auth/temp-login").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/services/**", "/api/projects/**", "/api/testimonials/**", "/api/settings", "/api/admin/census/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/enquiries", "/api/testimonials").permitAll()
-                .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/uploads/**", "/error").permitAll()
                 // Census DB2 proxy: permitAll so all authenticated roles (Admin, Engineer, Census User) can fetch DB2 data
                 .requestMatchers("/api/admin/db2/**").permitAll()
                 .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ENGINEER")

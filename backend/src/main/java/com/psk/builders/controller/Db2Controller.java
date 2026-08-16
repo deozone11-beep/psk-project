@@ -108,15 +108,8 @@ public class Db2Controller {
                 } catch (Exception e2) {}
             }
 
-            // 3. Determine order clause safely based on existing columns
-            String orderClause = "";
-            if (columns.contains("id")) {
-                orderClause = " ORDER BY id ASC";
-            } else if (columns.contains("hlb_code")) {
-                orderClause = " ORDER BY hlb_code ASC";
-            } else if (columns.contains("line_number")) {
-                orderClause = " ORDER BY line_number ASC";
-            }
+            // 3. Determine order clause safely (only use 'id' if present, avoid unindexed text sorting on 75k rows)
+            String orderClause = columns.contains("id") ? " ORDER BY id ASC" : "";
 
             // 4. Fetch rows safely with fallbacks
             List<Map<String, Object>> rows = new ArrayList<>();

@@ -259,14 +259,7 @@ public class CensusController {
                 } catch (Exception e2) {}
             }
 
-            String orderClause = "";
-            if (columns.contains("id")) {
-                orderClause = " ORDER BY id ASC";
-            } else if (columns.contains("hlb_code")) {
-                orderClause = " ORDER BY hlb_code ASC";
-            } else if (columns.contains("line_number")) {
-                orderClause = " ORDER BY line_number ASC";
-            }
+            String orderClause = columns.contains("id") ? " ORDER BY id ASC" : "";
 
             List<Map<String, Object>> rows = new ArrayList<>();
             try {
