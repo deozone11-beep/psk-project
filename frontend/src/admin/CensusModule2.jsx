@@ -1229,19 +1229,17 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
                 </tr>
               `;
             }).join('')}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="4" style="text-align: left; font-weight: 900;">GRAND TOTAL (${dataToPrint.length} Supervisors)</td>
-              <td style="text-align: center; font-weight: 900;">${grandTotalHLBs} HLBs</td>
-              <td style="text-align: center; font-weight: 900; color: #0284c7;">${grandTotalRecs.toLocaleString()}</td>
-              <td style="text-align: center;">
+            <tr style="background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important;">
+              <td colspan="4" style="text-align: left; font-weight: 900; border-top: 2.5px solid #0f172a;">GRAND TOTAL (${dataToPrint.length} Supervisors)</td>
+              <td style="text-align: center; font-weight: 900; border-top: 2.5px solid #0f172a;">${grandTotalHLBs} HLBs</td>
+              <td style="text-align: center; font-weight: 900; color: #0284c7; border-top: 2.5px solid #0f172a;">${grandTotalRecs.toLocaleString()}</td>
+              <td style="text-align: center; border-top: 2.5px solid #0f172a;">
                 <span class="err-badge ${grandTotalErrs > 0 ? 'has-err' : 'no-err'}">
                   ${grandTotalErrs} errors
                 </span>
               </td>
             </tr>
-          </tfoot>
+          </tbody>
         </table>
 
         <div class="print-footer">

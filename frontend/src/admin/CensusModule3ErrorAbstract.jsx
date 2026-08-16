@@ -804,81 +804,92 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       const grandTotalErrs = dataToPrint.reduce((s, c) => s + c.enumerators.reduce((es, e) => es + (e.errorCount || 0), 0), 0);
       const formattedDateTime = now.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-      const container = document.createElement('div');
-      container.style.padding = '0';
-      container.style.margin = '0';
-      container.style.background = '#ffffff';
-      container.style.color = '#0f172a';
-      container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      container.style.width = '100%';
-      container.style.boxSizing = 'border-box';
+      const ROWS_PER_PAGE = 22;
+      const totalPages = Math.ceil(dataToPrint.length / ROWS_PER_PAGE);
 
-      container.innerHTML = `
-        <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px;">
-          <h2 style="font-size: 15px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR ABSTRACT SUMMARY REPORT</h2>
-          <div style="font-size: 9px; color: #64748b; margin-top: 3px; font-weight: 600;">Generated Date &amp; Time: ${formattedDateTime} · Total Supervisors: ${dataToPrint.length}</div>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 9px; table-layout: fixed;">
-          <thead>
-            <tr style="background: #1e293b; color: #ffffff; page-break-inside: avoid !important; break-inside: avoid !important;">
-              <th style="width: 5%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">S.No</th>
-              <th style="width: 11%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Circle No</th>
-              <th style="width: 28%; text-align: left; padding: 6px 6px; border: 1px solid #334155; vertical-align: middle;">Supervisor Name &amp; ID</th>
-              <th style="width: 16%; text-align: left; padding: 6px 6px; border: 1px solid #334155; vertical-align: middle;">Mobile No</th>
-              <th style="width: 16%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Allotted HLBs</th>
-              <th style="width: 12%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Total Records</th>
-              <th style="width: 12%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">No. of Errors</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${dataToPrint.map((c, i) => {
-              const totalRecs = c.enumerators.reduce((s, e) => s + (e.totalRecords || e.households || 0), 0);
-              const totalErrs = c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
-              const uniqueEnumCount = new Set(c.enumerators.map(e => e.enumId || e.enumName)).size;
-              return `
-                <tr style="page-break-inside: avoid !important; break-inside: avoid !important;">
-                  <td style="text-align: center; font-weight: 700; color: #64748b; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${i + 1}</td>
-                  <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
-                    <span style="font-weight: 900; background: #991b1b; color: #fff; padding: 3px 8px; border-radius: 8px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle;">${c.circleNo}</span>
-                  </td>
-                  <td style="text-align: left; font-weight: 700; padding: 5px 6px; border: 1px solid #cbd5e1; word-wrap: break-word; vertical-align: middle;">${c.supervisorName}<br/><span style="font-size: 8px; color: #64748b; font-family: monospace;">${c.supervisorId || ''}</span></td>
-                  <td style="text-align: left; font-family: monospace; font-weight: 700; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${c.supervisorMobile || 'N/A'}</td>
-                  <td style="text-align: center; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${c.enumerators.length} HLBs (${uniqueEnumCount} Enums)</td>
-                  <td style="text-align: center; font-weight: 800; color: #0284c7; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${totalRecs.toLocaleString()}</td>
-                  <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
-                    <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${totalErrs > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
-                      ${totalErrs} ${totalErrs === 1 ? 'error' : 'errors'}
-                    </span>
-                  </td>
+      let pagesHtml = '';
+      for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+        const chunk = dataToPrint.slice(pageIdx * ROWS_PER_PAGE, (pageIdx + 1) * ROWS_PER_PAGE);
+        pagesHtml += `
+          <div style="width: 794px; padding: 20px 24px 20px 24px; box-sizing: border-box; background: #ffffff; page-break-after: ${pageIdx < totalPages - 1 ? 'always' : 'auto'}; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f172a;">
+            <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 6px; margin-bottom: 10px;">
+              <h2 style="font-size: 14px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR ABSTRACT SUMMARY REPORT</h2>
+              <table style="width: 100%; font-size: 8.5px; color: #64748b; margin-top: 3px; font-weight: 600; border: none; border-collapse: collapse;">
+                <tr>
+                  <td style="text-align: left; border: none; padding: 0;">Generated Date &amp; Time: ${formattedDateTime}</td>
+                  <td style="text-align: center; border: none; padding: 0; font-weight: 800; color: #991b1b;">Page ${pageIdx + 1} of ${totalPages}</td>
+                  <td style="text-align: right; border: none; padding: 0;">Total Supervisors: ${dataToPrint.length}</td>
                 </tr>
-              `;
-            }).join('')}
-            <tr style="background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important;">
-              <td colspan="4" style="text-align: left; padding: 7px 6px; border-top: 2px solid #0f172a; vertical-align: middle;">GRAND TOTAL (${dataToPrint.length} Supervisors)</td>
-              <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${grandTotalHLBs} HLBs</td>
-              <td style="text-align: center; color: #0284c7; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${grandTotalRecs.toLocaleString()}</td>
-              <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">
-                <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${grandTotalErrs > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
-                  ${grandTotalErrs} errors
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      `;
+              </table>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed;">
+              <thead>
+                <tr style="background: #1e293b; color: #ffffff;">
+                  <th style="width: 5%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">S.No</th>
+                  <th style="width: 11%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Circle No</th>
+                  <th style="width: 28%; text-align: left; padding: 6px 6px; border: 1px solid #334155; vertical-align: middle;">Supervisor Name &amp; ID</th>
+                  <th style="width: 16%; text-align: left; padding: 6px 6px; border: 1px solid #334155; vertical-align: middle;">Mobile No</th>
+                  <th style="width: 16%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Allotted HLBs</th>
+                  <th style="width: 12%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">Total Records</th>
+                  <th style="width: 12%; text-align: center; padding: 6px 4px; border: 1px solid #334155; vertical-align: middle;">No. of Errors</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${chunk.map((c, i) => {
+                  const globalIdx = pageIdx * ROWS_PER_PAGE + i + 1;
+                  const totalRecs = c.enumerators.reduce((s, e) => s + (e.totalRecords || e.households || 0), 0);
+                  const totalErrs = c.enumerators.reduce((s, e) => s + (e.errorCount || 0), 0);
+                  const uniqueEnumCount = new Set(c.enumerators.map(e => e.enumId || e.enumName)).size;
+                  return `
+                    <tr>
+                      <td style="text-align: center; font-weight: 700; color: #64748b; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${globalIdx}</td>
+                      <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
+                        <span style="font-weight: 900; background: #991b1b; color: #fff; padding: 3px 8px; border-radius: 8px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle;">${c.circleNo}</span>
+                      </td>
+                      <td style="text-align: left; font-weight: 700; padding: 5px 6px; border: 1px solid #cbd5e1; word-wrap: break-word; vertical-align: middle;">${c.supervisorName}<br/><span style="font-size: 8px; color: #64748b; font-family: monospace;">${c.supervisorId || ''}</span></td>
+                      <td style="text-align: left; font-family: monospace; font-weight: 700; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${c.supervisorMobile || 'N/A'}</td>
+                      <td style="text-align: center; font-weight: 700; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${c.enumerators.length} HLBs (${uniqueEnumCount} Enums)</td>
+                      <td style="text-align: center; font-weight: 800; color: #0284c7; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">${totalRecs.toLocaleString()}</td>
+                      <td style="text-align: center; padding: 5px 4px; border: 1px solid #cbd5e1; vertical-align: middle;">
+                        <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${totalErrs > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
+                          ${totalErrs} ${totalErrs === 1 ? 'error' : 'errors'}
+                        </span>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+                ${pageIdx === totalPages - 1 ? `
+                  <tr style="background: #e2e8f0; font-weight: 900;">
+                    <td colspan="4" style="text-align: left; padding: 7px 6px; border-top: 2px solid #0f172a; vertical-align: middle;">GRAND TOTAL (${dataToPrint.length} Supervisors)</td>
+                    <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${grandTotalHLBs} HLBs</td>
+                    <td style="text-align: center; color: #0284c7; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">${grandTotalRecs.toLocaleString()}</td>
+                    <td style="text-align: center; padding: 7px 4px; border-top: 2px solid #0f172a; vertical-align: middle;">
+                      <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${grandTotalErrs > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
+                        ${grandTotalErrs} errors
+                      </span>
+                    </td>
+                  </tr>
+                ` : ''}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
 
       const opt = {
-        margin: [8, 8, 8, 8],
+        margin: 0,
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 1, useCORS: true, logging: false, windowWidth: 1024 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['css'] }
       };
 
-      html2pdf().set(opt).from(container).save().catch(() => printSupervisorSummaryOnlyReport(dataToPrint));
-    }).catch(() => {
-      printSupervisorSummaryOnlyReport(dataToPrint);
+      html2pdf().set(opt).from(pagesHtml).save().catch(err => {
+        console.error('html2pdf save error:', err);
+      });
+    }).catch(err => {
+      console.error('html2pdf import error:', err);
     });
   };
 
@@ -893,72 +904,102 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       const filename = `Supervisor_Enumerator_Detailed_Report_${dateStr}.pdf`;
       const formattedDateTime = now.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-      const container = document.createElement('div');
-      container.style.padding = '0';
-      container.style.margin = '0';
-      container.style.background = '#ffffff';
-      container.style.color = '#0f172a';
-      container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      container.style.width = '100%';
-      container.style.boxSizing = 'border-box';
+      // Dynamic row-based packing for A4 Portrait
+      const pages = [];
+      let currentPageCards = [];
+      let currentHeight = 55; // Top header height
 
-      container.innerHTML = `
-        <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px;">
-          <h2 style="font-size: 15px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR &amp; ENUMERATOR DETAILED ERROR REPORT</h2>
-          <div style="font-size: 9px; color: #64748b; margin-top: 3px; font-weight: 600;">Generated Date &amp; Time: ${formattedDateTime} · Total Supervisors: ${dataToPrint.length}</div>
-        </div>
+      dataToPrint.forEach(c => {
+        const cardHeight = 36 + (c.enumerators.length * 28);
+        if (currentPageCards.length > 0 && (currentHeight + cardHeight > 940)) {
+          pages.push(currentPageCards);
+          currentPageCards = [c];
+          currentHeight = 55 + cardHeight;
+        } else {
+          currentPageCards.push(c);
+          currentHeight += cardHeight;
+        }
+      });
+      if (currentPageCards.length > 0) {
+        pages.push(currentPageCards);
+      }
 
-        ${dataToPrint.map(c => `
-          <div style="border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 14px; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden;">
-            <div style="background: #f1f5f9; padding: 6px 10px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background: #991b1b; color: #fff; font-weight: 900; font-size: 8.5px; padding: 3px 8px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; vertical-align: middle;">${c.circleNo}</span>
-                <span style="font-size: 11px; font-weight: 800; color: #0f172a;">Supervisor: ${c.supervisorName} ${c.supervisorId ? `(${c.supervisorId})` : ''}</span>
-              </div>
-              <div style="font-size: 9.5px; color: #475569; font-weight: 700;">📞 ${c.supervisorMobile || 'N/A'}</div>
-            </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed;">
-              <thead>
-                <tr style="background: #1e293b; color: #ffffff;">
-                  <th style="width: 35%; text-align: left; padding: 6px; border: 1px solid #334155; vertical-align: middle;">Enumerator Name &amp; ID</th>
-                  <th style="width: 20%; text-align: left; padding: 6px; border: 1px solid #334155; vertical-align: middle;">Mobile No</th>
-                  <th style="width: 20%; text-align: center; padding: 6px; border: 1px solid #334155; vertical-align: middle;">Allotted HLB Code</th>
-                  <th style="width: 15%; text-align: center; padding: 6px; border: 1px solid #334155; vertical-align: middle;">Total Records</th>
-                  <th style="width: 10%; text-align: center; padding: 6px; border: 1px solid #334155; vertical-align: middle;">Errors</th>
+      const totalPages = pages.length;
+
+      let pagesHtml = '';
+      pages.forEach((pageCards, pageIdx) => {
+        pagesHtml += `
+          <div style="width: 794px; padding: 20px 24px 20px 24px; box-sizing: border-box; background: #ffffff; page-break-after: ${pageIdx < totalPages - 1 ? 'always' : 'auto'}; position: relative; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f172a;">
+            <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 6px; margin-bottom: 12px;">
+              <h2 style="font-size: 14px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR &amp; ENUMERATOR DETAILED ERROR REPORT</h2>
+              <table style="width: 100%; font-size: 8.5px; color: #64748b; margin-top: 3px; font-weight: 600; border: none; border-collapse: collapse;">
+                <tr>
+                  <td style="text-align: left; border: none; padding: 0;">Generated Date &amp; Time: ${formattedDateTime}</td>
+                  <td style="text-align: center; border: none; padding: 0; font-weight: 800; color: #991b1b;">Page ${pageIdx + 1} of ${totalPages}</td>
+                  <td style="text-align: right; border: none; padding: 0;">Total Supervisors: ${dataToPrint.length}</td>
                 </tr>
-              </thead>
-              <tbody>
-                ${c.enumerators.map(e => `
-                  <tr style="page-break-inside: avoid !important; break-inside: avoid !important;">
-                    <td style="text-align: left; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;"><b>${e.enumName}</b><br/><span style="font-size: 8px; color: #64748b; font-family: monospace;">${e.enumId || ''}</span></td>
-                    <td style="text-align: left; font-family: monospace; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.enumMobile || 'N/A'}</td>
-                    <td style="text-align: center; font-family: monospace; font-weight: 700; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.hlbCode}</td>
-                    <td style="text-align: center; font-weight: 800; color: #0284c7; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.totalRecords}</td>
-                    <td style="text-align: center; padding: 5px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">
-                      <span style="font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 8.5px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; ${e.errorCount > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
-                        ${e.errorCount}
-                      </span>
+              </table>
+            </div>
+
+            ${pageCards.map(c => `
+              <div style="border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 12px; display: block; overflow: hidden; background: #ffffff;">
+                <table style="width: 100%; border-collapse: collapse; background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                  <tr>
+                    <td style="padding: 5px 8px; text-align: left; vertical-align: middle; border: none;">
+                      <span style="background: #991b1b; color: #fff; font-weight: 900; font-size: 8.5px; padding: 3px 8px; border-radius: 8px; display: inline-block; vertical-align: middle; margin-right: 8px;">${c.circleNo}</span>
+                      <span style="font-size: 10.5px; font-weight: 800; color: #0f172a; vertical-align: middle;">Supervisor: ${c.supervisorName} ${c.supervisorId ? `(${c.supervisorId})` : ''}</span>
+                    </td>
+                    <td style="padding: 5px 8px; text-align: right; font-size: 9px; color: #475569; font-weight: 700; vertical-align: middle; border: none;">
+                      📞 ${c.supervisorMobile || 'N/A'}
                     </td>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                </table>
+                <table style="width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed;">
+                  <thead>
+                    <tr style="background: #1e293b; color: #ffffff;">
+                      <th style="width: 35%; text-align: left; padding: 5px 6px; border: 1px solid #334155; vertical-align: middle;">Enumerator Name &amp; ID</th>
+                      <th style="width: 20%; text-align: left; padding: 5px 6px; border: 1px solid #334155; vertical-align: middle;">Mobile No</th>
+                      <th style="width: 20%; text-align: center; padding: 5px 6px; border: 1px solid #334155; vertical-align: middle;">Allotted HLB Code</th>
+                      <th style="width: 15%; text-align: center; padding: 5px 6px; border: 1px solid #334155; vertical-align: middle;">Total Records</th>
+                      <th style="width: 10%; text-align: center; padding: 5px 6px; border: 1px solid #334155; vertical-align: middle;">Errors</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${c.enumerators.map(e => `
+                      <tr>
+                        <td style="text-align: left; padding: 4px 6px; border: 1px solid #cbd5e1; vertical-align: middle;"><b>${e.enumName}</b><br/><span style="font-size: 8px; color: #64748b; font-family: monospace;">${e.enumId || ''}</span></td>
+                        <td style="text-align: left; font-family: monospace; padding: 4px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.enumMobile || 'N/A'}</td>
+                        <td style="text-align: center; font-family: monospace; font-weight: 700; padding: 4px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.hlbCode}</td>
+                        <td style="text-align: center; font-weight: 800; color: #0284c7; padding: 4px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">${e.totalRecords}</td>
+                        <td style="text-align: center; padding: 4px 6px; border: 1px solid #cbd5e1; vertical-align: middle;">
+                          <span style="font-weight: 800; padding: 2px 6px; border-radius: 6px; font-size: 8px; display: inline-block; text-align: center; line-height: 1; vertical-align: middle; ${e.errorCount > 0 ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;' : 'background: #dcfce7; color: #166534; border: 1px solid #86efac;'}">
+                            ${e.errorCount}
+                          </span>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `).join('')}
           </div>
-        `).join('')}
-      `;
+        `;
+      });
 
       const opt = {
-        margin: [8, 8, 8, 8],
+        margin: 0,
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 1, useCORS: true, logging: false, windowWidth: 1024 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['css'] }
       };
 
-      html2pdf().set(opt).from(container).save().catch(() => printSupervisorAbstractReport(dataToPrint));
-    }).catch(() => {
-      printSupervisorAbstractReport(dataToPrint);
+      html2pdf().set(opt).from(pagesHtml).save().catch(err => {
+        console.error('html2pdf save error:', err);
+      });
+    }).catch(err => {
+      console.error('html2pdf import error:', err);
     });
   };
 
@@ -1088,9 +1129,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                     </td>
                   </tr>
                 `).join('')}
-              </tbody>
-              <tfoot>
-                <tr>
+                <tr class="total-row">
                   <td style="text-align:left; font-weight:900;">SUPERVISOR TOTAL (${uniqueCount} Enumerators)</td>
                   <td style="text-align:left;">-</td>
                   <td>${c.enumerators.length} HLBs</td>
@@ -1101,7 +1140,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                     </span>
                   </td>
                 </tr>
-              </tfoot>
+              </tbody>
             </table>
           </div>
         `;

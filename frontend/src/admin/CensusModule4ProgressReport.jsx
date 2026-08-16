@@ -1019,9 +1019,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                 </tr>
               `;
             }).join('')}
-          </tbody>
-          <tfoot>
-            <tr>
+            <tr style="background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important;">
               <td colspan="4" style="text-align: left; font-weight: 900;">SUPERVISOR GRAND TOTAL (${dataToPrint.length} Circles)</td>
               <td style="font-weight: 900;">${overallStats.totalHlbs} HLBs</td>
               <td style="font-weight: 900;">${overallStats.expectedHouses.toLocaleString()}</td>
@@ -1037,7 +1035,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
               </td>
               <td style="font-weight: 900;">${overallStats.completedCount}/${overallStats.totalHlbs} Comp</td>
             </tr>
-          </tfoot>
+          </tbody>
         </table>
 
         <div class="print-footer">
@@ -1064,7 +1062,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           .report-header { text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px; }
           .report-title { font-size: 15px; font-weight: 900; color: #991b1b; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em; }
           .report-sub { font-size: 9px; color: #475569; font-weight: 600; }
-          .circle-card { border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 14px; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden; }
+          .circle-card { border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 14px; page-break-inside: avoid !important; break-inside: avoid !important; }
           .circle-header { background: #f1f5f9; padding: 6px 10px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; }
           .circle-badge { background: #991b1b; color: #fff; font-weight: 900; font-size: 8.5px; padding: 3px 8px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1; vertical-align: middle; }
           .sup-name { font-size: 11px; font-weight: 800; color: #0f172a; margin-left: 8px; }
@@ -1082,8 +1080,8 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
           .comp { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
           .hlb-code { font-weight: 800; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
           .print-footer { text-align: right; font-size: 9px; color: #94a3b8; margin-top: 12px; border-top: 1px solid #e2e8f0; padding-top: 5px; }
-          tfoot tr { background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important; }
-          tfoot td { border-top: 2px solid #0f172a; font-size: 9.5px; vertical-align: middle; }
+          .total-row { background: #e2e8f0; font-weight: 900; page-break-inside: avoid !important; break-inside: avoid !important; }
+          .total-row td { border-top: 2px solid #0f172a; font-size: 9.5px; vertical-align: middle; }
         </style>
       </head>
       <body>
@@ -1146,9 +1144,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                     </td>
                   </tr>
                 `).join('')}
-              </tbody>
-              <tfoot>
-                <tr>
+                <tr class="total-row">
                   <td style="text-align:left; font-weight:900;">SUPERVISOR TOTAL (${uniqueCount} Enums)</td>
                   <td style="text-align:left;">-</td>
                   <td>${c.enumerators.length} HLBs</td>
@@ -1169,7 +1165,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                     </span>
                   </td>
                 </tr>
-              </tfoot>
+              </tbody>
             </table>
           </div>
         `;
@@ -1197,14 +1193,21 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       const formattedDateTime = now.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
       const container = document.createElement('div');
-      container.style.padding = '0';
+      container.style.position = 'fixed';
+      container.style.left = '0px';
+      container.style.top = '0px';
+      container.style.zIndex = '999999';
+      container.style.width = '1024px';
+      container.style.padding = '12px';
       container.style.margin = '0';
       container.style.background = '#ffffff';
       container.style.color = '#0f172a';
       container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      container.style.width = '100%';
+      container.style.webkitFontSmoothing = 'antialiased';
+      container.style.mozOsxFontSmoothing = 'grayscale';
+      container.style.textRendering = 'optimizeLegibility';
       container.style.boxSizing = 'border-box';
-
+      
       container.innerHTML = `
         <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 8px; margin-bottom: 12px;">
           <h2 style="font-size: 15px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR SUMMARY PROGRESS REPORT</h2>
@@ -1287,19 +1290,26 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         </table>
       `;
 
+      const htmlContent = `
+        <div style="width: 1200px; padding: 20px; background: #ffffff; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          ${container.innerHTML}
+        </div>
+      `;
+
       const opt = {
-        margin: [8, 8, 8, 8],
+        margin: [10, 10, 10, 10],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 1, useCORS: true, logging: false, windowWidth: 1024 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 1200 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['css', 'legacy'], avoid: ['.circle-card'] }
       };
 
-      html2pdf().set(opt).from(container).save().catch(() => printSupervisorSummaryOnlyReport(dataToPrint));
+      html2pdf().set(opt).from(htmlContent).save().catch(err => {
+        console.error('html2pdf save error:', err);
+      });
     }).catch(err => {
-      console.warn('html2pdf error:', err);
-      printSupervisorSummaryOnlyReport(abstractReport);
+      console.error('html2pdf import error:', err);
     });
   };
 
