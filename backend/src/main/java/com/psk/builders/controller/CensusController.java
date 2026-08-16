@@ -232,35 +232,69 @@ public class CensusController {
         if (!tableName.matches("[a-zA-Z0-9_]+")) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid table name"));
         }
+        int safeLimit = Math.min(Math.max(limit, 1), 3000);
         try {
             org.springframework.jdbc.core.JdbcTemplate jt = getDb2();
-            String countSql = "SELECT COUNT(*) FROM public.\"" + tableName + "\"";
-            long total = jt.queryForObject(countSql, Long.class);
+            if (jt == null) {
+                return ResponseEntity.ok(Map.of("error", "Could not initialize DB2 datasource"));
+            }
 
-            String dataSql = "SELECT * FROM public.\"" + tableName + "\" LIMIT ? OFFSET ?";
-            List<Map<String, Object>> rows = jt.queryForList(dataSql, limit, offset);
-
-            List<String> columns;
-            if (!rows.isEmpty()) {
-                columns = new ArrayList<>(rows.get(0).keySet());
-            } else {
+            List<String> columns = new ArrayList<>();
+            try {
                 columns = jt.queryForList(
                         "SELECT column_name FROM information_schema.columns " +
                         "WHERE table_schema='public' AND table_name=? ORDER BY ordinal_position",
                         String.class, tableName
                 );
+            } catch (Exception ignore) {}
+
+            long total = 0;
+            try {
+                Long cnt = jt.queryForObject("SELECT COUNT(*) FROM public.\"" + tableName + "\"", Long.class);
+                if (cnt != null) total = cnt;
+            } catch (Exception e1) {
+                try {
+                    Long cnt = jt.queryForObject("SELECT COUNT(*) FROM " + tableName, Long.class);
+                    if (cnt != null) total = cnt;
+                } catch (Exception e2) {}
+            }
+
+            String orderClause = "";
+            if (columns.contains("id")) {
+                orderClause = " ORDER BY id ASC";
+            } else if (columns.contains("hlb_code")) {
+                orderClause = " ORDER BY hlb_code ASC";
+            } else if (columns.contains("line_number")) {
+                orderClause = " ORDER BY line_number ASC";
+            }
+
+            List<Map<String, Object>> rows = new ArrayList<>();
+            try {
+                rows = jt.queryForList("SELECT * FROM public.\"" + tableName + "\"" + orderClause + " LIMIT ? OFFSET ?", safeLimit, offset);
+            } catch (Exception e1) {
+                try {
+                    rows = jt.queryForList("SELECT * FROM public.\"" + tableName + "\" LIMIT ? OFFSET ?", safeLimit, offset);
+                } catch (Exception e2) {
+                    try {
+                        rows = jt.queryForList("SELECT * FROM " + tableName + " LIMIT ? OFFSET ?", safeLimit, offset);
+                    } catch (Exception e3) {}
+                }
+            }
+
+            if (columns.isEmpty() && !rows.isEmpty()) {
+                columns = new ArrayList<>(rows.get(0).keySet());
             }
 
             return ResponseEntity.ok(Map.of(
                     "table", tableName,
                     "total", total,
-                    "limit", limit,
+                    "limit", safeLimit,
                     "offset", offset,
                     "columns", columns,
                     "rows", rows
             ));
         } catch (Exception e) {
-            return ResponseEntity.ok(Map.of("error", e.getMessage()));
+            return ResponseEntity.ok(Map.of("error", e.getMessage() != null ? e.getMessage() : e.toString()));
         }
     }
 }

@@ -352,7 +352,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
   const [dbColumns, setDbColumns] = useState([]);
 
-  async function fetchAllRowsInChunks(t, chunkSize = 15000, onProgress) {
+  async function fetchAllRowsInChunks(t, chunkSize = 3000, onProgress) {
     let allRows = [];
     let totalCount = 0;
     let columns = [];
@@ -366,6 +366,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
         if (j.rows && Array.isArray(j.rows)) {
           allRows.push(...j.rows);
           totalCount = j.total || j.rows.length;
+          if (j.limit && j.limit < chunkSize) chunkSize = j.limit;
           if (j.columns?.length) columns = j.columns;
           else if (j.rows.length && !columns.length) columns = Object.keys(j.rows[0]);
           initialSuccess = true;
@@ -428,7 +429,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     let isFirstChunk = true;
 
     try {
-      await fetchAllRowsInChunks(t, 15000, (loaded, total, chunk, cols) => {
+      await fetchAllRowsInChunks(t, 3000, (loaded, total, chunk, cols) => {
         setLoadingProgress(`Loading ${loaded.toLocaleString()} / ${total.toLocaleString()} rows...`);
 
         if (cols && cols.length > 0) {

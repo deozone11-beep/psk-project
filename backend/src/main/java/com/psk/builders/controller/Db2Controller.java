@@ -82,50 +82,70 @@ public class Db2Controller {
         if (!tableName.matches("[a-zA-Z0-9_]+")) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid table name"));
         }
+
+        int safeLimit = Math.min(Math.max(limit, 1), 3000);
+
         try {
-            long total = 74906;
+            // 1. Get column names to inspect available columns for sorting
+            List<String> columns = new ArrayList<>();
             try {
-                total = db2.queryForObject("SELECT COUNT(*) FROM public.\"" + tableName + "\"", Long.class);
-            } catch (Exception e1) {
-                try {
-                    total = db2.queryForObject("SELECT COUNT(*) FROM " + tableName, Long.class);
-                } catch (Exception e2) {}
-            }
-
-            List<Map<String, Object>> rows = new ArrayList<>();
-            try {
-                rows = db2.queryForList("SELECT * FROM public.\"" + tableName + "\" ORDER BY id ASC LIMIT ? OFFSET ?", limit, offset);
-            } catch (Exception e1) {
-                try {
-                    rows = db2.queryForList("SELECT * FROM " + tableName + " ORDER BY id ASC LIMIT ? OFFSET ?", limit, offset);
-                } catch (Exception e2) {
-                    try {
-                        rows = db2.queryForList("SELECT * FROM " + tableName + " LIMIT ? OFFSET ?", limit, offset);
-                    } catch (Exception e3) {}
-                }
-            }
-
-            List<String> columns;
-            if (!rows.isEmpty()) {
-                columns = new ArrayList<>(rows.get(0).keySet());
-            } else {
                 columns = db2.queryForList(
                         "SELECT column_name FROM information_schema.columns " +
                         "WHERE table_schema='public' AND table_name=? ORDER BY ordinal_position",
                         String.class, tableName
                 );
+            } catch (Exception ignore) {}
+
+            // 2. Count total rows
+            long total = 0;
+            try {
+                Long cnt = db2.queryForObject("SELECT COUNT(*) FROM public.\"" + tableName + "\"", Long.class);
+                if (cnt != null) total = cnt;
+            } catch (Exception e1) {
+                try {
+                    Long cnt = db2.queryForObject("SELECT COUNT(*) FROM " + tableName, Long.class);
+                    if (cnt != null) total = cnt;
+                } catch (Exception e2) {}
+            }
+
+            // 3. Determine order clause safely based on existing columns
+            String orderClause = "";
+            if (columns.contains("id")) {
+                orderClause = " ORDER BY id ASC";
+            } else if (columns.contains("hlb_code")) {
+                orderClause = " ORDER BY hlb_code ASC";
+            } else if (columns.contains("line_number")) {
+                orderClause = " ORDER BY line_number ASC";
+            }
+
+            // 4. Fetch rows safely with fallbacks
+            List<Map<String, Object>> rows = new ArrayList<>();
+            try {
+                rows = db2.queryForList("SELECT * FROM public.\"" + tableName + "\"" + orderClause + " LIMIT ? OFFSET ?", safeLimit, offset);
+            } catch (Exception e1) {
+                try {
+                    rows = db2.queryForList("SELECT * FROM public.\"" + tableName + "\" LIMIT ? OFFSET ?", safeLimit, offset);
+                } catch (Exception e2) {
+                    try {
+                        rows = db2.queryForList("SELECT * FROM " + tableName + " LIMIT ? OFFSET ?", safeLimit, offset);
+                    } catch (Exception e3) {}
+                }
+            }
+
+            if (columns.isEmpty() && !rows.isEmpty()) {
+                columns = new ArrayList<>(rows.get(0).keySet());
             }
 
             return ResponseEntity.ok(Map.of(
                     "table", tableName,
                     "total", total,
-                    "limit", limit,
+                    "limit", safeLimit,
                     "offset", offset,
                     "columns", columns,
                     "rows", rows
             ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : e.toString()));
         }
     }
 

@@ -192,7 +192,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     }
   }
 
-  async function fetchAllRowsInChunks(t, chunkSize = 5000, onChunk) {
+  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk) {
     let allRows = [];
     let totalCount = 0;
 
@@ -205,6 +205,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         if (j.rows && Array.isArray(j.rows)) {
           allRows.push(...j.rows);
           totalCount = j.total || j.rows.length;
+          if (j.limit && j.limit < chunkSize) chunkSize = j.limit;
           initialSuccess = true;
           if (onChunk) onChunk(j.rows, allRows.length, totalCount);
         } else {
