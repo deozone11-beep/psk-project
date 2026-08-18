@@ -385,7 +385,7 @@ export default function CensusPublicSupervisorReport() {
 
   // 5. HOD Overall Stats
   const hodStats = useMemo(() => {
-    let totExp = 0, totCen = 0, totHH = 0, totVer = 0, totSe = 0, totPop = 0, totErr = 0, totComp = 0, totHlbs = 0;
+    let totExp = 0, totCen = 0, totHH = 0, totVer = 0, totSe = 0, totPop = 0, totErr = 0, totComp = 0, totHlbs = 0, totLocked = 0;
     const uniqueEnums = new Set();
 
     allCircles.forEach(c => {
@@ -399,6 +399,7 @@ export default function CensusPublicSupervisorReport() {
         totSe += e.seIdUsed;
         totPop += e.totalPopulation;
         totErr += e.errorCount;
+        totLocked += (e.lockedCount || 0);
         if (e.isCompleted) totComp++;
       });
     });
@@ -427,6 +428,7 @@ export default function CensusPublicSupervisorReport() {
       households: totHH,
       verifiedBySup: totVer,
       totalSeId: totSe,
+      totalLocked: totLocked,
       totalPopulation: totPop,
       totalErrors: totErr || censusErrorRows.length,
       completedCount: totComp
@@ -867,6 +869,10 @@ export default function CensusPublicSupervisorReport() {
             <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(168,85,247,0.25)', borderRadius: '10px', padding: '12px' }}>
               <div style={{ fontSize: '9.5px', color: '#d8b4fe', fontWeight: 700, textTransform: 'uppercase' }}>SE ID Used</div>
               <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#a855f7', marginTop: '2px' }}>{hodStats.totalSeId.toLocaleString()}</div>
+            </div>
+            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '10px', padding: '12px' }}>
+              <div style={{ fontSize: '9.5px', color: '#67e8f9', fontWeight: 700, textTransform: 'uppercase' }}>🔒 Locked</div>
+              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#06b6d4', marginTop: '2px' }}>{hodStats.totalLocked.toLocaleString()}</div>
             </div>
             <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
               <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Total Population</div>
