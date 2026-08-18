@@ -4366,6 +4366,554 @@ body .modalContent .modalClose:hover {
   box-shadow: 0 0 12px rgba(168, 85, 247, 0.8);
 }
 
+/* =========================================================================
+   A3 HAND-DRAWN PENCIL SKETCH BLOCK LAYOUT MAP STYLES
+   ========================================================================= */
+.a3SketchModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 10px;
+}
+
+.a3SketchControlBar {
+  width: 100%;
+  max-width: 1440px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.a3ControlLeft, .a3ControlRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.a3TitleBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(37, 99, 235, 0.15);
+  border: 1px solid rgba(37, 99, 235, 0.4);
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.a3MainTitle {
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: #93c5fd;
+}
+
+.a3SubBadge {
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.a3StyleGroup, .a3ToggleGroup, .a3ZoomGroup {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.a3StyleBtn, .a3ToggleBtn {
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.a3StyleBtn.active, .a3ToggleBtn.active {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+}
+
+.a3ZoomGroup button {
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.a3ZoomGroup button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.a3ZoomLabel {
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: #94a3b8;
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+.a3ExportBtn {
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.a3PrintBtn {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+.a3PrintBtn:hover {
+  background: #059669;
+}
+
+.a3PdfBtn {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.a3PdfBtn:hover {
+  background: #1d4ed8;
+}
+
+.a3PngBtn {
+  background: #475569;
+  color: #f1f5f9;
+}
+
+.a3CloseBtn {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.a3CloseBtn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* Canvas Viewport */
+.a3CanvasScrollContainer {
+  width: 100%;
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 20px;
+}
+
+/* Authentic A3 Sheet Proportion (420mm x 297mm -> approx 1400px x 990px) */
+.a3SheetContainer {
+  width: 1400px;
+  min-height: 990px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  padding: 16px;
+  box-sizing: border-box;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+.a3DraftBorder {
+  border: 4px double #0f172a;
+  padding: 14px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+/* Header */
+.a3CensusHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px double #0f172a;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.a3HeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.a3Emblem {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.a3CensusMainTitle {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #0f172a;
+  font-family: 'Times New Roman', serif;
+}
+
+.a3CensusSubTitle {
+  margin: 2px 0 0 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1e293b;
+  font-family: 'Times New Roman', serif;
+}
+
+.a3CensusGovt {
+  margin: 2px 0 0 0;
+  font-size: 0.72rem;
+  font-family: 'Segoe UI', sans-serif;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
+.a3MetaTable {
+  border-collapse: collapse;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.78rem;
+  border: 1px solid #0f172a;
+}
+
+.a3MetaTable td {
+  padding: 4px 8px;
+  border: 1px solid #0f172a;
+}
+
+.metaLabel {
+  background: #f1f5f9;
+  font-weight: 800;
+  color: #334155;
+}
+
+.metaVal {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.metaVal.highlight {
+  color: #2563eb;
+  font-size: 0.88rem;
+}
+
+/* Drawing Frame */
+.a3DrawingFrame {
+  flex: 1;
+  min-height: 620px;
+  border: 2px solid #0f172a;
+  position: relative;
+  overflow: hidden;
+  background: #faf8f5;
+}
+
+.a3SvgWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.a3VectorSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.a3LoadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 450px;
+  gap: 10px;
+  color: #334155;
+  font-family: sans-serif;
+}
+
+.a3LoadingState p {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.a3LoadingState span {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* Footer Frame */
+.a3CensusFooter {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1.3fr;
+  gap: 12px;
+  border-top: 3px double #0f172a;
+  padding-top: 10px;
+  margin-top: 10px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.footerBoxTitle {
+  margin: 0 0 6px 0;
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 3px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 0.74rem;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.statLabel {
+  color: #64748b;
+  font-size: 0.68rem;
+}
+
+.statVal {
+  color: #0f172a;
+  font-size: 0.82rem;
+}
+
+.legendItemsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 0.72rem;
+  align-items: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendBox {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #0f172a;
+  display: inline-block;
+}
+
+.puccaBox {
+  background: repeating-linear-gradient(45deg, #0f172a, #0f172a 2px, #ffffff 2px, #ffffff 5px);
+}
+
+.commBox {
+  background: #f59e0b;
+  border-color: #d97706;
+}
+
+.legendLine {
+  width: 20px;
+  height: 3px;
+  display: inline-block;
+}
+
+.roadLine {
+  background: #0f172a;
+  border-top: 1px solid #0f172a;
+  border-bottom: 1px solid #0f172a;
+}
+
+.blockBoundLine {
+  border-top: 2px dashed #0f172a;
+  height: 0;
+}
+
+.sigColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.sigCol {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.72rem;
+}
+
+.sigLabel {
+  margin: 0 0 2px 0;
+  font-weight: 700;
+  color: #334155;
+}
+
+.sigInput {
+  border: none;
+  border-bottom: 1px solid #94a3b8;
+  background: transparent;
+  font-size: 0.72rem;
+  font-family: inherit;
+  color: #0f172a;
+  padding: 2px 0;
+  outline: none;
+}
+
+.sigLine {
+  margin-top: 14px;
+  border-bottom: 1px solid #0f172a;
+}
+
+.sigDate {
+  font-size: 0.65rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Blueprint Theme overrides */
+.a3SheetContainer.a3Theme_BLUEPRINT {
+  background: #0c2340;
+  color: #ffffff;
+}
+
+.a3SheetContainer.a3Theme_BLUEPRINT .a3DraftBorder,
+.a3SheetContainer.a3Theme_BLUEPRINT .a3CensusHeader,
+.a3SheetContainer.a3Theme_BLUEPRINT .a3CensusFooter,
+.a3SheetContainer.a3Theme_BLUEPRINT .a3DrawingFrame,
+.a3SheetContainer.a3Theme_BLUEPRINT .a3MetaTable,
+.a3SheetContainer.a3Theme_BLUEPRINT .a3MetaTable td {
+  border-color: #38bdf8;
+  background: #0c2340;
+}
+
+.a3SheetContainer.a3Theme_BLUEPRINT .a3CensusMainTitle,
+.a3SheetContainer.a3Theme_BLUEPRINT .a3CensusSubTitle,
+.a3SheetContainer.a3Theme_BLUEPRINT .metaVal,
+.a3SheetContainer.a3Theme_BLUEPRINT .statVal,
+.a3SheetContainer.a3Theme_BLUEPRINT .footerBoxTitle {
+  color: #f0f9ff;
+}
+
+.a3SheetContainer.a3Theme_BLUEPRINT .metaLabel {
+  background: #082f49;
+  color: #bae6fd;
+}
+
+.a3SheetContainer.a3Theme_BLUEPRINT .sigInput {
+  color: #e0f2fe;
+  border-color: #38bdf8;
+}
+
+/* =========================================================================
+   A3 PRINT MEDIA QUERY RULES
+   ========================================================================= */
+@media print {
+  @page {
+    size: A3 landscape;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .a3SheetContainer, .a3SheetContainer * {
+    visibility: visible;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .a3SketchModalOverlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+    background: #ffffff !important;
+  }
+
+  .a3SheetContainer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 420mm !important;
+    height: 297mm !important;
+    max-width: none !important;
+    max-height: none !important;
+    padding: 8mm !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .a3DraftBorder {
+    height: 280mm !important;
+  }
+
+  .a3DrawingFrame {
+    min-height: 180mm !important;
+  }
+}
+
+
 
 
 

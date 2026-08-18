@@ -43,7 +43,7 @@ export default function CensusPublicSupervisorReport() {
 
   // 2. Query Params
   const queryParams = useMemo(() => {
-    if (typeof window === 'undefined') return { circle: '', id: '', role: 'hod', isAdmin: false, isHod: true };
+    if (typeof window === 'undefined') return { circle: '', id: '', role: 'hod', isAdmin: false, isHod: true, isSupervisorRequest: false, isInvalidCircle: false };
     const sp = new URLSearchParams(window.location.search);
     const circle = (sp.get('circle') || sp.get('c') || '').trim();
     const id = (sp.get('id') || sp.get('supId') || sp.get('supervisor') || '').trim();
@@ -53,7 +53,23 @@ export default function CensusPublicSupervisorReport() {
     const isAdmin = roleRaw === 'admin' || id.toLowerCase() === 'admin' || sp.has('admin');
     const isHod = roleRaw === 'hod' || id.toLowerCase() === 'hod' || sp.has('hod') || (!circle && !id && !isAdmin);
     
-    return { circle, id, role: isAdmin ? 'admin' : (isHod ? 'hod' : 'supervisor'), isAdmin, isHod };
+    // Validate circle number: must be 1-3 digits only, between 001-075
+    const isSupervisorRequest = !isAdmin && !isHod && !!(circle || id);
+    let isInvalidCircle = false;
+    if (isSupervisorRequest && circle) {
+      const numOnly = circle.replace(/[^0-9]/g, '');
+      // Must be all digits, max 3 digits
+      if (numOnly !== circle || numOnly.length > 3 || numOnly.length === 0) {
+        isInvalidCircle = true;
+      } else {
+        const num = parseInt(numOnly, 10);
+        if (num < 1 || num > 75) {
+          isInvalidCircle = true;
+        }
+      }
+    }
+    
+    return { circle, id, role: isAdmin ? 'admin' : (isHod ? 'hod' : 'supervisor'), isAdmin, isHod, isSupervisorRequest, isInvalidCircle };
   }, []);
 
   const dbHlbMap = useMemo(() => {
@@ -334,18 +350,34 @@ export default function CensusPublicSupervisorReport() {
   // Target Circle matching: circle number (e.g. 001) OR supervisor ID (e.g. sm_...)
   const targetCircleData = useMemo(() => {
     if (queryParams.isAdmin || queryParams.isHod) return null;
+    // If circle number is invalid/out-of-range, return undefined (triggers not-found page)
+    if (queryParams.isInvalidCircle) return undefined;
     const searchTarget = queryParams.circle || queryParams.id;
     if (!searchTarget) return null;
 
-    const q = searchTarget.toLowerCase().replace(/[^0-9a-z_]/g, '');
-    return allCircles.find(c => {
+    // For numeric circle queries: use STRICT match only (padded 3-digit comparison)
+    const circleNumOnly = searchTarget.replace(/[^0-9]/g, '');
+    const isNumericQuery = circleNumOnly.length > 0 && circleNumOnly === searchTarget.replace(/\s/g, '');
+
+    const found = allCircles.find(c => {
       const cNum = String(c.circleNumber).padStart(3, '0');
-      const cNumShort = String(c.circleNumber);
-      const cName = c.circleNo.toLowerCase().replace(/[^0-9a-z_]/g, '');
-      const sName = c.supervisorName.toLowerCase().replace(/[^0-9a-z_]/g, '');
       const sId = (c.supervisorId || '').toLowerCase().replace(/[^0-9a-z_]/g, '');
-      return cName.includes(q) || cNum === q || cNumShort === q || sName.includes(q) || (sId && sId.includes(q));
+      const sName = c.supervisorName.toLowerCase().replace(/[^0-9a-z_]/g, '');
+
+      if (isNumericQuery) {
+        // Strict numeric match: padded must exactly equal (e.g. '016' === '016')
+        const paddedQuery = circleNumOnly.padStart(3, '0');
+        return cNum === paddedQuery;
+      } else {
+        // Non-numeric: match supervisor ID or name
+        const q = searchTarget.toLowerCase().replace(/[^0-9a-z_]/g, '');
+        return (sId && sId.includes(q)) || sName.includes(q);
+      }
     });
+
+    // If user explicitly requested a supervisor view but no matching circle found → undefined (not-found)
+    if (found === undefined && queryParams.isSupervisorRequest) return undefined;
+    return found ?? null;
   }, [allCircles, queryParams]);
 
   // 5. HOD Overall Stats
@@ -525,8 +557,57 @@ export default function CensusPublicSupervisorReport() {
         </div>
       )}
 
+      {/* NOT FOUND PAGE - invalid circle number or out-of-range */}
+      {!loading && targetCircleData === undefined && (
+        <div style={{
+          maxWidth: '500px',
+          margin: '60px auto',
+          textAlign: 'center',
+          padding: '40px 24px'
+        }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            background: 'rgba(239,68,68,0.12)',
+            border: '2px solid rgba(239,68,68,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px auto'
+          }}>
+            <AlertCircle size={36} color="#ef4444" />
+          </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', margin: '0 0 8px 0' }}>
+            Page Not Found
+          </h2>
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 6px 0' }}>
+            The supervisor circle{' '}
+            <b style={{ color: '#f87171', fontFamily: 'monospace' }}>
+              {(queryParams.circle || queryParams.id) ? `"${queryParams.circle || queryParams.id}"` : ''}
+            </b>{' '}
+            does not exist.
+          </p>
+          <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 24px 0' }}>
+            Valid circle numbers are <b style={{ color: '#e2e8f0' }}>001 to 075</b> (3 digits only).
+          </p>
+          <div style={{
+            background: 'rgba(239,68,68,0.08)',
+            border: '1px solid rgba(239,68,68,0.2)',
+            borderRadius: '10px',
+            padding: '12px 16px',
+            fontSize: '11.5px',
+            color: '#fca5a5',
+            lineHeight: 1.6
+          }}>
+            Example valid links:<br />
+            <code style={{ color: '#38bdf8' }}>/report?circle=001</code> · <code style={{ color: '#38bdf8' }}>/report?circle=025</code>
+          </div>
+        </div>
+      )}
+
       {/* SINGLE SUPERVISOR VIEW */}
-      {!loading && targetCircleData && (
+      {!loading && targetCircleData && targetCircleData !== undefined && (
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {/* Supervisor Card Header */}
           <div style={{
@@ -648,7 +729,7 @@ export default function CensusPublicSupervisorReport() {
                     <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>Verified</th>
                     <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>SE ID</th>
                     <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>Population</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>Errors</th>
+                    <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>Errors (Click to View)</th>
                     <th style={{ padding: '10px 10px', textAlign: 'center', fontWeight: 800 }}>Status</th>
                   </tr>
                 </thead>
@@ -681,17 +762,38 @@ export default function CensusPublicSupervisorReport() {
                       <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800, color: '#a855f7' }}>{e.seIdUsed || 0}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800, color: '#22c55e' }}>{e.totalPopulation}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                        <span style={{
-                          padding: '2px 7px',
-                          borderRadius: '6px',
-                          fontSize: '10px',
-                          fontWeight: 800,
-                          background: e.errorCount > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)',
-                          color: e.errorCount > 0 ? '#ef4444' : '#22c55e',
-                          border: e.errorCount > 0 ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(34,197,94,0.3)'
-                        }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (e.errorCount > 0) {
+                              setSelectedErrorModal({
+                                circleNo: targetCircleData.circleNo,
+                                supervisorName: targetCircleData.supervisorName,
+                                enumName: e.enumName,
+                                enumId: e.enumId,
+                                enumMobile: e.enumMobile,
+                                hlbCode: e.hlbCode,
+                                errors: e.errorRecords
+                              });
+                            }
+                          }}
+                          style={{
+                            background: e.errorCount > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.15)',
+                            color: e.errorCount > 0 ? '#ef4444' : '#22c55e',
+                            border: e.errorCount > 0 ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(34,197,94,0.3)',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '10px',
+                            fontWeight: 800,
+                            cursor: e.errorCount > 0 ? 'pointer' : 'default',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          {e.errorCount > 0 && <AlertTriangle size={10} />}
                           {e.errorCount} {e.errorCount === 1 ? 'error' : 'errors'}
-                        </span>
+                        </button>
                       </td>
                       <td style={{ padding: '10px 10px', textAlign: 'center' }}>
                         <span style={{
@@ -715,8 +817,8 @@ export default function CensusPublicSupervisorReport() {
         </div>
       )}
 
-      {/* HOD / ADMIN MASTER VIEW (ALL 75 CIRCLES) */}
-      {!loading && !targetCircleData && (
+      {/* HOD / ADMIN MASTER VIEW (ALL 75 CIRCLES) - only when not a supervisor request */}
+      {!loading && targetCircleData === null && (
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* HOD Master KPIs */}
           <div className="kpi-grid" style={{
@@ -751,6 +853,10 @@ export default function CensusPublicSupervisorReport() {
             <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
               <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Verified By Sup</div>
               <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#0ea5e9', marginTop: '2px' }}>{hodStats.verifiedBySup.toLocaleString()}</div>
+            </div>
+            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(168,85,247,0.25)', borderRadius: '10px', padding: '12px' }}>
+              <div style={{ fontSize: '9.5px', color: '#d8b4fe', fontWeight: 700, textTransform: 'uppercase' }}>SE ID Used</div>
+              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#a855f7', marginTop: '2px' }}>{hodStats.totalSeId.toLocaleString()}</div>
             </div>
             <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
               <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Total Population</div>
@@ -1106,8 +1212,12 @@ export default function CensusPublicSupervisorReport() {
                     Active Errors Inspection ({selectedErrorModal.errors.length})
                   </span>
                 </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
-                  Enumerator: <b style={{ color: '#e2e8f0' }}>{selectedErrorModal.enumName}</b> ({selectedErrorModal.enumId}) · Supervisor: <b style={{ color: '#e2e8f0' }}>{selectedErrorModal.supervisorName}</b>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                  <span>Enumerator: <b style={{ color: '#e2e8f0' }}>{selectedErrorModal.enumName}</b> ({selectedErrorModal.enumId})</span>
+                  {selectedErrorModal.enumMobile && selectedErrorModal.enumMobile !== 'N/A' && (
+                    <span>📞 <a href={`tel:${selectedErrorModal.enumMobile}`} style={{ color: '#60a5fa', textDecoration: 'none', fontWeight: 700 }}>{selectedErrorModal.enumMobile}</a></span>
+                  )}
+                  <span>· Supervisor: <b style={{ color: '#e2e8f0' }}>{selectedErrorModal.supervisorName}</b></span>
                 </div>
               </div>
 
