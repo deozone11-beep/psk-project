@@ -658,6 +658,7 @@ export default function CensusPublicSupervisorReport() {
             const ver = targetCircleData.enumerators.reduce((s, e) => s + e.verifiedBySup, 0);
             const se = targetCircleData.enumerators.reduce((s, e) => s + e.seIdUsed, 0);
             const pop = targetCircleData.enumerators.reduce((s, e) => s + e.totalPopulation, 0);
+            const lck = targetCircleData.enumerators.reduce((s, e) => s + (e.lockedCount || 0), 0);
             const err = targetCircleData.enumerators.reduce((s, e) => s + e.errorCount, 0);
             const comp = targetCircleData.enumerators.filter(e => e.isCompleted).length;
 
@@ -686,6 +687,10 @@ export default function CensusPublicSupervisorReport() {
                 <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
                   <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>SE ID Used</div>
                   <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: '#a855f7', marginTop: '2px' }}>{se.toLocaleString()}</div>
+                </div>
+                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '10px', padding: '10px 12px' }}>
+                  <div style={{ fontSize: '9.5px', color: '#67e8f9', fontWeight: 700, textTransform: 'uppercase' }}>🔒 Locked</div>
+                  <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: '#06b6d4', marginTop: '2px' }}>{lck.toLocaleString()}</div>
                 </div>
                 <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
                   <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Population</div>
