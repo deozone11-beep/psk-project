@@ -508,6 +508,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           buildingNo: r.building_number || r.buildingNumber || r.bld_no || '-',
           houseNo: r.census_house_num || r.censusHouseNum || r.house_no || '-',
           headName: r.householdhead_name || r.householdheadName || r.head_name || '-',
+          headMobile: r.mobile || r.mobile_no || r.contact_no || r.phone || '',
           errType: errDesc
         };
 
@@ -1181,6 +1182,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                 building_number: rec.buildingNo || '',
                 census_house_num: rec.houseNo || '',
                 head_name: rec.headName || '',
+                head_mobile: rec.headMobile || '',
                 error_type: rec.errType || 'Active Census Error',
                 error_description: rec.errType || '',
                 line_number: numOnly

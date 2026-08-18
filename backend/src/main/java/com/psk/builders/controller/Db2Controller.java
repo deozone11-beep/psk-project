@@ -352,11 +352,14 @@ public class Db2Controller {
                     "building_number VARCHAR(100), " +
                     "census_house_num VARCHAR(100), " +
                     "head_name VARCHAR(150), " +
+                    "head_mobile VARCHAR(50), " +
                     "error_type VARCHAR(150), " +
                     "error_description TEXT, " +
                     "line_number INT, " +
                     "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
                     ")");
+            // Add column if it doesn't exist (for existing tables)
+            try { db2.execute("ALTER TABLE public.census_errors ADD COLUMN IF NOT EXISTS head_mobile VARCHAR(50)"); } catch (Exception ignored) {};
 
             // 2. Clear old errors (DELETE is safe with PgBouncer connection pooler)
             try {
@@ -381,12 +384,12 @@ public class Db2Controller {
 
                 StringBuilder sqlBuilder = new StringBuilder();
                 sqlBuilder.append("INSERT INTO public.census_errors ")
-                        .append("(circle_no, hlb_code, enumerator_name, enumerator_id, building_number, census_house_num, head_name, error_type, error_description, line_number) VALUES ");
+                        .append("(circle_no, hlb_code, enumerator_name, enumerator_id, building_number, census_house_num, head_name, head_mobile, error_type, error_description, line_number) VALUES ");
 
                 List<Object> params = new ArrayList<>();
                 for (int j = 0; j < chunk.size(); j++) {
                     if (j > 0) sqlBuilder.append(", ");
-                    sqlBuilder.append("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    sqlBuilder.append("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     Map<String, Object> err = chunk.get(j);
                     params.add(err.get("circle_no") != null ? err.get("circle_no").toString() : "");
                     params.add(err.get("hlb_code") != null ? err.get("hlb_code").toString() : "");
@@ -395,6 +398,7 @@ public class Db2Controller {
                     params.add(err.get("building_number") != null ? err.get("building_number").toString() : "");
                     params.add(err.get("census_house_num") != null ? err.get("census_house_num").toString() : "");
                     params.add(err.get("head_name") != null ? err.get("head_name").toString() : "");
+                    params.add(err.get("head_mobile") != null ? err.get("head_mobile").toString() : "");
                     params.add(err.get("error_type") != null ? err.get("error_type").toString() : "");
                     params.add(err.get("error_description") != null ? err.get("error_description").toString() : "");
 
@@ -437,11 +441,13 @@ public class Db2Controller {
                             "building_number VARCHAR(100), " +
                             "census_house_num VARCHAR(100), " +
                             "head_name VARCHAR(150), " +
+                            "head_mobile VARCHAR(50), " +
                             "error_type VARCHAR(150), " +
                             "error_description TEXT, " +
                             "line_number INT, " +
                             "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
                             ")");
+                    try { stmt.execute("ALTER TABLE census_errors ADD COLUMN IF NOT EXISTS head_mobile VARCHAR(50)"); } catch (Throwable ignored) {}
                     stmt.execute("DELETE FROM census_errors");
 
                     if (errors != null && !errors.isEmpty()) {
@@ -450,10 +456,10 @@ public class Db2Controller {
                             List<Map<String, Object>> chunk = errors.subList(i, end);
                             StringBuilder sqlBuilder = new StringBuilder();
                             sqlBuilder.append("INSERT INTO census_errors ")
-                                    .append("(circle_no, hlb_code, enumerator_name, enumerator_id, building_number, census_house_num, head_name, error_type, error_description, line_number) VALUES ");
+                                    .append("(circle_no, hlb_code, enumerator_name, enumerator_id, building_number, census_house_num, head_name, head_mobile, error_type, error_description, line_number) VALUES ");
                             for (int j = 0; j < chunk.size(); j++) {
                                 if (j > 0) sqlBuilder.append(", ");
-                                sqlBuilder.append("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                sqlBuilder.append("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                             }
                             java.sql.PreparedStatement ps = conn.prepareStatement(sqlBuilder.toString());
                             int pIdx = 1;
@@ -465,6 +471,7 @@ public class Db2Controller {
                                 ps.setString(pIdx++, err.get("building_number") != null ? err.get("building_number").toString() : "");
                                 ps.setString(pIdx++, err.get("census_house_num") != null ? err.get("census_house_num").toString() : "");
                                 ps.setString(pIdx++, err.get("head_name") != null ? err.get("head_name").toString() : "");
+                                ps.setString(pIdx++, err.get("head_mobile") != null ? err.get("head_mobile").toString() : "");
                                 ps.setString(pIdx++, err.get("error_type") != null ? err.get("error_type").toString() : "");
                                 ps.setString(pIdx++, err.get("error_description") != null ? err.get("error_description").toString() : "");
 

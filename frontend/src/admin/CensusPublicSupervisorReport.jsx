@@ -1270,6 +1270,7 @@ export default function CensusPublicSupervisorReport() {
                     <th style={{ padding: '8px 10px', width: '90px', textAlign: 'center', fontWeight: 800 }}>Building No</th>
                     <th style={{ padding: '8px 10px', width: '90px', textAlign: 'center', fontWeight: 800 }}>House No</th>
                     <th style={{ padding: '8px 10px', width: '140px', fontWeight: 800 }}>Head of House</th>
+                    <th style={{ padding: '8px 10px', width: '120px', fontWeight: 800 }}>📞 Mobile No</th>
                     <th style={{ padding: '8px 10px', fontWeight: 800 }}>Error Description &amp; Rule</th>
                   </tr>
                 </thead>
@@ -1296,6 +1297,17 @@ export default function CensusPublicSupervisorReport() {
                       </td>
                       <td style={{ padding: '8px 10px', fontWeight: 700, color: '#ffffff' }}>
                         {err.head_name || err.headName || '-'}
+                      </td>
+                      <td style={{ padding: '8px 10px', fontFamily: 'monospace' }}>
+                        {(err.head_mobile || err.headMobile) ? (
+                          <a
+                            href={`tel:${err.head_mobile || err.headMobile}`}
+                            style={{ color: '#4ade80', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Phone size={10} />
+                            {err.head_mobile || err.headMobile}
+                          </a>
+                        ) : <span style={{ color: '#475569' }}>-</span>}
                       </td>
                       <td style={{ padding: '8px 10px' }}>
                         <span style={{
