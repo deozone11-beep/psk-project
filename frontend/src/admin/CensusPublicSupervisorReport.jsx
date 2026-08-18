@@ -1214,30 +1214,51 @@ export default function CensusPublicSupervisorReport() {
                 </div>
                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
                   <span>Enumerator: <b style={{ color: '#e2e8f0' }}>{selectedErrorModal.enumName}</b> ({selectedErrorModal.enumId})</span>
-                  {selectedErrorModal.enumMobile && selectedErrorModal.enumMobile !== 'N/A' && (
-                    <span>📞 <a href={`tel:${selectedErrorModal.enumMobile}`} style={{ color: '#60a5fa', textDecoration: 'none', fontWeight: 700 }}>{selectedErrorModal.enumMobile}</a></span>
-                  )}
                   <span>· Supervisor: <b style={{ color: '#e2e8f0' }}>{selectedErrorModal.supervisorName}</b></span>
                 </div>
               </div>
 
-              <button
-                onClick={() => setSelectedErrorModal(null)}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: 'none',
-                  color: '#fff',
-                  borderRadius: '8px',
-                  width: '30px',
-                  height: '30px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <X size={16} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {selectedErrorModal.enumMobile && selectedErrorModal.enumMobile !== 'N/A' && (
+                  <a
+                    href={`tel:${selectedErrorModal.enumMobile}`}
+                    style={{
+                      background: 'rgba(34,197,94,0.18)',
+                      border: '1px solid rgba(34,197,94,0.5)',
+                      color: '#4ade80',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <Phone size={13} />
+                    {selectedErrorModal.enumMobile}
+                  </a>
+                )}
+                <button
+                  onClick={() => setSelectedErrorModal(null)}
+                  style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    border: 'none',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    width: '30px',
+                    height: '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Modal Body / Errors Table */}
