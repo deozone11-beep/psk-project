@@ -248,13 +248,14 @@ export default function CensusPublicSupervisorReport() {
         const ver = parseInt(c.total_household_verified_by_supervisor || c.verified_by_supervisor || c.verified_households || 0);
         const pop = parseInt(c.total_population || c.population || c.tot_population || 0);
         const seUsed = parseInt(c.total_se_id_used || c.total_se_used || c.se_id_used || c.total_self_enum || c.se_used || 0);
+        const locked = parseInt(c.total_locked_census_houses || c.totalLockedCensusHouses || c.locked_census_houses || c.locked_houses || c.locked || 0);
 
         const stVal = String(c.status ?? c.completed ?? c.work_status ?? c.is_completed ?? '').trim().toLowerCase();
         const isComp = stVal === '1' || stVal === 'completed' || stVal === 'true';
 
-        chargeMetricsMap.set(blkKey, { exp, houses, hh, ver, pop, isComp, seUsed });
-        chargeMetricsMap.set(String(parseInt(blkKey, 10)), { exp, houses, hh, ver, pop, isComp, seUsed });
-        chargeMetricsMap.set(blkKey.padStart(4, '0'), { exp, houses, hh, ver, pop, isComp, seUsed });
+        chargeMetricsMap.set(blkKey, { exp, houses, hh, ver, pop, isComp, seUsed, locked });
+        chargeMetricsMap.set(String(parseInt(blkKey, 10)), { exp, houses, hh, ver, pop, isComp, seUsed, locked });
+        chargeMetricsMap.set(blkKey.padStart(4, '0'), { exp, houses, hh, ver, pop, isComp, seUsed, locked });
       });
     }
 
@@ -311,6 +312,7 @@ export default function CensusPublicSupervisorReport() {
           const verCount = cData.ver || parseInt(a.total_household_verified_by_supervisor || 0);
           const popCount = cData.pop || parseInt(a.total_population || 0);
           const seIdUsed = cData.seUsed || parseInt(a.total_se_id_used || a.total_se_used || a.se_id_used || 0);
+          const lockedCount = cData.locked || parseInt(a.total_locked_census_houses || a.totalLockedCensusHouses || a.locked_census_houses || a.locked || 0);
           const stAllot = String(a.status ?? a.completed ?? a.work_status ?? '').trim().toLowerCase();
           const isComp = cData.isComp || stAllot === '1' || stAllot === 'completed' || stAllot === 'true';
 
@@ -324,6 +326,7 @@ export default function CensusPublicSupervisorReport() {
             households: hhCount,
             verifiedBySup: verCount,
             seIdUsed: seIdUsed,
+            lockedCount: lockedCount,
             totalPopulation: popCount,
             errorCount: errList.length,
             errorRecords: errList,
@@ -728,6 +731,7 @@ export default function CensusPublicSupervisorReport() {
                     <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>Households</th>
                     <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>Verified</th>
                     <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>SE ID</th>
+                    <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>🔒 Locked</th>
                     <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>Population</th>
                     <th style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800 }}>Errors (Click to View)</th>
                     <th style={{ padding: '10px 10px', textAlign: 'center', fontWeight: 800 }}>Status</th>
@@ -760,6 +764,7 @@ export default function CensusPublicSupervisorReport() {
                       <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800, color: '#f59e0b' }}>{e.households}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800, color: '#0ea5e9' }}>{e.verifiedBySup}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800, color: '#a855f7' }}>{e.seIdUsed || 0}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800, color: '#06b6d4' }}>{e.lockedCount || 0}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 800, color: '#22c55e' }}>{e.totalPopulation}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'center' }}>
                         <button
@@ -1068,6 +1073,7 @@ export default function CensusPublicSupervisorReport() {
                             <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800 }}>Households</th>
                             <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800 }}>Verified</th>
                             <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800 }}>SE ID</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800 }}>🔒 Locked</th>
                             <th style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800 }}>Population</th>
                             <th style={{ padding: '8px 8px', textAlign: 'center', fontWeight: 800 }}>Errors (Click to View)</th>
                             <th style={{ padding: '8px 8px', textAlign: 'center', fontWeight: 800 }}>Status</th>
@@ -1100,6 +1106,7 @@ export default function CensusPublicSupervisorReport() {
                               <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800, color: '#f59e0b' }}>{e.households}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800, color: '#0ea5e9' }}>{e.verifiedBySup}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800, color: '#a855f7' }}>{e.seIdUsed || 0}</td>
+                              <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800, color: '#06b6d4' }}>{e.lockedCount || 0}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 800, color: '#22c55e' }}>{e.totalPopulation}</td>
                               <td style={{ padding: '8px 8px', textAlign: 'center' }}>
                                 <button
