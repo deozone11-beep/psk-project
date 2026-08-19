@@ -619,6 +619,20 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
             ))}
           </div>
 
+          {/* Paper Size Setting */}
+          <div className="a3StyleGroup">
+            <select
+              className="a3StyleBtn"
+              style={{ cursor: 'pointer', padding: '4px 8px' }}
+              value={paperSize}
+              onChange={e => setPaperSize(e.target.value)}
+              title="Select Print Paper Size"
+            >
+              <option value="A3">📄 A3 Landscape (Standard)</option>
+              <option value="A4">📄 A4 Landscape</option>
+            </select>
+          </div>
+
           {/* Layer Toggles */}
           <div className="a3ToggleGroup">
             <label className="a3ToggleLbl">
@@ -653,7 +667,7 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
             <Printer size={16} /> Print / Save PDF
           </button>
           <button className="a3ActionBtn btnPdf" onClick={handleDownloadPdf}>
-            <FileDown size={16} /> Export A3 PDF
+            <FileDown size={16} /> Export {paperSize} PDF
           </button>
           <button className="a3ActionBtn btnPng" onClick={handleDownloadPng}>
             <Download size={16} /> Export PNG
@@ -668,7 +682,7 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
       <div className="a3CanvasScroll">
         <div
           ref={a3PrintRef}
-          className={`a3OfficialSheet ${sketchStyle.toLowerCase()}`}
+          className={`a3OfficialSheet ${sketchStyle.toLowerCase()} ${paperSize === 'A4' ? 'print_a4' : ''}`}
           style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top center' }}
         >
 
