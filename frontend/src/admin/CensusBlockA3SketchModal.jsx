@@ -279,15 +279,35 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
     }
     extractPts(blockPoly.coordinates);
     if (pts.length > 0) {
-      const spanLng = Math.max(...pts.map(p => p[0])) - Math.min(...pts.map(p => p[0]));
-      const spanLat = Math.max(...pts.map(p => p[1])) - Math.min(...pts.map(p => p[1]));
-      // Modest margin (~14%) so active block is large & prominent in the center
-      const padLng = Math.max(spanLng * 0.14, 0.0004);
-      const padLat = Math.max(spanLat * 0.14, 0.0003);
-      minLng = Math.min(...pts.map(p => p[0])) - padLng;
-      maxLng = Math.max(...pts.map(p => p[0])) + padLng;
-      minLat = Math.min(...pts.map(p => p[1])) - padLat;
-      maxLat = Math.max(...pts.map(p => p[1])) + padLat;
+      const rawMinLng = Math.min(...pts.map(p => p[0]));
+      const rawMaxLng = Math.max(...pts.map(p => p[0]));
+      const rawMinLat = Math.min(...pts.map(p => p[1]));
+      const rawMaxLat = Math.max(...pts.map(p => p[1]));
+
+      const cLng = (rawMinLng + rawMaxLng) / 2;
+      const cLat = (rawMinLat + rawMaxLat) / 2;
+      const rawSpanLng = rawMaxLng - rawMinLng;
+      const rawSpanLat = rawMaxLat - rawMinLat;
+
+      const cosLat = Math.cos(cLat * Math.PI / 180);
+      const canvasAspect = svgW / svgH; // 1200 / 750 = 1.6
+      const geoAspect = (rawSpanLng * cosLat) / Math.max(0.0001, rawSpanLat);
+
+      const marginFactor = 0.08; // Tight 8% margin to make the figure large & prominent
+      let finalSpanLng, finalSpanLat;
+
+      if (geoAspect > canvasAspect) {
+        finalSpanLng = rawSpanLng * (1 + 2 * marginFactor);
+        finalSpanLat = (finalSpanLng / canvasAspect) / cosLat;
+      } else {
+        finalSpanLat = rawSpanLat * (1 + 2 * marginFactor);
+        finalSpanLng = (finalSpanLat * canvasAspect) * cosLat;
+      }
+
+      minLng = cLng - finalSpanLng / 2;
+      maxLng = cLng + finalSpanLng / 2;
+      minLat = cLat - finalSpanLat / 2;
+      maxLat = cLat + finalSpanLat / 2;
     }
   } else if (targetBuildings.length > 0) {
     const allLngs = [], allLats = [];
@@ -303,12 +323,29 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
       collect(b.geometry.coordinates);
     });
     if (allLngs.length > 0) {
-      const padLng = (Math.max(...allLngs) - Math.min(...allLngs)) * 0.14 || 0.0004;
-      const padLat = (Math.max(...allLats) - Math.min(...allLats)) * 0.14 || 0.0003;
-      minLng = Math.min(...allLngs) - padLng;
-      maxLng = Math.max(...allLngs) + padLng;
-      minLat = Math.min(...allLats) - padLat;
-      maxLat = Math.max(...allLats) + padLat;
+      const rawMinLng = Math.min(...allLngs), rawMaxLng = Math.max(...allLngs);
+      const rawMinLat = Math.min(...allLats), rawMaxLat = Math.max(...allLats);
+      const cLng = (rawMinLng + rawMaxLng) / 2;
+      const cLat = (rawMinLat + rawMaxLat) / 2;
+      const rawSpanLng = rawMaxLng - rawMinLng;
+      const rawSpanLat = rawMaxLat - rawMinLat;
+      const cosLat = Math.cos(cLat * Math.PI / 180);
+      const canvasAspect = svgW / svgH;
+      const geoAspect = (rawSpanLng * cosLat) / Math.max(0.0001, rawSpanLat);
+
+      const marginFactor = 0.08;
+      let finalSpanLng, finalSpanLat;
+      if (geoAspect > canvasAspect) {
+        finalSpanLng = rawSpanLng * (1 + 2 * marginFactor);
+        finalSpanLat = (finalSpanLng / canvasAspect) / cosLat;
+      } else {
+        finalSpanLat = rawSpanLat * (1 + 2 * marginFactor);
+        finalSpanLng = (finalSpanLat * canvasAspect) * cosLat;
+      }
+      minLng = cLng - finalSpanLng / 2;
+      maxLng = cLng + finalSpanLng / 2;
+      minLat = cLat - finalSpanLat / 2;
+      maxLat = cLat + finalSpanLat / 2;
     }
   }
 
