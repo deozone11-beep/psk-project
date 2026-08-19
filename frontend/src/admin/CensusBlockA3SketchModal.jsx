@@ -13,6 +13,7 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
   const [showStreetNames, setShowStreetNames] = useState(true);
   const [showHatching, setShowHatching] = useState(true);
   const [showLegend, setShowLegend] = useState(true);
+  const [paperSize, setPaperSize] = useState('A3'); // 'A3' | 'A4'
   const [zoomLevel, setZoomLevel] = useState(1);
   
   const [enumeratorName, setEnumeratorName] = useState('R. Sundaram (Enumerator #0482)');
@@ -261,6 +262,9 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
     return false;
   }
 
+  const svgW = 1200;
+  const svgH = 750;
+
   // Calculate SVG ViewBox Bounds — tightly focused on the ACTIVE block as the MAJOR figure
   let minLng = centerLng - 0.0018, maxLng = centerLng + 0.0018;
   let minLat = centerLat - 0.0014, maxLat = centerLat + 0.0014;
@@ -348,9 +352,6 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
       maxLat = cLat + finalSpanLat / 2;
     }
   }
-
-  const svgW = 1200;
-  const svgH = 750;
 
   function projectToSvg(lng, lat) {
     const x = ((lng - minLng) / (maxLng - minLng)) * svgW;
@@ -474,7 +475,10 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
 
   // Print function
   function handlePrintA3() {
+    const origTitle = document.title;
+    document.title = `Census_2027_Ward_${cleanWard}_Block_${blockNo}_Layout`;
     window.print();
+    setTimeout(() => { document.title = origTitle; }, 1500);
   }
 
   // Export PDF function
@@ -487,13 +491,14 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
         backgroundColor: '#ffffff'
       });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const isA4 = paperSize === 'A4';
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: 'a3'
+        format: isA4 ? 'a4' : 'a3'
       });
-      pdf.addImage(imgData, 'JPEG', 0, 0, 420, 297);
-      pdf.save(`Census_2027_HLB_Block_${cleanWard}_${blockNo}_A3_Layout.pdf`);
+      pdf.addImage(imgData, 'JPEG', 0, 0, isA4 ? 297 : 420, isA4 ? 210 : 297);
+      pdf.save(`Census_2027_HLB_Block_${cleanWard}_${blockNo}_${paperSize}_Layout.pdf`);
     } catch (err) {
       console.error('PDF export error:', err);
     }
