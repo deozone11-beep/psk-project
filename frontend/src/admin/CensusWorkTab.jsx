@@ -1859,8 +1859,8 @@ export default function CensusWorkTab({ creds }) {
             </button>
             <div className="hlbBasemapDivider" />
             {[
-              { key: 'OSM', label: 'OSM Vector' },
-              { key: 'HYBRID', label: 'Google Hybrid' },
+              { key: 'OSM', label: 'OSM' },
+              { key: 'HYBRID', label: 'Hybrid' },
               { key: 'ROADMAP', label: 'Roadmap' },
               { key: 'SATELLITE', label: 'Satellite' },
               { key: 'TERRAIN', label: 'Terrain' },
@@ -1874,29 +1874,28 @@ export default function CensusWorkTab({ creds }) {
               </button>
             ))}
 
-            {/* Spacer pushes filters to right */}
-            <div style={{ flex: 1 }} />
+            <div className="hlbBasemapDivider" />
 
             {/* Center: Inline Search */}
             <div className="hlbBarSearchWrap">
               <form onSubmit={handleGoogleSearch} className="hlbBarSearchForm">
-                <Search size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                <Search size={12} style={{ color: '#94a3b8', flexShrink: 0 }} />
                 <input
                   type="text"
                   className="hlbBarSearchInput"
-                  placeholder="Search Ward, AC, Block or Places..."
+                  placeholder="Search Ward, Block, Places..."
                   value={locationQuery}
                   onChange={(e) => setLocationQuery(e.target.value)}
                 />
                 {locationQuery && (
-                  <X size={12} style={{ color: '#64748b', cursor: 'pointer', flexShrink: 0 }}
+                  <X size={11} style={{ color: '#64748b', cursor: 'pointer', flexShrink: 0 }}
                     onClick={() => { setLocationQuery(''); setSuggestions([]); }} />
                 )}
                 <button type="submit" className="hlbBarSearchBtn" disabled={isSearching}>
-                  {isSearching ? <RefreshCw size={12} className="spin" /> : 'Go'}
+                  {isSearching ? <RefreshCw size={11} className="spin" /> : 'Go'}
                 </button>
                 {suggestions.length > 0 && (
-                  <div className="googleSearchSuggestionsDropdown" style={{ top: '38px', left: 0, minWidth: '320px' }}>
+                  <div className="googleSearchSuggestionsDropdown" style={{ top: '38px', left: 0, minWidth: '280px' }}>
                     {suggestions.map((item, idx) => (
                       <div key={idx} className="googleSearchSuggestionItem" onClick={() => selectPlaceItem(item)}>
                         <MapPin size={14} color={item.isGccWard ? '#0891b2' : '#ea4335'} style={{ flexShrink: 0 }} />
@@ -1911,18 +1910,16 @@ export default function CensusWorkTab({ creds }) {
               </form>
             </div>
 
-            <div style={{ flex: 1 }} />
-            <div className="hlbBasemapDivider" />
-
-            {/* Right: Census Zone → Ward → Block Filter */}
+            {/* Right: Census Zone → Ward → Block Filter (Pinned & always visible) */}
             <div className="hlbBarFilterGroup">
-              <Filter size={13} style={{ color: '#60a5fa', flexShrink: 0 }} />
+              <Filter size={12} style={{ color: '#60a5fa', flexShrink: 0 }} />
               <select
                 className="hlbBarSelect"
                 value={selectedFilterZone}
                 onChange={(e) => handleSelectZoneFilter(e.target.value)}
+                title="Filter by GCC Zone"
               >
-                <option value="">All Zones</option>
+                <option value="">Zone</option>
                 {availableZones.map(z => (
                   <option key={z} value={z}>Zone {z}</option>
                 ))}
@@ -1931,8 +1928,9 @@ export default function CensusWorkTab({ creds }) {
                 className="hlbBarSelect"
                 value={selectedFilterWard}
                 onChange={(e) => handleSelectWardFilter(e.target.value)}
+                title="Filter by Ward"
               >
-                <option value="">-- Ward --</option>
+                <option value="">Ward</option>
                 {availableWards.map(w => (
                   <option key={w} value={w}>Ward {w}</option>
                 ))}
@@ -1941,8 +1939,9 @@ export default function CensusWorkTab({ creds }) {
                 className="hlbBarSelect"
                 value={selectedFilterBlock}
                 onChange={(e) => handleSelectBlockFromFilter(e.target.value)}
+                title="Select HLB Block"
               >
-                <option value="">-- Block --</option>
+                <option value="">Block</option>
                 {availableBlocks.map(b => (
                   <option key={b.id} value={b.id}>
                     #{b.blockNo} (W{b.wardNo})
@@ -1951,7 +1950,7 @@ export default function CensusWorkTab({ creds }) {
               </select>
               {(selectedFilterZone || selectedFilterWard || selectedFilterBlock) && (
                 <button className="hlbBarResetBtn" onClick={handleResetFilters} title="Reset Filters">
-                  <FilterX size={13} />
+                  <FilterX size={12} />
                 </button>
               )}
             </div>

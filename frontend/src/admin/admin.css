@@ -3344,29 +3344,37 @@ body .modalContent .modalClose:hover {
   top: 0;
   left: 0;
   right: 0;
-  height: 38px;
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  min-height: 38px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
   display: flex;
   align-items: center;
-  padding: 0 14px;
+  padding: 3px 10px;
   gap: 4px;
   z-index: 999;
-  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hlbBasemapBar::-webkit-scrollbar {
+  display: none;
 }
 
 .hlbBasemapBtn {
   background: transparent;
   border: none;
   color: #94a3b8;
-  font-size: 0.78rem;
+  font-size: 0.73rem;
   font-weight: 700;
-  padding: 5px 12px;
+  padding: 4px 9px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.18s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .hlbBasemapBtn:hover {
