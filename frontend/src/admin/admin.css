@@ -3338,20 +3338,21 @@ body .modalContent .modalClose:hover {
   display: none; /* replaced by hlbBasemapBar */
 }
 
-/* ===== BASEMAP SUB-TOOLBAR (below navbar, full-width, no overlap) ===== */
+/* ===== BASEMAP SUB-TOOLBAR (3-Zone Balanced Layout) ===== */
 .hlbBasemapBar {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  min-height: 38px;
+  min-height: 42px;
   background: rgba(15, 23, 42, 0.94);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255,255,255,0.1);
   display: flex;
   align-items: center;
-  padding: 3px 10px;
-  gap: 4px;
+  justify-content: space-between;
+  padding: 4px 16px;
+  gap: 12px;
   z-index: 999;
   overflow-x: auto;
   overflow-y: hidden;
@@ -3363,13 +3364,38 @@ body .modalContent .modalClose:hover {
   display: none;
 }
 
+.hlbBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.hlbBarCenter {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.hlbBarRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .hlbBasemapBtn {
   background: transparent;
   border: none;
   color: #94a3b8;
-  font-size: 0.73rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  padding: 4px 9px;
+  padding: 5px 10px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -4399,20 +4425,21 @@ body .modalContent .modalClose:hover {
   background: #1e293b;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  padding: 8px 16px;
+  padding: 6px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .a3ControlLeft, .a3ControlRight {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -4422,26 +4449,26 @@ body .modalContent .modalClose:hover {
   gap: 8px;
   background: rgba(37, 99, 235, 0.15);
   border: 1px solid rgba(37, 99, 235, 0.4);
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: 8px;
 }
 
 .a3MainTitle {
   font-weight: 800;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   color: #93c5fd;
 }
 
 .a3SubBadge {
   background: #2563eb;
   color: #ffffff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 6px;
 }
 
-.a3StyleGroup, .a3ToggleGroup, .a3ZoomGroup {
+.a3StyleGroup, .a3ToggleGroup {
   display: flex;
   align-items: center;
   background: rgba(0, 0, 0, 0.25);
@@ -4451,96 +4478,139 @@ body .modalContent .modalClose:hover {
   gap: 2px;
 }
 
-.a3StyleBtn, .a3ToggleBtn {
+.a3StyleBtn {
   background: transparent;
   color: #94a3b8;
   border: none;
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 6px;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
 }
 
-.a3StyleBtn.active, .a3ToggleBtn.active {
+.a3StyleBtn.active {
   background: #2563eb;
   color: #ffffff;
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
 }
 
-.a3ZoomGroup button {
-  background: transparent;
-  border: none;
+.a3ToggleLbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: #cbd5e1;
-  padding: 5px 8px;
   cursor: pointer;
-  border-radius: 4px;
+  padding: 2px 6px;
+  user-select: none;
 }
 
-.a3ZoomGroup button:hover {
-  background: rgba(255, 255, 255, 0.1);
+.a3ToggleLbl input {
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.a3ZoomGroup {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  padding: 2px 4px;
+  gap: 2px;
+}
+
+.a3ZoomBtn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 3px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.a3ZoomBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
 }
 
-.a3ZoomLabel {
-  font-size: 0.75rem;
+.a3ZoomText {
+  font-size: 0.72rem;
   font-family: monospace;
-  color: #94a3b8;
+  color: #e2e8f0;
   font-weight: 700;
   padding: 0 4px;
 }
 
-.a3ExportBtn {
+.a3ActionBtn {
   border: none;
-  padding: 7px 14px;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
+  gap: 5px;
+  transition: all 0.18s ease;
+  white-space: nowrap;
 }
 
-.a3PrintBtn {
+.a3ActionBtn.btnPrint {
   background: #10b981;
   color: #ffffff;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
 }
 
-.a3PrintBtn:hover {
+.a3ActionBtn.btnPrint:hover {
   background: #059669;
+  transform: translateY(-1px);
 }
 
-.a3PdfBtn {
+.a3ActionBtn.btnPdf {
   background: #2563eb;
   color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
 }
 
-.a3PdfBtn:hover {
+.a3ActionBtn.btnPdf:hover {
   background: #1d4ed8;
+  transform: translateY(-1px);
 }
 
-.a3PngBtn {
+.a3ActionBtn.btnPng {
   background: #475569;
   color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.a3ActionBtn.btnPng:hover {
+  background: #64748b;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .a3CloseBtn {
   background: rgba(239, 68, 68, 0.2);
   border: 1px solid rgba(239, 68, 68, 0.4);
   color: #f87171;
-  border-radius: 8px;
-  padding: 6px;
+  border-radius: 7px;
+  padding: 5px;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.18s ease;
 }
 
 .a3CloseBtn:hover {
@@ -4973,9 +5043,10 @@ body .modalContent .modalClose:hover {
 .a3OffSigInput { width: 100%; border: none; border-bottom: 1px dotted #1e293b; font-size: 8px; padding: 2px 0; background: transparent; font-family: inherit; }
 .a3OffSigLine { border-bottom: 1px dotted #1e293b; height: 18px; }
 .a3OffTamilTag { text-align: right; font-size: 9px; font-weight: 800; margin-top: 6px; color: #64748b; }
-.a3OffRight { flex: 1; position: relative; border: 1px solid #1e293b; margin: 6px; overflow: hidden; background: #faf8f5; }
+.a3OffRight { flex: 1; position: relative; border: 1.5px solid #1e293b; margin: 6px; overflow: hidden; background: #ffffff; display: flex; }
 .a3OffRight .a3VectorSvg { width: 100%; height: 100%; display: block; }
 .a3OffNorth { position: absolute; top: 10px; right: 14px; display: flex; flex-direction: column; align-items: center; z-index: 5; font-size: 9px; font-weight: 900; }
+.a3OffScaleTag { position: absolute; top: 10px; left: 14px; font-size: 8.5px; font-weight: 700; color: #334155; z-index: 5; white-space: nowrap; background: rgba(255, 255, 255, 0.85); padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, 0.1); }
 /* =========================================================================
    DEDICATED CENSUS PHYSICAL FORM A3 / A4 PRINT ENGINE
    ========================================================================= */

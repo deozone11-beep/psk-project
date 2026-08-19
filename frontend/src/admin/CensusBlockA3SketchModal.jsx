@@ -118,19 +118,6 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
           setBlockPoly(matchedPoly);
         }
 
-        // 3. Fetch real OpenStreetMap road geometries via backend proxy (0 CORS / instant cache)
-        try {
-          const roadRes = await fetch(`/api/admin/census/roads?minLat=${minLat}&minLng=${minLng}&maxLat=${maxLat}&maxLng=${maxLng}`);
-          if (roadRes.ok) {
-            const elements = await roadRes.json();
-            if (isMounted && Array.isArray(elements) && elements.length > 0) {
-              setOsmRoads(elements);
-            }
-          }
-        } catch (rErr) {
-          console.warn('Real OSM road network fetch error:', rErr);
-        }
-
         // Filter visible neighboring blocks
         const visibleNeighbors = neighbors.filter(n => {
           if (!n.center) return false;
@@ -377,10 +364,11 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
       return (180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))));
     }
 
-    const minTx = lngToTileX(minLng, tileZ);
-    const maxTx = lngToTileX(maxLng, tileZ);
-    const minTy = latToTileY(maxLat, tileZ);
-    const maxTy = latToTileY(minLat, tileZ);
+    // Add +1 buffer tile in all directions so tiles seamlessly cover 100% of the canvas with zero top/bottom/side gaps
+    const minTx = lngToTileX(minLng, tileZ) - 1;
+    const maxTx = lngToTileX(maxLng, tileZ) + 1;
+    const minTy = latToTileY(maxLat, tileZ) - 1;
+    const maxTy = latToTileY(minLat, tileZ) + 1;
 
     const tiles = [];
     for (let tx = minTx; tx <= maxTx; tx++) {
@@ -398,13 +386,61 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
           url: `https://mt1.google.com/vt/lyrs=m&x=${tx}&y=${ty}&z=${tileZ}`,
           x: x1,
           y: y1,
-          width: x2 - x1,
-          height: y2 - y1
+          width: Math.ceil(x2 - x1) + 1,
+          height: Math.ceil(y2 - y1) + 1
         });
       }
     }
     return tiles;
   })();
+
+  // Convert Google tiles into in-memory Base64 Data URLs so html2canvas renders them 100% reliably in PDF & PNG exports
+  const [tileDataUrls, setTileDataUrls] = useState({});
+
+  useEffect(() => {
+    if (!googleTiles || googleTiles.length === 0) return;
+    let isCancelled = false;
+
+    async function loadTilesAsBase64() {
+      const results = {};
+      await Promise.all(
+        googleTiles.map(async (t) => {
+          try {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = t.url;
+            await new Promise((resolve) => {
+              img.onload = () => {
+                try {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = img.naturalWidth || 256;
+                  canvas.height = img.naturalHeight || 256;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(img, 0, 0);
+                  results[t.key] = canvas.toDataURL('image/png');
+                } catch (ce) {
+                  results[t.key] = t.url;
+                }
+                resolve();
+              };
+              img.onerror = () => {
+                results[t.key] = t.url;
+                resolve();
+              };
+            });
+          } catch (e) {
+            results[t.key] = t.url;
+          }
+        })
+      );
+      if (!isCancelled) {
+        setTileDataUrls(results);
+      }
+    }
+
+    loadTilesAsBase64();
+    return () => { isCancelled = true; };
+  }, [minLng, minLat, maxLng, maxLat]);
 
   function renderPolygonPath(coordinates, type) {
     let d = '';
@@ -488,7 +524,10 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
       const canvas = await html2canvas(a3PrintRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        allowTaint: true,
+        imageTimeout: 15000,
+        backgroundColor: '#ffffff',
+        logging: false
       });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const isA4 = paperSize === 'A4';
@@ -511,7 +550,10 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
       const canvas = await html2canvas(a3PrintRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        allowTaint: true,
+        imageTimeout: 15000,
+        backgroundColor: '#ffffff',
+        logging: false
       });
       const link = document.createElement('a');
       link.download = `Census_2027_HLB_Block_${cleanWard}_${blockNo}_Layout.png`;
@@ -911,7 +953,9 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
                         {googleTiles.map(t => (
                           <image
                             key={t.key}
-                            href={t.url}
+                            href={tileDataUrls[t.key] || t.url}
+                            xlinkHref={tileDataUrls[t.key] || t.url}
+                            crossOrigin="anonymous"
                             x={t.x}
                             y={t.y}
                             width={t.width}

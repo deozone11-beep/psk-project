@@ -1810,149 +1810,155 @@ export default function CensusWorkTab({ creds }) {
       {appNavTab === 'MAP_APPLICATION' && (
         <div className="hlbMapPortalBody">
 
-          {/* ---- FULL TOOLBAR: Basemap + Search + Filters (single row) ---- */}
+          {/* ---- FULL TOOLBAR: Basemap + Search + Filters (3-Zone Balanced Layout) ---- */}
           <div className="hlbBasemapBar">
-            {/* Left: Layer Toggles + basemap buttons */}
-            <button 
-              className={`hlbBasemapBtn ${showGdbPolygons ? 'activePoly' : ''}`}
-              onClick={() => {
-                if (gdbGeoJsonLayerRef.current && hlbLeafletRef.current) {
-                  if (showGdbPolygons) {
-                    hlbLeafletRef.current.removeLayer(gdbGeoJsonLayerRef.current);
-                  } else {
-                    gdbGeoJsonLayerRef.current.addTo(hlbLeafletRef.current);
+            {/* 1. LEFT: Layer Toggles */}
+            <div className="hlbBarLeft">
+              <button 
+                className={`hlbBasemapBtn ${showGdbPolygons ? 'activePoly' : ''}`}
+                onClick={() => {
+                  if (gdbGeoJsonLayerRef.current && hlbLeafletRef.current) {
+                    if (showGdbPolygons) {
+                      hlbLeafletRef.current.removeLayer(gdbGeoJsonLayerRef.current);
+                    } else {
+                      gdbGeoJsonLayerRef.current.addTo(hlbLeafletRef.current);
+                    }
+                    setShowGdbPolygons(!showGdbPolygons);
                   }
-                  setShowGdbPolygons(!showGdbPolygons);
-                }
-              }}
-              title="Toggle Census Block Boundaries"
-            >
-              📍 HLB Blocks (9,269)
-            </button>
-            <button 
-              className={`hlbBasemapBtn ${showGccZones ? 'activeZone' : ''}`}
-              onClick={toggleGccZones}
-              title="Toggle Official GCC Zones (1-15)"
-            >
-              🏢 GCC Zones (1-15)
-            </button>
-            <button 
-              className={`hlbBasemapBtn ${showGccWards ? 'activeWard' : ''}`}
-              onClick={toggleGccWards}
-              title="Toggle Official GCC Wards (200 Wards + AC details)"
-            >
-              🏛️ GCC Wards (200)
-            </button>
-            <button 
-              className={`hlbBasemapBtn ${showGccOuter ? 'activeOuter' : ''}`}
-              onClick={toggleGccOuter}
-              title="Toggle GCC Outer City Boundary"
-            >
-              🗺️ GCC Border
-            </button>
-            <button 
-              className={`hlbBasemapBtn ${showGccBuildings ? 'activeBuilding' : ''}`}
-              onClick={toggleGccBuildings}
-              title="Toggle Drone Survey Building Roof Footprints (9.32 Lakh Buildings)"
-            >
-              🏠 Drone Buildings
-            </button>
-            <div className="hlbBasemapDivider" />
-            {[
-              { key: 'OSM', label: 'OSM' },
-              { key: 'HYBRID', label: 'Hybrid' },
-              { key: 'ROADMAP', label: 'Roadmap' },
-              { key: 'SATELLITE', label: 'Satellite' },
-              { key: 'TERRAIN', label: 'Terrain' },
-            ].map(bm => (
-              <button
-                key={bm.key}
-                className={`hlbBasemapBtn ${basemapType === bm.key || (bm.key === 'OSM' && basemapType === 'VECTOR') ? 'active' : ''}`}
-                onClick={() => setBasemapType(bm.key)}
+                }}
+                title="Toggle Census Block Boundaries"
               >
-                {bm.label}
+                📍 HLB Blocks (9,269)
               </button>
-            ))}
-
-            <div className="hlbBasemapDivider" />
-
-            {/* Center: Inline Search */}
-            <div className="hlbBarSearchWrap">
-              <form onSubmit={handleGoogleSearch} className="hlbBarSearchForm">
-                <Search size={12} style={{ color: '#94a3b8', flexShrink: 0 }} />
-                <input
-                  type="text"
-                  className="hlbBarSearchInput"
-                  placeholder="Search Ward, Block, Places..."
-                  value={locationQuery}
-                  onChange={(e) => setLocationQuery(e.target.value)}
-                />
-                {locationQuery && (
-                  <X size={11} style={{ color: '#64748b', cursor: 'pointer', flexShrink: 0 }}
-                    onClick={() => { setLocationQuery(''); setSuggestions([]); }} />
-                )}
-                <button type="submit" className="hlbBarSearchBtn" disabled={isSearching}>
-                  {isSearching ? <RefreshCw size={11} className="spin" /> : 'Go'}
-                </button>
-                {suggestions.length > 0 && (
-                  <div className="googleSearchSuggestionsDropdown" style={{ top: '38px', left: 0, minWidth: '280px' }}>
-                    {suggestions.map((item, idx) => (
-                      <div key={idx} className="googleSearchSuggestionItem" onClick={() => selectPlaceItem(item)}>
-                        <MapPin size={14} color={item.isGccWard ? '#0891b2' : '#ea4335'} style={{ flexShrink: 0 }} />
-                        <div style={{ overflow: 'hidden' }}>
-                          <p className="googleSearchSuggestionTitle">{item.title || (item.display_name ? item.display_name.split(',')[0] : 'Location')}</p>
-                          <p className="googleSearchSuggestionSubtitle">{item.subtitle || item.display_name || ''}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </form>
+              <button 
+                className={`hlbBasemapBtn ${showGccZones ? 'activeZone' : ''}`}
+                onClick={toggleGccZones}
+                title="Toggle Official GCC Zones (1-15)"
+              >
+                🏢 GCC Zones (1-15)
+              </button>
+              <button 
+                className={`hlbBasemapBtn ${showGccWards ? 'activeWard' : ''}`}
+                onClick={toggleGccWards}
+                title="Toggle Official GCC Wards (200 Wards + AC details)"
+              >
+                🏛️ GCC Wards (200)
+              </button>
+              <button 
+                className={`hlbBasemapBtn ${showGccOuter ? 'activeOuter' : ''}`}
+                onClick={toggleGccOuter}
+                title="Toggle GCC Outer City Boundary"
+              >
+                🗺️ GCC Border
+              </button>
+              <button 
+                className={`hlbBasemapBtn ${showGccBuildings ? 'activeBuilding' : ''}`}
+                onClick={toggleGccBuildings}
+                title="Toggle Drone Survey Building Roof Footprints (9.32 Lakh Buildings)"
+              >
+                🏠 Drone Buildings
+              </button>
             </div>
 
-            {/* Right: Census Zone → Ward → Block Filter (Pinned & always visible) */}
-            <div className="hlbBarFilterGroup">
-              <Filter size={12} style={{ color: '#60a5fa', flexShrink: 0 }} />
-              <select
-                className="hlbBarSelect"
-                value={selectedFilterZone}
-                onChange={(e) => handleSelectZoneFilter(e.target.value)}
-                title="Filter by GCC Zone"
-              >
-                <option value="">Zone</option>
-                {availableZones.map(z => (
-                  <option key={z} value={z}>Zone {z}</option>
-                ))}
-              </select>
-              <select
-                className="hlbBarSelect"
-                value={selectedFilterWard}
-                onChange={(e) => handleSelectWardFilter(e.target.value)}
-                title="Filter by Ward"
-              >
-                <option value="">Ward</option>
-                {availableWards.map(w => (
-                  <option key={w} value={w}>Ward {w}</option>
-                ))}
-              </select>
-              <select
-                className="hlbBarSelect"
-                value={selectedFilterBlock}
-                onChange={(e) => handleSelectBlockFromFilter(e.target.value)}
-                title="Select HLB Block"
-              >
-                <option value="">Block</option>
-                {availableBlocks.map(b => (
-                  <option key={b.id} value={b.id}>
-                    #{b.blockNo} (W{b.wardNo})
-                  </option>
-                ))}
-              </select>
-              {(selectedFilterZone || selectedFilterWard || selectedFilterBlock) && (
-                <button className="hlbBarResetBtn" onClick={handleResetFilters} title="Reset Filters">
-                  <FilterX size={12} />
+            {/* 2. CENTER: Basemap Layer Segmented Switcher */}
+            <div className="hlbBarCenter">
+              {[
+                { key: 'OSM', label: 'OSM' },
+                { key: 'HYBRID', label: 'Hybrid' },
+                { key: 'ROADMAP', label: 'Roadmap' },
+                { key: 'SATELLITE', label: 'Satellite' },
+                { key: 'TERRAIN', label: 'Terrain' },
+              ].map(bm => (
+                <button
+                  key={bm.key}
+                  className={`hlbBasemapBtn ${basemapType === bm.key || (bm.key === 'OSM' && basemapType === 'VECTOR') ? 'active' : ''}`}
+                  onClick={() => setBasemapType(bm.key)}
+                >
+                  {bm.label}
                 </button>
-              )}
+              ))}
+            </div>
+
+            {/* 3. RIGHT: Search + Zone/Ward/Block Filters */}
+            <div className="hlbBarRight">
+              {/* Inline Search */}
+              <div className="hlbBarSearchWrap">
+                <form onSubmit={handleGoogleSearch} className="hlbBarSearchForm">
+                  <Search size={12} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                  <input
+                    type="text"
+                    className="hlbBarSearchInput"
+                    placeholder="Search Ward, Block, Places..."
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                  />
+                  {locationQuery && (
+                    <X size={11} style={{ color: '#64748b', cursor: 'pointer', flexShrink: 0 }}
+                      onClick={() => { setLocationQuery(''); setSuggestions([]); }} />
+                  )}
+                  <button type="submit" className="hlbBarSearchBtn" disabled={isSearching}>
+                    {isSearching ? <RefreshCw size={11} className="spin" /> : 'Go'}
+                  </button>
+                  {suggestions.length > 0 && (
+                    <div className="googleSearchSuggestionsDropdown" style={{ top: '38px', left: 0, minWidth: '280px' }}>
+                      {suggestions.map((item, idx) => (
+                        <div key={idx} className="googleSearchSuggestionItem" onClick={() => selectPlaceItem(item)}>
+                          <MapPin size={14} color={item.isGccWard ? '#0891b2' : '#ea4335'} style={{ flexShrink: 0 }} />
+                          <div style={{ overflow: 'hidden' }}>
+                            <p className="googleSearchSuggestionTitle">{item.title || (item.display_name ? item.display_name.split(',')[0] : 'Location')}</p>
+                            <p className="googleSearchSuggestionSubtitle">{item.subtitle || item.display_name || ''}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </form>
+              </div>
+
+              {/* Census Zone → Ward → Block Filter */}
+              <div className="hlbBarFilterGroup">
+                <Filter size={12} style={{ color: '#60a5fa', flexShrink: 0 }} />
+                <select
+                  className="hlbBarSelect"
+                  value={selectedFilterZone}
+                  onChange={(e) => handleSelectZoneFilter(e.target.value)}
+                  title="Filter by GCC Zone"
+                >
+                  <option value="">Zone</option>
+                  {availableZones.map(z => (
+                    <option key={z} value={z}>Zone {z}</option>
+                  ))}
+                </select>
+                <select
+                  className="hlbBarSelect"
+                  value={selectedFilterWard}
+                  onChange={(e) => handleSelectWardFilter(e.target.value)}
+                  title="Filter by Ward"
+                >
+                  <option value="">Ward</option>
+                  {availableWards.map(w => (
+                    <option key={w} value={w}>Ward {w}</option>
+                  ))}
+                </select>
+                <select
+                  className="hlbBarSelect"
+                  value={selectedFilterBlock}
+                  onChange={(e) => handleSelectBlockFromFilter(e.target.value)}
+                  title="Select HLB Block"
+                >
+                  <option value="">Block</option>
+                  {availableBlocks.map(b => (
+                    <option key={b.id} value={b.id}>
+                      #{b.blockNo} (W{b.wardNo})
+                    </option>
+                  ))}
+                </select>
+                {(selectedFilterZone || selectedFilterWard || selectedFilterBlock) && (
+                  <button className="hlbBarResetBtn" onClick={handleResetFilters} title="Reset Filters">
+                    <FilterX size={12} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
