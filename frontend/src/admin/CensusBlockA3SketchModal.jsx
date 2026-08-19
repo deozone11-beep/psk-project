@@ -37,6 +37,12 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
   const centerLat = parseFloat(block.lat || block.centerLat || 13.0645);
   const centerLng = parseFloat(block.lng || block.centerLng || 80.1760);
 
+  // Global in-memory cache to prevent re-fetching large 16MB GeoJSON repeatedly
+  if (typeof window !== 'undefined') {
+    if (!window.__hlbPolysCache) window.__hlbPolysCache = null;
+    if (!window.__wardBuildingsCache) window.__wardBuildingsCache = {};
+  }
+
   // Load building polygons & block boundary
   useEffect(() => {
     let isMounted = true;
@@ -44,21 +50,37 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
 
     async function loadData() {
       try {
-        // 1. Fetch Ward Buildings
-        const bRes = await fetch(`/gcc_buildings/ward_${cleanWard}.json`);
+        // 1. Fetch Ward Buildings (with instant cache)
         let allWardBuildings = [];
-        if (bRes.ok) {
-          const bData = await bRes.json();
-          allWardBuildings = bData.features || [];
+        if (window.__wardBuildingsCache && window.__wardBuildingsCache[cleanWard]) {
+          allWardBuildings = window.__wardBuildingsCache[cleanWard];
+        } else {
+          const bRes = await fetch(`/gcc_buildings/ward_${cleanWard}.json`);
+          if (bRes.ok) {
+            const bData = await bRes.json();
+            allWardBuildings = bData.features || [];
+            if (window.__wardBuildingsCache) {
+              window.__wardBuildingsCache[cleanWard] = allWardBuildings;
+            }
+          }
         }
 
-        // 2. Fetch HLB Block Polygon and surrounding blocks from hlb_polys.json
-        const pRes = await fetch('/hlb_polys.json');
+        // 2. Fetch HLB Block Polygon and surrounding blocks from hlb_polys.json (with instant cache)
+        let allFeatures = [];
+        if (window.__hlbPolysCache) {
+          allFeatures = window.__hlbPolysCache;
+        } else {
+          const pRes = await fetch('/hlb_polys.json');
+          if (pRes.ok) {
+            const pData = await pRes.json();
+            allFeatures = pData.features || [];
+            window.__hlbPolysCache = allFeatures;
+          }
+        }
+
         let matchedPoly = null;
         let neighbors = [];
-        if (pRes.ok) {
-          const pData = await pRes.json();
-          const allFeatures = pData.features || [];
+        if (allFeatures.length > 0) {
           const found = allFeatures.find(f => {
             const p = f.properties || {};
             const bId = String(p.hlb_id || p.code_block || '');

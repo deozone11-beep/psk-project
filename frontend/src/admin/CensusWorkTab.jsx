@@ -1826,37 +1826,37 @@ export default function CensusWorkTab({ creds }) {
                     setShowGdbPolygons(!showGdbPolygons);
                   }
                 }}
-                title="Toggle Census Block Boundaries"
+                title="Toggle Census Block Boundaries (9,269 Blocks)"
               >
-                📍 HLB Blocks (9,269)
+                📍 HLB (9.2k)
               </button>
               <button 
                 className={`hlbBasemapBtn ${showGccZones ? 'activeZone' : ''}`}
                 onClick={toggleGccZones}
                 title="Toggle Official GCC Zones (1-15)"
               >
-                🏢 GCC Zones (1-15)
+                🏢 Zones
               </button>
               <button 
                 className={`hlbBasemapBtn ${showGccWards ? 'activeWard' : ''}`}
                 onClick={toggleGccWards}
-                title="Toggle Official GCC Wards (200 Wards + AC details)"
+                title="Toggle Official GCC Wards (200 Wards)"
               >
-                🏛️ GCC Wards (200)
+                🏛️ Wards
               </button>
               <button 
                 className={`hlbBasemapBtn ${showGccOuter ? 'activeOuter' : ''}`}
                 onClick={toggleGccOuter}
                 title="Toggle GCC Outer City Boundary"
               >
-                🗺️ GCC Border
+                🗺️ Border
               </button>
               <button 
                 className={`hlbBasemapBtn ${showGccBuildings ? 'activeBuilding' : ''}`}
                 onClick={toggleGccBuildings}
-                title="Toggle Drone Survey Building Roof Footprints (9.32 Lakh Buildings)"
+                title="Toggle Drone Survey Building Footprints"
               >
-                🏠 Drone Buildings
+                🏠 Buildings
               </button>
             </div>
 
@@ -1865,8 +1865,8 @@ export default function CensusWorkTab({ creds }) {
               {[
                 { key: 'OSM', label: 'OSM' },
                 { key: 'HYBRID', label: 'Hybrid' },
-                { key: 'ROADMAP', label: 'Roadmap' },
-                { key: 'SATELLITE', label: 'Satellite' },
+                { key: 'ROADMAP', label: 'Road' },
+                { key: 'SATELLITE', label: 'Sat' },
                 { key: 'TERRAIN', label: 'Terrain' },
               ].map(bm => (
                 <button
@@ -1879,16 +1879,16 @@ export default function CensusWorkTab({ creds }) {
               ))}
             </div>
 
-            {/* 3. RIGHT: Search + Zone/Ward/Block Filters */}
+            {/* 3. RIGHT: Search + Zone/Ward/Block Filters (Always anchored on screen) */}
             <div className="hlbBarRight">
               {/* Inline Search */}
               <div className="hlbBarSearchWrap">
                 <form onSubmit={handleGoogleSearch} className="hlbBarSearchForm">
-                  <Search size={12} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                  <Search size={11} style={{ color: '#94a3b8', flexShrink: 0 }} />
                   <input
                     type="text"
                     className="hlbBarSearchInput"
-                    placeholder="Search Ward, Block, Places..."
+                    placeholder="Search place / ward..."
                     value={locationQuery}
                     onChange={(e) => setLocationQuery(e.target.value)}
                   />
@@ -1900,7 +1900,7 @@ export default function CensusWorkTab({ creds }) {
                     {isSearching ? <RefreshCw size={11} className="spin" /> : 'Go'}
                   </button>
                   {suggestions.length > 0 && (
-                    <div className="googleSearchSuggestionsDropdown" style={{ top: '38px', left: 0, minWidth: '280px' }}>
+                    <div className="googleSearchSuggestionsDropdown" style={{ top: '38px', left: 0, minWidth: '260px' }}>
                       {suggestions.map((item, idx) => (
                         <div key={idx} className="googleSearchSuggestionItem" onClick={() => selectPlaceItem(item)}>
                           <MapPin size={14} color={item.isGccWard ? '#0891b2' : '#ea4335'} style={{ flexShrink: 0 }} />

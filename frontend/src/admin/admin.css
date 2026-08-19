@@ -3625,8 +3625,8 @@ body .modalContent .modalClose:hover {
   border: none;
   outline: none;
   color: #e2e8f0;
-  font-size: 0.78rem;
-  width: 220px;
+  font-size: 0.76rem;
+  width: 140px;
 }
 
 .hlbBarSearchInput::placeholder {
