@@ -14,6 +14,7 @@ import CensusModule3Hub from './CensusModule3Hub';
 import CensusModule3ErrorAbstract from './CensusModule3ErrorAbstract';
 import CensusModule3ErrorCustomReport from './CensusModule3ErrorCustomReport';
 import CensusModule4ProgressReport from './CensusModule4ProgressReport';
+import CensusBlockA3SketchModal from './CensusBlockA3SketchModal';
 
 
 const STORAGE_KEY = 'psk_census_blocks_v10';
@@ -2451,80 +2452,20 @@ export default function CensusWorkTab({ creds }) {
           </div>
         </div>
       )}
-      {/* OFFICIAL CENSUS BLOCK PRINT LAYOUT MODAL */}
+      {/* A3 HAND-DRAWN CENSUS BLOCK SKETCH MODAL */}
       {showBlockPrintModal && blockToPrint && (
-        <div className="censusBlockPrintModalOverlay">
-          <div className="censusBlockPrintCard">
-            {/* Modal Header (No Print) */}
-            <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a' }}>
-                <Printer size={22} color="#1a73e8" />
-                <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Census Block Layout Print Preview</h2>
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  onClick={() => window.print()}
-                  style={{ background: '#1a73e8', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <Printer size={16} /> Print / Export PDF
-                </button>
-                <button 
-                  onClick={() => setShowBlockPrintModal(false)}
-                  style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '8px 14px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-
-            {/* Official Printable Layout Frame */}
-            <div style={{ border: '3px double #0f172a', padding: '20px', background: '#ffffff', color: '#0f172a', fontFamily: 'serif' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #0f172a', paddingBottom: '12px', marginBottom: '16px' }}>
-                <img src="/logo-icon.png" alt="Census Seal" style={{ width: '56px', height: '56px' }} />
-                <div style={{ textAlign: 'center' }}>
-                  <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>Census of India 2027</h1>
-                  <h3 style={{ margin: '4px 0 0 0', fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>House Listing Block (HLB) Layout Map</h3>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.78rem', fontFamily: 'sans-serif', color: '#64748b' }}>Office of the Registrar General and Census Commissioner of India</p>
-                </div>
-                <div style={{ textAlign: 'right', fontSize: '0.8rem', fontFamily: 'monospace', fontWeight: 700 }}>
-                  <p style={{ margin: 0 }}><b>DISTRICT:</b> CHENNAI (34-02)</p>
-                  <p style={{ margin: '2px 0 0 0' }}><b>STATE:</b> TAMIL NADU (34)</p>
-                </div>
-              </div>
-
-              {/* Block Details Info Box */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', background: '#f8fafc', border: '1px solid #cbd5e1', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontFamily: 'sans-serif', fontSize: '0.85rem' }}>
-                <div><span style={{ color: '#64748b', fontSize: '0.75rem' }}>HLB BLOCK ID:</span><br/><b style={{ fontSize: '1.1rem', color: '#1a73e8' }}>{blockToPrint.title.replace('🏛️ HLB Census Block #', '')}</b></div>
-                <div><span style={{ color: '#64748b', fontSize: '0.75rem' }}>DETAILS:</span><br/><b>{blockToPrint.subtitle}</b></div>
-                <div><span style={{ color: '#64748b', fontSize: '0.75rem' }}>LATITUDE:</span><br/><b style={{ fontFamily: 'monospace' }}>{blockToPrint.lat}</b></div>
-                <div><span style={{ color: '#64748b', fontSize: '0.75rem' }}>LONGITUDE:</span><br/><b style={{ fontFamily: 'monospace' }}>{blockToPrint.lng}</b></div>
-              </div>
-
-              {/* High Resolution Block Map Image / Canvas Display */}
-              <div style={{ position: 'relative', width: '100%', height: '360px', borderRadius: '10px', overflow: 'hidden', border: '2px solid #0f172a', marginBottom: '16px' }}>
-                <img 
-                  src={`https://mt1.google.com/vt/lyrs=y&x=${Math.floor((parseFloat(blockToPrint.lng) + 180) / 360 * Math.pow(2, 17))}&y=${Math.floor((1 - Math.log(Math.tan(parseFloat(blockToPrint.lat) * Math.PI / 180) + 1 / Math.cos(parseFloat(blockToPrint.lat) * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, 17))}&z=17`} 
-                  alt="Block Map Snapshot" 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '24px', height: '24px', background: '#ea4335', border: '3px solid #fff', borderRadius: '50%', boxShadow: '0 0 12px rgba(0,0,0,0.5)' }}></div>
-                <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.9)', padding: '6px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800, fontFamily: 'sans-serif' }}>🧭 NORTH ⬆</div>
-                <div style={{ position: 'absolute', bottom: '12px', left: '12px', background: 'rgba(255,255,255,0.9)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'monospace' }}>Scale: 1:2000 | WGS84</div>
-              </div>
-
-              {/* Signature Footer */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '24px', paddingTop: '16px', borderTop: '1px dashed #94a3b8', fontFamily: 'sans-serif', fontSize: '0.8rem' }}>
-                <div>
-                  <p style={{ margin: 0 }}><b>Prepared By:</b> Census Enumerator Officer</p>
-                  <p style={{ margin: '4px 0 0 0', color: '#64748b' }}>Date: {new Date().toLocaleDateString()}</p>
-                </div>
-                <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #0f172a', paddingTop: '4px' }}>
-                  <b>Supervisor Signature</b>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <CensusBlockA3SketchModal
+          block={{
+            wardNo: blockToPrint.wardNo || (blockToPrint.subtitle ? blockToPrint.subtitle.match(/Ward[\s#]*(\d+)/i)?.[1] : null) || blockToPrint.title?.replace(/[^0-9]/g, '').slice(0, 3) || '144',
+            blockNo: blockToPrint.blockNo || blockToPrint.title?.replace('🏛️ HLB Census Block #', '').trim() || blockToPrint.title?.replace(/[^0-9]/g, '') || '0144',
+            zoneNo: blockToPrint.zoneNo || (blockToPrint.subtitle ? blockToPrint.subtitle.match(/Zone[\s#]*(\d+)/i)?.[1] : null) || '11',
+            lat: parseFloat(blockToPrint.lat) || 13.0645,
+            lng: parseFloat(blockToPrint.lng) || 80.1760,
+            centerLat: parseFloat(blockToPrint.lat) || 13.0645,
+            centerLng: parseFloat(blockToPrint.lng) || 80.1760,
+          }}
+          onClose={() => setShowBlockPrintModal(false)}
+        />
       )}
     </div>
   );

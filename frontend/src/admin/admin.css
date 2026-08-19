@@ -4913,7 +4913,64 @@ body .modalContent .modalClose:hover {
   }
 }
 
-
-
-
+/* ══════════════════════════════════════════════════════════
+   OFFICIAL CENSUS 2027 A3 TEMPLATE — MATCHING PRINTED FORM
+   ══════════════════════════════════════════════════════════ */
+.a3OfficialSheet {
+  width: 420mm; min-height: 297mm; background: #fff; border: 2px solid #1e293b;
+  margin: 20px auto; display: flex; flex-direction: column;
+  font-family: 'Noto Sans Tamil', 'Segoe UI', Roboto, sans-serif; color: #1e293b; overflow: hidden;
+}
+.a3OffHdr { display: flex; align-items: stretch; border-bottom: 2px solid #1e293b; font-size: 9px; line-height: 1.35; }
+.a3OffHdrTitle { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-right: 1.5px solid #1e293b; min-width: 240px; }
+.a3OffEmblem { width: 32px; height: 32px; object-fit: contain; }
+.a3OffTamilTitle { font-weight: 800; font-size: 11px; }
+.a3OffEngTitle { font-weight: 700; font-size: 9px; color: #475569; }
+.a3OffHdrCenter { flex: 1; padding: 6px 14px; border-right: 1.5px solid #1e293b; font-size: 8px; text-align: center; }
+.a3OffHdrCenter strong { display: block; margin-top: 3px; font-size: 9px; }
+.a3OffHdrSign { min-width: 140px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: space-between; font-size: 8px; }
+.a3OffSignLabel { font-weight: 600; }
+.a3OffSignLine { border-bottom: 1px dotted #1e293b; margin-top: auto; height: 20px; }
+.a3OffBody { flex: 1; display: flex; min-height: 0; }
+.a3OffLeft { width: 255px; min-width: 255px; border-right: 2px solid #1e293b; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; font-size: 8.5px; overflow-y: auto; }
+.a3OffAdminSection { display: flex; flex-direction: column; gap: 3px; }
+.a3OffAdminRow { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.a3OffAdminLbl { flex: 1; font-weight: 600; font-size: 8px; }
+.a3OffAdminBoxes { display: flex; gap: 2px; }
+.a3OffAdminBox { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border: 1.5px solid #1e293b; font-weight: 800; font-size: 11px; font-family: 'Courier New', monospace; }
+.a3OffDateLine { font-size: 8px; border-bottom: 1px dotted #1e293b; flex: 1; padding-left: 4px; }
+.a3OffDivider { border-top: 1.5px solid #1e293b; margin: 3px 0; }
+.a3OffNote { font-size: 7.5px; line-height: 1.4; }
+.a3OffNote strong { font-size: 8px; text-decoration: underline; }
+.a3OffNote p { margin: 2px 0 0; }
+.a3OffLegend { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+.a3OffLegTitle { font-weight: 800; font-size: 8px; text-decoration: underline; margin-top: 5px; }
+.a3OffLegRow { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 7.5px; padding: 1px 0; }
+.a3OffSymPucca { display: inline-block; width: 16px; height: 12px; border: 1.5px solid #1e293b; background: rgba(30,41,59,0.06); flex-shrink: 0; }
+.a3OffSymPuccaOther { display: inline-block; width: 16px; height: 12px; border: 1.5px solid #1e293b; background: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(30,41,59,0.15) 2px, rgba(30,41,59,0.15) 3px); flex-shrink: 0; }
+.a3OffLineSolid { display: inline-block; width: 35px; height: 0; border-top: 2px solid #1e293b; flex-shrink: 0; }
+.a3OffLineDash { display: inline-block; width: 35px; height: 0; border-top: 2px dashed #1e293b; flex-shrink: 0; }
+.a3OffLineTar { display: inline-block; width: 35px; height: 3px; background: repeating-linear-gradient(90deg, #1e293b 0 5px, transparent 5px 8px); flex-shrink: 0; }
+.a3OffLineRail { display: inline-block; width: 35px; height: 4px; background: repeating-linear-gradient(90deg, #1e293b 0 2px, transparent 2px 5px); border-top: 1.5px solid #1e293b; border-bottom: 1.5px solid #1e293b; flex-shrink: 0; }
+.a3OffLineRiver { display: inline-block; width: 35px; height: 0; border-top: 2.5px solid #3b82f6; flex-shrink: 0; }
+.a3OffLineCanal { display: inline-block; width: 35px; height: 0; border-top: 2px dashed #3b82f6; flex-shrink: 0; }
+.a3OffNumRow { display: flex; gap: 3px; margin-top: 4px; }
+.a3OffNumBox { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 18px; border: 1.5px solid #1e293b; font-weight: 900; font-size: 10px; font-family: 'Courier New', monospace; }
+.a3OffNumText { font-size: 7px; line-height: 1.35; margin: 3px 0 0; }
+.a3OffStats { margin-top: 4px; border-top: 1px solid #94a3b8; padding-top: 4px; display: flex; flex-direction: column; gap: 2px; }
+.a3OffStatsRow { display: flex; justify-content: space-between; font-size: 8px; }
+.a3OffStatsRow b { font-family: 'Courier New', monospace; }
+.a3OffSigs { margin-top: auto; display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid #94a3b8; }
+.a3OffSigField span { display: block; font-size: 7.5px; font-weight: 600; }
+.a3OffSigInput { width: 100%; border: none; border-bottom: 1px dotted #1e293b; font-size: 8px; padding: 2px 0; background: transparent; font-family: inherit; }
+.a3OffSigLine { border-bottom: 1px dotted #1e293b; height: 18px; }
+.a3OffTamilTag { text-align: right; font-size: 9px; font-weight: 800; margin-top: 6px; color: #64748b; }
+.a3OffRight { flex: 1; position: relative; border: 1px solid #1e293b; margin: 6px; overflow: hidden; background: #faf8f5; }
+.a3OffRight .a3VectorSvg { width: 100%; height: 100%; display: block; }
+.a3OffNorth { position: absolute; top: 10px; right: 14px; display: flex; flex-direction: column; align-items: center; z-index: 5; font-size: 9px; font-weight: 900; }
+.a3OffScaleTag { position: absolute; top: 10px; left: 14px; font-size: 8px; font-weight: 700; color: #475569; z-index: 5; }
+@media print {
+  .a3OfficialSheet { width: 420mm !important; min-height: 297mm !important; margin: 0 !important; border: none !important; page-break-inside: avoid; }
+  .a3OffRight { background: #fff !important; }
+}
 

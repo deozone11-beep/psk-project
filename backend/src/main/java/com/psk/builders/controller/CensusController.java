@@ -290,4 +290,87 @@ public class CensusController {
             return ResponseEntity.ok(Map.of("error", e.getMessage() != null ? e.getMessage() : e.toString()));
         }
     }
+
+    private final Map<String, List<Map<String, Object>>> roadCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    @GetMapping("/roads")
+    public ResponseEntity<?> getRoads(
+            @RequestParam double minLat,
+            @RequestParam double minLng,
+            @RequestParam double maxLat,
+            @RequestParam double maxLng
+    ) {
+        String cacheKey = String.format(Locale.US, "%.4f,%.4f,%.4f,%.4f", minLat, minLng, maxLat, maxLng);
+        if (roadCache.containsKey(cacheKey)) {
+            return ResponseEntity.ok(roadCache.get(cacheKey));
+        }
+
+        List<Map<String, Object>> roads = new ArrayList<>();
+        String overpassQuery = String.format(Locale.US,
+                "[out:json][timeout:15];way[\"highway\"](%.5f,%.5f,%.5f,%.5f);out geom;",
+                minLat, minLng, maxLat, maxLng);
+
+        String[] endpoints = {
+                "https://overpass-api.de/api/interpreter",
+                "https://lz4.overpass-api.de/api/interpreter",
+                "https://overpass.kumi.systems/api/interpreter"
+        };
+
+        for (String endpoint : endpoints) {
+            try {
+                java.net.URL url = new java.net.URL(endpoint);
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("User-Agent", "CensusMapSketchApp/1.0");
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(12000);
+                conn.setDoOutput(true);
+
+                byte[] postBytes = ("data=" + java.net.URLEncoder.encode(overpassQuery, "UTF-8")).getBytes("UTF-8");
+                try (java.io.OutputStream os = conn.getOutputStream()) {
+                    os.write(postBytes);
+                }
+
+                if (conn.getResponseCode() == 200) {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(conn.getInputStream());
+                    com.fasterxml.jackson.databind.JsonNode elements = root.path("elements");
+                    if (elements.isArray()) {
+                        for (com.fasterxml.jackson.databind.JsonNode el : elements) {
+                            com.fasterxml.jackson.databind.JsonNode tags = el.path("tags");
+                            String rawName = tags.path("name").asText(tags.path("name:en").asText(tags.path("ref").asText("")));
+                            String cleanName = rawName
+                                    .replaceAll("(?i)^(Nolambur|Mogappair|Maduravoyal|Phase-\\d*)\\s*", "")
+                                    .trim();
+                            String highway = tags.path("highway").asText("residential");
+                            com.fasterxml.jackson.databind.JsonNode geom = el.path("geometry");
+                            if (geom.isArray() && geom.size() >= 2) {
+                                List<Map<String, Double>> pts = new ArrayList<>();
+                                for (com.fasterxml.jackson.databind.JsonNode pt : geom) {
+                                    Map<String, Double> p = new HashMap<>();
+                                    p.put("lat", pt.path("lat").asDouble());
+                                    p.put("lng", pt.path("lon").asDouble());
+                                    pts.add(p);
+                                }
+                                Map<String, Object> r = new HashMap<>();
+                                r.put("id", el.path("id").asLong());
+                                r.put("name", cleanName.isEmpty() ? rawName : cleanName);
+                                r.put("highway", highway);
+                                r.put("points", pts);
+                                roads.add(r);
+                            }
+                        }
+                    }
+                    if (!roads.isEmpty()) {
+                        roadCache.put(cacheKey, roads);
+                        return ResponseEntity.ok(roads);
+                    }
+                }
+            } catch (Exception ignore) {
+                // Try next mirror
+            }
+        }
+        return ResponseEntity.ok(roads);
+    }
 }
