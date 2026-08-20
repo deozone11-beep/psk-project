@@ -6,6 +6,66 @@ const API_BASE = import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? '/api' : 'https://psk-builders.onrender.com/api');
 
+const DEFAULT_ERRORS = [
+  {
+    id: 'err1',
+    name: 'Night Soil by Human',
+    nameTa: 'மனிதர்களால் அகற்றப்படும் வகை',
+    keywords: ['night soil removed by human', 'service latrine', 'சேவை கழிவு', 'மனிதர்களால் அகற்றப்படும் வகை'],
+    color: '#ef4444',
+    icon: '🚫'
+  },
+  {
+    id: 'err2',
+    name: 'Landline Only',
+    nameTa: 'தொலைபேசி மட்டும்',
+    keywords: ['landline only', 'landline', 'தொலைபேசி மட்டும்', 'தொலைபேசி'],
+    color: '#f97316',
+    icon: '☎️'
+  },
+  {
+    id: 'err3',
+    name: 'No Light',
+    nameTa: 'விளக்கு வசதி இல்லை',
+    keywords: ['no lighting', 'no light', 'விளக்கு வசதி இல்லை', 'மின் விளக்கு வசதி இல்லை'],
+    color: '#3b82f6',
+    icon: '💡'
+  },
+  {
+    id: 'err4',
+    name: 'River / Canal',
+    nameTa: 'ஆறு/ கால்வாய்',
+    keywords: ['river/ canal', 'river', 'canal', 'ஆறு/ கால்வாய்', 'ஆறு / கால்வாய்', 'ஆறு', 'கால்வாய்'],
+    color: '#8b5cf6',
+    icon: '🌊'
+  },
+  {
+    id: 'err5',
+    name: 'Open Drainage',
+    nameTa: 'திறந்த வெளி',
+    keywords: ['no: open', 'open drainage', 'open', 'திறந்த வெளி', 'திறந்த'],
+    color: '#14b8a6',
+    icon: '🕳️'
+  },
+  {
+    id: 'err6',
+    name: 'LPG / PNG Connection',
+    nameTa: 'LPG/ PNG இணைப்பு',
+    keywords: ['lpg/ png connection', 'lpg', 'png', 'எல்.பி.ஜி / பி.என்.ஜி இணைப்பு', 'சமையலறை உள்ளது'],
+    color: '#eab308',
+    icon: '🔥'
+  }
+];
+
+function matchErrorType(errRow) {
+  const desc = String(errRow.error_description || errRow.error_type || errRow.errType || '').toLowerCase().trim();
+  if (!desc) return null;
+  for (const def of DEFAULT_ERRORS) {
+    if (def.keywords.some(kw => desc.includes(kw.toLowerCase()))) return def.id;
+  }
+  return null;
+}
+
 export default function CensusPublicSupervisorReport() {
   const [allotedRows, setAllotedRows] = useState([]);
   const [chargeRows, setChargeRows] = useState([]);
@@ -435,6 +495,36 @@ export default function CensusPublicSupervisorReport() {
     };
   }, [allCircles, chargeRows, censusErrorRows]);
 
+  // Error Breakup by Type — across all census errors
+  const errorBreakupAll = useMemo(() => {
+    const counts = {};
+    DEFAULT_ERRORS.forEach(d => { counts[d.id] = 0; });
+    counts['other'] = 0;
+
+    censusErrorRows.forEach(e => {
+      const matchedId = matchErrorType(e);
+      if (matchedId) counts[matchedId]++;
+      else counts['other']++;
+    });
+
+    return counts;
+  }, [censusErrorRows]);
+
+  // Error Breakup for a given list of error records
+  const getErrorBreakup = useCallback((errorRecords) => {
+    const counts = {};
+    DEFAULT_ERRORS.forEach(d => { counts[d.id] = 0; });
+    counts['other'] = 0;
+
+    (errorRecords || []).forEach(e => {
+      const matchedId = matchErrorType(e);
+      if (matchedId) counts[matchedId]++;
+      else counts['other']++;
+    });
+
+    return counts;
+  }, []);
+
   // Filtered list for HOD search
   const filteredHodCircles = useMemo(() => {
     if (!searchQuery.trim()) return allCircles;
@@ -503,6 +593,88 @@ export default function CensusPublicSupervisorReport() {
             font-size: 10.5px !important;
             padding: 6px 10px !important;
           }
+          .err-breakup-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 6px !important;
+          }
+          .err-breakup-card {
+            padding: 8px 10px !important;
+          }
+          .err-breakup-icon {
+            font-size: 16px !important;
+          }
+          .err-breakup-name {
+            font-size: 9px !important;
+          }
+          .err-breakup-count {
+            font-size: 15px !important;
+          }
+        }
+
+        /* GLOBAL CARD HOVER & INTERACTION (Desktop & Mobile) */
+        .kpi-card {
+          transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease !important;
+          position: relative;
+          overflow: hidden;
+          will-change: transform, box-shadow;
+        }
+        .kpi-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+          transition: 0.5s ease;
+          pointer-events: none;
+        }
+        .kpi-card:hover::before {
+          left: 100%;
+        }
+        .kpi-card:hover {
+          transform: translateY(-5px) scale(1.02) !important;
+          box-shadow: 0 16px 32px -8px var(--card-glow, rgba(56,189,248,0.4)), 0 0 20px -2px var(--card-glow-sub, rgba(56,189,248,0.25)) !important;
+          border-color: var(--card-border-hover, rgba(56,189,248,0.8)) !important;
+        }
+        .kpi-card:hover .kpi-icon-badge {
+          transform: scale(1.18) rotate(8deg) !important;
+          box-shadow: 0 4px 14px var(--card-glow-sub, rgba(255,255,255,0.3)) !important;
+        }
+
+        .err-breakup-card {
+          transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease, opacity 0.28s ease !important;
+          position: relative;
+          overflow: hidden;
+          will-change: transform, box-shadow;
+        }
+        .err-breakup-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+          transition: 0.5s ease;
+          pointer-events: none;
+        }
+        .err-breakup-card:hover::before {
+          left: 100%;
+        }
+        .err-breakup-card:hover {
+          transform: translateY(-5px) scale(1.02) !important;
+          opacity: 1 !important;
+          box-shadow: 0 16px 32px -8px var(--card-glow, rgba(239,68,68,0.4)), 0 0 20px -2px var(--card-glow-sub, rgba(239,68,68,0.25)) !important;
+          border-color: var(--card-border-hover, rgba(239,68,68,0.8)) !important;
+        }
+        .err-breakup-card:hover .kpi-icon-badge {
+          transform: scale(1.18) rotate(8deg) !important;
+          box-shadow: 0 4px 14px var(--card-glow-sub, rgba(255,255,255,0.3)) !important;
+        }
+
+        .kpi-icon-badge {
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease !important;
         }
       `}</style>
       {/* Top Brand Header */}
@@ -665,50 +837,238 @@ export default function CensusPublicSupervisorReport() {
             const comp = targetCircleData.enumerators.filter(e => e.isCompleted).length;
 
             return (
+              <>
               <div className="kpi-grid" style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(125px, 1fr))',
-                gap: '8px'
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: '10px'
               }}>
-                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Exp Houses</div>
-                  <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: '#ffffff', marginTop: '2px' }}>{exp.toLocaleString()}</div>
-                </div>
-                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Cen Houses</div>
-                  <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: '#38bdf8', marginTop: '2px' }}>{cen.toLocaleString()}</div>
-                </div>
-                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Households</div>
-                  <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: '#f59e0b', marginTop: '2px' }}>{hh.toLocaleString()}</div>
-                </div>
-                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Verified By Sup</div>
-                  <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: '#0ea5e9', marginTop: '2px' }}>{ver.toLocaleString()}</div>
-                </div>
-                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>SE ID Used</div>
-                  <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: '#a855f7', marginTop: '2px' }}>{se.toLocaleString()}</div>
-                </div>
-                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '9.5px', color: '#67e8f9', fontWeight: 700, textTransform: 'uppercase' }}>🔒 Locked</div>
-                  <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: '#06b6d4', marginTop: '2px' }}>{lck.toLocaleString()}</div>
-                </div>
-                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Population</div>
-                  <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: '#22c55e', marginTop: '2px' }}>{pop.toLocaleString()}</div>
-                </div>
-                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Active Errors</div>
-                  <div className="kpi-value" style={{ fontSize: '16px', fontWeight: 900, color: err > 0 ? '#ef4444' : '#22c55e', marginTop: '2px' }}>{err}</div>
-                </div>
-                <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Status</div>
-                  <div className="kpi-value" style={{ fontSize: '13px', fontWeight: 800, color: comp === targetCircleData.enumerators.length ? '#22c55e' : '#f59e0b', marginTop: '4px' }}>
-                    {comp}/{targetCircleData.enumerators.length} Comp
+                {[
+                  { label: 'Exp Houses', value: exp.toLocaleString(), color: '#f1f5f9', accent: '#94a3b8', gradient: 'linear-gradient(135deg, rgba(148,163,184,0.15) 0%, rgba(15,23,42,0.7) 100%)', icon: '🏠', borderColor: '#64748b' },
+                  { label: 'Cen Houses', value: cen.toLocaleString(), color: '#38bdf8', accent: '#0284c7', gradient: 'linear-gradient(135deg, rgba(2,132,199,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🏘️', borderColor: '#0284c7' },
+                  { label: 'Households', value: hh.toLocaleString(), color: '#fbbf24', accent: '#f59e0b', gradient: 'linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '👨‍👩‍👧‍👦', borderColor: '#d97706' },
+                  { label: 'Verified By Sup', value: ver.toLocaleString(), color: '#38bdf8', accent: '#0ea5e9', gradient: 'linear-gradient(135deg, rgba(14,165,233,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '✅', borderColor: '#0284c7' },
+                  { label: 'SE ID Used', value: se.toLocaleString(), color: '#d8b4fe', accent: '#c084fc', gradient: 'linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🆔', borderColor: '#7c3aed' },
+                  { label: '🔒 Locked', value: lck.toLocaleString(), color: '#22d3ee', accent: '#06b6d4', gradient: 'linear-gradient(135deg, rgba(6,182,212,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🔒', borderColor: '#0891b2' },
+                  { label: 'Population', value: pop.toLocaleString(), color: '#4ade80', accent: '#22c55e', gradient: 'linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '👤', borderColor: '#16a34a' },
+                  { label: 'Active Errors', value: String(err), color: err > 0 ? '#f87171' : '#4ade80', accent: err > 0 ? '#ef4444' : '#22c55e', gradient: err > 0 ? 'linear-gradient(135deg, rgba(239,68,68,0.22) 0%, rgba(15,23,42,0.7) 100%)' : 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(15,23,42,0.7) 100%)', icon: '⚠️', borderColor: err > 0 ? '#dc2626' : '#16a34a' },
+                  { label: 'Status', value: `${comp}/${targetCircleData.enumerators.length}`, sub: 'Comp', color: comp === targetCircleData.enumerators.length ? '#4ade80' : '#fbbf24', accent: comp === targetCircleData.enumerators.length ? '#16a34a' : '#d97706', gradient: comp === targetCircleData.enumerators.length ? 'linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(15,23,42,0.7) 100%)' : 'linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: comp === targetCircleData.enumerators.length ? '🎉' : '⏳', borderColor: comp === targetCircleData.enumerators.length ? '#16a34a' : '#d97706' }
+                ].map((card, i) => (
+                  <div key={i} className="kpi-card" style={{
+                    background: card.gradient,
+                    borderRadius: '14px',
+                    padding: '12px 14px',
+                    border: `1px solid ${card.borderColor}35`,
+                    borderLeft: `3.5px solid ${card.borderColor}`,
+                    position: 'relative',
+                    backdropFilter: 'blur(12px)',
+                    boxShadow: `0 4px 16px -4px ${card.accent}15`,
+                    '--card-glow': `${card.accent}50`,
+                    '--card-glow-sub': `${card.accent}25`,
+                    '--card-border-hover': `${card.accent}90`,
+                    cursor: 'default',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '85px'
+                  }}>
+                    {/* Top glow shine */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '1px',
+                      background: `linear-gradient(90deg, transparent, ${card.accent}55, transparent)`
+                    }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>{card.label}</div>
+                      {card.icon && (
+                        <div className="kpi-icon-badge" style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          background: `${card.accent}22`,
+                          border: `1px solid ${card.accent}45`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '16px',
+                          boxShadow: `0 2px 8px ${card.accent}20`
+                        }}>
+                          {card.icon}
+                        </div>
+                      )}
+                    </div>
+                    <div className="kpi-value" style={{ fontSize: '21px', fontWeight: 900, color: card.color, letterSpacing: '-0.5px' }}>
+                      {card.value}{card.sub && <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginLeft: '5px' }}>{card.sub}</span>}
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
+
+              {/* ERROR BREAKUP CARDS — Supervisor View */}
+              {err > 0 && (() => {
+                const supAllErrors = targetCircleData.enumerators.flatMap(e => e.errorRecords || []);
+                const supBreakup = getErrorBreakup(supAllErrors);
+                return (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <div style={{
+                        width: '26px',
+                        height: '26px',
+                        borderRadius: '7px',
+                        background: 'rgba(239,68,68,0.2)',
+                        border: '1px solid rgba(239,68,68,0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <AlertTriangle size={14} color="#ef4444" />
+                      </div>
+                      <span style={{ fontSize: '13px', fontWeight: 900, color: '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Error Type Breakup</span>
+                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>({err} total errors in {targetCircleData.circleNo})</span>
+                    </div>
+                    <div className="err-breakup-grid" style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                      gap: '12px'
+                    }}>
+                      {DEFAULT_ERRORS.map(def => {
+                        const count = supBreakup[def.id] || 0;
+                        return (
+                          <div key={def.id} className="err-breakup-card" style={{
+                            background: count > 0 
+                              ? `linear-gradient(145deg, ${def.color}18 0%, rgba(15,23,42,0.9) 100%)`
+                              : 'rgba(19,24,36,0.6)',
+                            border: `1px solid ${count > 0 ? def.color + '45' : 'rgba(255,255,255,0.06)'}`,
+                            borderLeft: `4px solid ${count > 0 ? def.color : 'rgba(255,255,255,0.1)'}`,
+                            borderRadius: '16px',
+                            padding: '14px 16px',
+                            backdropFilter: 'blur(12px)',
+                            opacity: count > 0 ? 1 : 0.45,
+                            '--card-glow': `${def.color}45`,
+                            '--card-glow-sub': `${def.color}20`,
+                            '--card-border-hover': `${def.color}90`,
+                            cursor: 'default',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            minHeight: '135px'
+                          }}>
+                            {/* Top specular line */}
+                            {count > 0 && (
+                              <div style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: '1.5px',
+                                background: `linear-gradient(90deg, transparent, ${def.color}60, transparent)`
+                              }} />
+                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <div className="kpi-icon-badge" style={{
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '12px',
+                                background: `${def.color}25`,
+                                border: `1.5px solid ${def.color}55`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '22px',
+                                boxShadow: `0 4px 12px ${def.color}25`
+                              }}>
+                                {def.icon}
+                              </div>
+                              <div className="err-breakup-count" style={{ fontSize: '26px', fontWeight: 900, color: count > 0 ? def.color : '#475569', letterSpacing: '-0.5px' }}>
+                                {count.toLocaleString()}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
+                                {def.name}
+                              </div>
+                              <div style={{
+                                display: 'inline-block',
+                                fontSize: '9.5px',
+                                color: count > 0 ? '#94a3b8' : '#475569',
+                                fontWeight: 600,
+                                background: 'rgba(255,255,255,0.05)',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                lineHeight: '1.3'
+                              }}>
+                                {def.nameTa}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {supBreakup['other'] > 0 && (
+                        <div className="err-breakup-card" style={{
+                          background: 'linear-gradient(145deg, rgba(148,163,184,0.15) 0%, rgba(15,23,42,0.9) 100%)',
+                          border: '1px solid rgba(148,163,184,0.35)',
+                          borderLeft: '4px solid #94a3b8',
+                          borderRadius: '16px',
+                          padding: '14px 16px',
+                          backdropFilter: 'blur(12px)',
+                          '--card-glow': 'rgba(148,163,184,0.35)',
+                          '--card-glow-sub': 'rgba(148,163,184,0.15)',
+                          '--card-border-hover': 'rgba(148,163,184,0.8)',
+                          cursor: 'default',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          minHeight: '135px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <div className="kpi-icon-badge" style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '12px',
+                              background: 'rgba(148,163,184,0.22)',
+                              border: '1.5px solid rgba(148,163,184,0.5)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '22px',
+                              boxShadow: '0 4px 12px rgba(148,163,184,0.2)'
+                            }}>
+                              ⚠️
+                            </div>
+                            <div className="err-breakup-count" style={{ fontSize: '26px', fontWeight: 900, color: '#e2e8f0', letterSpacing: '-0.5px' }}>
+                              {supBreakup['other'].toLocaleString()}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
+                              Other Errors
+                            </div>
+                            <div style={{
+                              display: 'inline-block',
+                              fontSize: '9.5px',
+                              color: '#94a3b8',
+                              fontWeight: 600,
+                              background: 'rgba(255,255,255,0.05)',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              lineHeight: '1.3'
+                            }}>
+                              பிற பிழைகள்
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              </>
             );
           })()}
 
@@ -832,57 +1192,239 @@ export default function CensusPublicSupervisorReport() {
       {/* HOD / ADMIN MASTER VIEW (ALL 75 CIRCLES) - only when not a supervisor request */}
       {!loading && targetCircleData === null && (
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* HOD Master KPIs */}
+          {/* HOD Master KPIs — Ultra Sleek Design */}
           <div className="kpi-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-            gap: '8px'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+            gap: '10px'
           }}>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Supervisors</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#ffffff', marginTop: '2px' }}>{hodStats.totalCircles} Circles</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Enumerators</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#38bdf8', marginTop: '2px' }}>{hodStats.totalEnums} Enums</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Total HLBs</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#a855f7', marginTop: '2px' }}>{hodStats.totalHlbs} Blocks</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Expected Houses</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#ffffff', marginTop: '2px' }}>{hodStats.expectedHouses.toLocaleString()}</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Census Houses</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#38bdf8', marginTop: '2px' }}>{hodStats.censusHouses.toLocaleString()}</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Households</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#f59e0b', marginTop: '2px' }}>{hodStats.households.toLocaleString()}</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Verified By Sup</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#0ea5e9', marginTop: '2px' }}>{hodStats.verifiedBySup.toLocaleString()}</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(168,85,247,0.25)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#d8b4fe', fontWeight: 700, textTransform: 'uppercase' }}>SE ID Used</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#a855f7', marginTop: '2px' }}>{hodStats.totalSeId.toLocaleString()}</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#67e8f9', fontWeight: 700, textTransform: 'uppercase' }}>🔒 Locked</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#06b6d4', marginTop: '2px' }}>{hodStats.totalLocked.toLocaleString()}</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Total Population</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#22c55e', marginTop: '2px' }}>{hodStats.totalPopulation.toLocaleString()}</div>
-            </div>
-            <div className="kpi-card" style={{ background: '#131824', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '12px' }}>
-              <div style={{ fontSize: '9.5px', color: '#fca5a5', fontWeight: 700, textTransform: 'uppercase' }}>Active Errors</div>
-              <div className="kpi-value" style={{ fontSize: '18px', fontWeight: 900, color: '#ef4444', marginTop: '2px' }}>{hodStats.totalErrors.toLocaleString()}</div>
-            </div>
+            {[
+              { label: 'Supervisors', value: `${hodStats.totalCircles}`, sub: 'Circles', color: '#ffffff', accent: '#818cf8', gradient: 'linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '👨‍💼', borderColor: '#6366f1' },
+              { label: 'Enumerators', value: `${hodStats.totalEnums}`, sub: 'Enums', color: '#38bdf8', accent: '#38bdf8', gradient: 'linear-gradient(135deg, rgba(14,165,233,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '👥', borderColor: '#0ea5e9' },
+              { label: 'Total HLBs', value: `${hodStats.totalHlbs}`, sub: 'Blocks', color: '#c084fc', accent: '#c084fc', gradient: 'linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🗂️', borderColor: '#a855f7' },
+              { label: 'Expected Houses', value: hodStats.expectedHouses.toLocaleString(), sub: null, color: '#f1f5f9', accent: '#94a3b8', gradient: 'linear-gradient(135deg, rgba(148,163,184,0.15) 0%, rgba(15,23,42,0.7) 100%)', icon: '🏠', borderColor: '#64748b' },
+              { label: 'Census Houses', value: hodStats.censusHouses.toLocaleString(), sub: null, color: '#38bdf8', accent: '#0284c7', gradient: 'linear-gradient(135deg, rgba(2,132,199,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🏘️', borderColor: '#0284c7' },
+              { label: 'Households', value: hodStats.households.toLocaleString(), sub: null, color: '#fbbf24', accent: '#f59e0b', gradient: 'linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '👨‍👩‍👧‍👦', borderColor: '#d97706' },
+              { label: 'Verified By Sup', value: hodStats.verifiedBySup.toLocaleString(), sub: null, color: '#38bdf8', accent: '#0ea5e9', gradient: 'linear-gradient(135deg, rgba(14,165,233,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '✅', borderColor: '#0284c7' },
+              { label: 'SE ID Used', value: hodStats.totalSeId.toLocaleString(), sub: null, color: '#d8b4fe', accent: '#c084fc', gradient: 'linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🆔', borderColor: '#7c3aed' },
+              { label: '🔒 Locked', value: hodStats.totalLocked.toLocaleString(), sub: null, color: '#22d3ee', accent: '#06b6d4', gradient: 'linear-gradient(135deg, rgba(6,182,212,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🔒', borderColor: '#0891b2' },
+              { label: 'Total Population', value: hodStats.totalPopulation.toLocaleString(), sub: null, color: '#4ade80', accent: '#22c55e', gradient: 'linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '👤', borderColor: '#16a34a' },
+              { label: 'Active Errors', value: hodStats.totalErrors.toLocaleString(), sub: null, color: hodStats.totalErrors > 0 ? '#f87171' : '#4ade80', accent: hodStats.totalErrors > 0 ? '#ef4444' : '#22c55e', gradient: hodStats.totalErrors > 0 ? 'linear-gradient(135deg, rgba(239,68,68,0.22) 0%, rgba(15,23,42,0.7) 100%)' : 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(15,23,42,0.7) 100%)', icon: '⚠️', borderColor: hodStats.totalErrors > 0 ? '#dc2626' : '#16a34a' }
+            ].map((card, i) => (
+              <div key={i} className="kpi-card" style={{
+                background: card.gradient,
+                borderRadius: '14px',
+                padding: '12px 14px',
+                border: `1px solid ${card.borderColor}35`,
+                borderLeft: `3.5px solid ${card.borderColor}`,
+                position: 'relative',
+                backdropFilter: 'blur(12px)',
+                boxShadow: `0 4px 16px -4px ${card.accent}15`,
+                '--card-glow': `${card.accent}50`,
+                '--card-glow-sub': `${card.accent}25`,
+                '--card-border-hover': `${card.accent}90`,
+                cursor: 'default',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                minHeight: '85px'
+              }}>
+                {/* Top glow shine */}
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '1px',
+                  background: `linear-gradient(90deg, transparent, ${card.accent}55, transparent)`
+                }} />
+                
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>{card.label}</div>
+                  {card.icon && (
+                    <div className="kpi-icon-badge" style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      background: `${card.accent}22`,
+                      border: `1px solid ${card.accent}45`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '16px',
+                      boxShadow: `0 2px 8px ${card.accent}20`
+                    }}>
+                      {card.icon}
+                    </div>
+                  )}
+                </div>
+                <div className="kpi-value" style={{ fontSize: '21px', fontWeight: 900, color: card.color, letterSpacing: '-0.5px' }}>
+                  {card.value}{card.sub && <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginLeft: '5px' }}>{card.sub}</span>}
+                </div>
+              </div>
+            ))}
           </div>
+
+          {/* ERROR BREAKUP CARDS — HOD/Admin View */}
+          {hodStats.totalErrors > 0 && (
+            <div style={{ marginTop: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <div style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '7px',
+                  background: 'rgba(239,68,68,0.2)',
+                  border: '1px solid rgba(239,68,68,0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <AlertTriangle size={14} color="#ef4444" />
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: 900, color: '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Error Type Breakup</span>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>({hodStats.totalErrors.toLocaleString()} total errors across all circles)</span>
+              </div>
+              <div className="err-breakup-grid" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                gap: '12px'
+              }}>
+                {DEFAULT_ERRORS.map(def => {
+                  const count = errorBreakupAll[def.id] || 0;
+                  return (
+                    <div key={def.id} className="err-breakup-card" style={{
+                      background: count > 0 
+                        ? `linear-gradient(145deg, ${def.color}18 0%, rgba(15,23,42,0.9) 100%)`
+                        : 'rgba(19,24,36,0.6)',
+                      border: `1px solid ${count > 0 ? def.color + '45' : 'rgba(255,255,255,0.06)'}`,
+                      borderLeft: `4px solid ${count > 0 ? def.color : 'rgba(255,255,255,0.1)'}`,
+                      borderRadius: '16px',
+                      padding: '14px 16px',
+                      backdropFilter: 'blur(12px)',
+                      opacity: count > 0 ? 1 : 0.45,
+                      '--card-glow': `${def.color}45`,
+                      '--card-glow-sub': `${def.color}20`,
+                      '--card-border-hover': `${def.color}90`,
+                      cursor: 'default',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      minHeight: '135px'
+                    }}>
+                      {/* Top specular line */}
+                      {count > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: '1.5px',
+                          background: `linear-gradient(90deg, transparent, ${def.color}60, transparent)`
+                        }} />
+                      )}
+                      
+                      {/* Header Row: Big Prominent Icon + Count */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div className="kpi-icon-badge" style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: '12px',
+                          background: `${def.color}25`,
+                          border: `1.5px solid ${def.color}55`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '22px',
+                          boxShadow: `0 4px 12px ${def.color}25`
+                        }}>
+                          {def.icon}
+                        </div>
+                        <div className="err-breakup-count" style={{ fontSize: '26px', fontWeight: 900, color: count > 0 ? def.color : '#475569', letterSpacing: '-0.5px' }}>
+                          {count.toLocaleString()}
+                        </div>
+                      </div>
+
+                      {/* Title & Tamil Label */}
+                      <div>
+                        <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
+                          {def.name}
+                        </div>
+                        <div style={{
+                          display: 'inline-block',
+                          fontSize: '9.5px',
+                          color: count > 0 ? '#94a3b8' : '#475569',
+                          fontWeight: 600,
+                          background: 'rgba(255,255,255,0.05)',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          lineHeight: '1.3'
+                        }}>
+                          {def.nameTa}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {errorBreakupAll['other'] > 0 && (
+                  <div className="err-breakup-card" style={{
+                    background: 'linear-gradient(145deg, rgba(148,163,184,0.15) 0%, rgba(15,23,42,0.9) 100%)',
+                    border: '1px solid rgba(148,163,184,0.35)',
+                    borderLeft: '4px solid #94a3b8',
+                    borderRadius: '16px',
+                    padding: '14px 16px',
+                    backdropFilter: 'blur(12px)',
+                    '--card-glow': 'rgba(148,163,184,0.35)',
+                    '--card-glow-sub': 'rgba(148,163,184,0.15)',
+                    '--card-border-hover': 'rgba(148,163,184,0.8)',
+                    cursor: 'default',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '135px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div className="kpi-icon-badge" style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        background: 'rgba(148,163,184,0.22)',
+                        border: '1.5px solid rgba(148,163,184,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '22px',
+                        boxShadow: '0 4px 12px rgba(148,163,184,0.2)'
+                      }}>
+                        ⚠️
+                      </div>
+                      <div className="err-breakup-count" style={{ fontSize: '26px', fontWeight: 900, color: '#e2e8f0', letterSpacing: '-0.5px' }}>
+                        {errorBreakupAll['other'].toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
+                        Other Errors
+                      </div>
+                      <div style={{
+                        display: 'inline-block',
+                        fontSize: '9.5px',
+                        color: '#94a3b8',
+                        fontWeight: 600,
+                        background: 'rgba(255,255,255,0.05)',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        lineHeight: '1.3'
+                      }}>
+                        பிற பிழைகள்
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* View Mode Tabs (Summary vs Detailed Enumerators Breakdown) */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
@@ -1281,6 +1823,77 @@ export default function CensusPublicSupervisorReport() {
 
             {/* Modal Body / Errors Table */}
             <div style={{ padding: '14px 18px', overflowY: 'auto', flex: 1 }}>
+              {/* Mini Error Type Breakup in Modal */}
+              {(() => {
+                const modalBreakup = getErrorBreakup(selectedErrorModal.errors);
+                const hasAnyBreakup = DEFAULT_ERRORS.some(d => (modalBreakup[d.id] || 0) > 0);
+                if (!hasAnyBreakup) return null;
+                return (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                    marginBottom: '12px',
+                    padding: '10px 12px',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255,255,255,0.06)'
+                  }}>
+                    {DEFAULT_ERRORS.map(def => {
+                      const cnt = modalBreakup[def.id] || 0;
+                      if (cnt === 0) return null;
+                      return (
+                        <div key={def.id} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          background: `${def.color}18`,
+                          border: `1px solid ${def.color}40`,
+                          borderRadius: '8px',
+                          padding: '4px 10px'
+                        }}>
+                          <span style={{ fontSize: '13px' }}>{def.icon}</span>
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: def.color }}>{def.name}</span>
+                          <span style={{
+                            background: def.color,
+                            color: '#ffffff',
+                            fontSize: '9px',
+                            fontWeight: 900,
+                            padding: '1px 6px',
+                            borderRadius: '10px',
+                            minWidth: '18px',
+                            textAlign: 'center'
+                          }}>{cnt}</span>
+                        </div>
+                      );
+                    })}
+                    {modalBreakup['other'] > 0 && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        background: 'rgba(148,163,184,0.1)',
+                        border: '1px solid rgba(148,163,184,0.3)',
+                        borderRadius: '8px',
+                        padding: '4px 10px'
+                      }}>
+                        <span style={{ fontSize: '13px' }}>⚠️</span>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8' }}>Other</span>
+                        <span style={{
+                          background: '#94a3b8',
+                          color: '#0f172a',
+                          fontSize: '9px',
+                          fontWeight: 900,
+                          padding: '1px 6px',
+                          borderRadius: '10px',
+                          minWidth: '18px',
+                          textAlign: 'center'
+                        }}>{modalBreakup['other']}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ background: '#1e293b', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
