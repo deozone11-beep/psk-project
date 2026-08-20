@@ -15,6 +15,7 @@ import CensusModule3ErrorAbstract from './CensusModule3ErrorAbstract';
 import CensusModule3ErrorCustomReport from './CensusModule3ErrorCustomReport';
 import CensusModule4ProgressReport from './CensusModule4ProgressReport';
 import CensusBlockA3SketchModal from './CensusBlockA3SketchModal';
+import CensusBulkA3PrintModal from './CensusBulkA3PrintModal';
 
 
 const STORAGE_KEY = 'psk_census_blocks_v10';
@@ -172,6 +173,7 @@ export default function CensusWorkTab({ creds }) {
   const [showGccBuildings, setShowGccBuildings] = useState(false);
   const [gdbSummaryData, setGdbSummaryData] = useState([]);
   const [showBlockPrintModal, setShowBlockPrintModal] = useState(false);
+  const [showBulkPrintModal, setShowBulkPrintModal] = useState(false);
   const [blockToPrint, setBlockToPrint] = useState(null);
 
   // Extract gdbSummaryData dynamically from loaded GeoJSON
@@ -1803,6 +1805,24 @@ export default function CensusWorkTab({ creds }) {
           >
             Map
           </button>
+          <button 
+            className="hlbTabBtn"
+            onClick={() => setShowBulkPrintModal(true)}
+            style={{
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              color: '#ffffff',
+              border: '1px solid rgba(96, 165, 250, 0.6)',
+              boxShadow: '0 2px 10px rgba(37, 99, 235, 0.5)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 800,
+              cursor: 'pointer'
+            }}
+            title="Bulk A3 Map Print & Multi-page PDF Export"
+          >
+            <Printer size={15} /> 🖨️ Bulk A3 Print
+          </button>
         </nav>
       </header>
 
@@ -1958,12 +1978,38 @@ export default function CensusWorkTab({ creds }) {
                     <FilterX size={12} />
                   </button>
                 )}
+                <button
+                  className="hlbBasemapBtn"
+                  style={{
+                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255,255,255,0.25)',
+                    fontWeight: 800,
+                    boxShadow: '0 2px 8px rgba(37,99,235,0.4)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    marginLeft: '4px'
+                  }}
+                  onClick={() => setShowBulkPrintModal(true)}
+                  title="Bulk A3 Map Print / Multi-Page PDF Export"
+                >
+                  <Printer size={13} /> 🖨️ Bulk A3 Print
+                </button>
               </div>
             </div>
           </div>
 
           {/* Floating Google Maps Utility Buttons (Bottom Right) */}
           <div className="googleMapsFloatingTools">
+            <button 
+              className="googleToolCircleBtn" 
+              style={{ background: '#2563eb', color: '#ffffff', border: '1px solid #60a5fa', boxShadow: '0 4px 14px rgba(37, 99, 235, 0.5)' }} 
+              onClick={() => setShowBulkPrintModal(true)} 
+              title="🖨️ Bulk A3 Map Print & Multi-page PDF"
+            >
+              <Printer size={20} color="#ffffff" />
+            </button>
             <button className="googleToolCircleBtn" onClick={handleMyLocation} title="GPS My Location">
               <Navigation size={20} color="#1a73e8" />
             </button>
@@ -2470,6 +2516,16 @@ export default function CensusWorkTab({ creds }) {
             centerLng: parseFloat(blockToPrint.lng) || 80.1760,
           }}
           onClose={() => setShowBlockPrintModal(false)}
+        />
+      )}
+
+      {/* A3 BULK PRINT & MULTI-PAGE PDF EXPORT MODAL */}
+      {showBulkPrintModal && (
+        <CensusBulkA3PrintModal
+          initialWard={selectedFilterWard || '144'}
+          initialZone={selectedFilterZone || '11'}
+          availableBlocksList={gdbSummaryData}
+          onClose={() => setShowBulkPrintModal(false)}
         />
       )}
     </div>

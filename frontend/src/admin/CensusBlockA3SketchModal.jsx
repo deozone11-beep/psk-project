@@ -546,20 +546,32 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
   async function handleDownloadPdf() {
     if (!a3PrintRef.current) return;
     try {
-      const canvas = await html2canvas(a3PrintRef.current, {
-        scale: 2,
+      const el = a3PrintRef.current;
+      const prevTransform = el.style.transform;
+      el.style.transform = 'none'; // Temporarily reset zoom transform for clean 1:1 capture
+
+      const canvas = await html2canvas(el, {
+        scale: 1.0,
         useCORS: true,
         allowTaint: true,
-        imageTimeout: 15000,
+        imageTimeout: 8000,
         backgroundColor: '#ffffff',
-        logging: false
+        logging: false,
+        width: el.offsetWidth || 1400,
+        height: el.offsetHeight || 990,
+        windowWidth: 1400,
+        windowHeight: 990
       });
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+      el.style.transform = prevTransform; // Restore zoom transform
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
       const isA4 = paperSize === 'A4';
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: isA4 ? 'a4' : 'a3'
+        format: isA4 ? 'a4' : 'a3',
+        compress: true
       });
       pdf.addImage(imgData, 'JPEG', 0, 0, isA4 ? 297 : 420, isA4 ? 210 : 297);
       pdf.save(`Census_2027_HLB_Block_${cleanWard}_${blockNo}_${paperSize}_Layout.pdf`);
@@ -573,10 +585,10 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
     if (!a3PrintRef.current) return;
     try {
       const canvas = await html2canvas(a3PrintRef.current, {
-        scale: 2,
+        scale: 1.3,
         useCORS: true,
         allowTaint: true,
-        imageTimeout: 15000,
+        imageTimeout: 10000,
         backgroundColor: '#ffffff',
         logging: false
       });
