@@ -9,6 +9,7 @@ import jsPDF from 'jspdf';
 
 export default function CensusBlockA3SketchModal({ block, onClose }) {
   const [sketchStyle, setSketchStyle] = useState('PENCIL'); // 'PENCIL' | 'BLUEPRINT' | 'CADASTRAL' | 'SATELLITE'
+  const [language, setLanguage] = useState('TAMIL'); // 'TAMIL' | 'ENGLISH'
   const [showDoorNumbers, setShowDoorNumbers] = useState(true);
   const [showStreetNames, setShowStreetNames] = useState(true);
   const [showHatching, setShowHatching] = useState(true);
@@ -22,6 +23,7 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
   
   const [loading, setLoading] = useState(true);
   const [blockPoly, setBlockPoly] = useState(null);
+  const [adminProps, setAdminProps] = useState(null);
   const [surroundingBlocks, setSurroundingBlocks] = useState([]);
   const [osmRoads, setOsmRoads] = useState([]);
   const [buildings, setBuildings] = useState([]);
@@ -90,6 +92,7 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
           });
           if (found) {
             matchedPoly = found.geometry;
+            setAdminProps(found.properties || {});
           }
 
           // Collect other HLB blocks in this ward / nearby for contextual surrounding display
@@ -704,8 +707,24 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
         <div className="a3ControlLeft">
           <div className="a3TitleBadge">
             <PenTool size={18} color="#2563eb" />
-            <span className="a3MainTitle">A3 Hand-Drawn Pencil Layout Map</span>
+            <span className="a3MainTitle">A3 Official Census Layout Map (கணக்கெடுப்பு வரைபடம்)</span>
             <span className="a3SubBadge">Ward {cleanWard} | Block #{blockNo}</span>
+          </div>
+
+          {/* Language Selector */}
+          <div className="a3StyleGroup">
+            <button
+              className={`a3StyleBtn ${language === 'TAMIL' ? 'active' : ''}`}
+              onClick={() => setLanguage('TAMIL')}
+            >
+              🇮🇳 தமிழ் (Tamil)
+            </button>
+            <button
+              className={`a3StyleBtn ${language === 'ENGLISH' ? 'active' : ''}`}
+              onClick={() => setLanguage('ENGLISH')}
+            >
+              🇬🇧 English
+            </button>
           </div>
 
           {/* Style Selector */}
@@ -734,7 +753,7 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
               onChange={e => setPaperSize(e.target.value)}
               title="Select Print Paper Size"
             >
-              <option value="A3">📄 A3 Landscape (Standard)</option>
+              <option value="A3">📄 A3 Landscape (Official)</option>
               <option value="A4">📄 A4 Landscape</option>
             </select>
           </div>
@@ -752,10 +771,6 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
             <label className="a3ToggleLbl">
               <input type="checkbox" checked={showHatching} onChange={e => setShowHatching(e.target.checked)} />
               <span>Hatching</span>
-            </label>
-            <label className="a3ToggleLbl">
-              <input type="checkbox" checked={showLegend} onChange={e => setShowLegend(e.target.checked)} />
-              <span>Legend</span>
             </label>
           </div>
         </div>
@@ -792,115 +807,322 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
           style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top center' }}
         >
 
-          {/* FULL-WIDTH TOP HEADER */}
+          {/* ══════════════════════════════════════════════════════
+             1. FULL-WIDTH TOP OFFICIAL HEADER (MATCHING PDF)
+             ══════════════════════════════════════════════════════ */}
           <div className="a3OffHdr">
-            <div className="a3OffHdrTitle">
-              <div>
-                <div className="a3OffTamilTitle">{'\u0B87\u0BA8\u0BCD\u0BA4\u0BBF\u0BAF \u0BAE\u0B95\u0BCD\u0B95\u0BB3\u0BCD \u0BA4\u0BCA\u0B95\u0BC8 \u0B95\u0BA3\u0B95\u0BCD\u0B95\u0BC6\u0B9F\u0BC1\u0BAA\u0BCD\u0BAA\u0BC1 2027'}</div>
-                <div className="a3OffEngTitle">CENSUS OF INDIA 2027</div>
-              </div>
+            <div className="a3OffHdrLeft">
+              {language === 'TAMIL' ? (
+                <span className="a3OffMainTitle">இந்திய மக்கள் தொகை கணக்கெடுப்பு 2027</span>
+              ) : (
+                <span className="a3OffMainTitle">CENSUS OF INDIA 2027</span>
+              )}
             </div>
             <div className="a3OffHdrCenter">
-              <p>{'\u0B87\u0BA8\u0BCD\u0BA4 75 \u0BAE\u0B95\u0BCD\u0B95\u0BB3\u0BCD\u0BA4\u0BCA\u0B95\u0BC8. \u0B92\u0BB0\u0BC1 \u0BB5\u0BC0\u0B9F\u0BCD\u0B9F\u0BC8 \u0BAE\u0B9F\u0BCD\u0B9F\u0BC1\u0BAE\u0BCD \u0B92\u0BB0\u0BC1 \u0B9A\u0BC6\u0BB5\u0BCD\u0BB5\u0B95\u0BA4\u0BCD\u0BA4\u0BBF\u0BB2\u0BCD \u0B95\u0B9F\u0BCD\u0B9F\u0BBF\u0B9F \u0BB5\u0BB0\u0BC8\u0BA8\u0BCD\u0BA4\u0BC1 \u0B95\u0BBE\u0B9F\u0BCD\u0B9F\u0BB5\u0BC1\u0BAE\u0BCD.'}</p>
-              <strong>{'\u0BB5\u0BC0\u0B9F\u0BCD\u0B9F\u0BBE\u0BA9\u0BCD \u0BB5\u0BC0\u0B9F\u0BCD\u0B9F\u0BC1 \u0BB5\u0BB0\u0BC8\u0BAA\u0BCD\u0BAA\u0B9F\u0BAE\u0BCD'} / HOUSE LISTING LAYOUT MAP (NOTIONAL)</strong>
+              {language === 'TAMIL' ? (
+                <>
+                  <span className="a3OffNotice">இது ஒரு முக்கியமான மக்கள் தொகை கணக்கெடுப்பு ஆவணம். தயவு செய்து இந்த வரைபடத்தை நேர்த்தியாகவும் சரியாகவும் வரையவும்</span>
+                  <span className="a3OffType">விவரமான கோட்டு வரைபடம்</span>
+                </>
+              ) : (
+                <>
+                  <span className="a3OffNotice">This is an important Census document. Please draw this map neatly and correctly.</span>
+                  <span className="a3OffType">LAYOUT MAP</span>
+                </>
+              )}
             </div>
-            <div className="a3OffHdrSign">
-              <div className="a3OffSignLabel">{'\u0B95\u0B9F\u0BCD\u0B9F\u0BC1\u0BAA\u0BCD\u0BAA\u0BBE\u0B9F\u0BCD\u0B9F\u0BC1 \u0B95\u0BA3\u0B95\u0BCD\u0B95\u0BC6\u0B9F\u0BC1\u0BAA\u0BCD\u0BAA\u0BBE\u0BB3\u0BB0\u0BCD'}<br/>{'\u0B95\u0BC8\u0BAF\u0BCA\u0BAA\u0BCD\u0BAA\u0BAE\u0BCD'}</div>
-              <div className="a3OffSignLine" />
+            <div className="a3OffHdrRight">
+              {language === 'TAMIL' ? (
+                <span>வீட்டுப்பட்டியல் & வீடுகள் கணக்கெடுப்பு / மக்கள் தொகை கணக்கெடுப்பு</span>
+              ) : (
+                <span>Houselisting & Housing Census/Population Enumeration</span>
+              )}
             </div>
           </div>
 
-          {/* BODY: LEFT PANEL + RIGHT MAP */}
+          {/* ══════════════════════════════════════════════════════
+             2. BODY: LEFT FORM COLUMN + RIGHT MAP CANVAS
+             ══════════════════════════════════════════════════════ */}
           <div className="a3OffBody">
 
-            {/* LEFT LEGEND PANEL */}
+            {/* LEFT FORM & LEGEND COLUMN */}
             <div className="a3OffLeft">
 
-              {/* Admin Code Boxes */}
-              <div className="a3OffAdminSection">
-                {[
-                  { label: '\u0BAE\u0BBE\u0BA8\u0BBF\u0BB2\u0BAE\u0BCD/\u0B95\u0BC7\u0BA8\u0BCD\u0BA4\u0BBF\u0BB0\u0BAA\u0BCD \u0BAA\u0B95\u0BC1\u0BA4\u0BBF', val: '34', boxes: 2 },
-                  { label: '\u0BAE\u0BBE\u0BB5\u0B9F\u0BCD\u0B9F\u0BAE\u0BCD', val: '02', boxes: 2 },
-                  { label: '\u0BA4\u0BC1\u0BA3\u0BC8 \u0BAE\u0BBE\u0BB5\u0B9F\u0BCD\u0B9F\u0BAE\u0BCD', val: '', boxes: 4 },
-                  { label: '\u0BA8\u0B95\u0BB0\u0BAE\u0BCD / \u0B95\u0BBF\u0BB0\u0BBE\u0BAE\u0BAE\u0BCD', val: '', boxes: 4 },
-                  { label: '\u0BB5\u0BBE\u0BB0\u0BCD\u0B9F\u0BC1 \u0B8E\u0BA3\u0BCD', val: String(parseInt(cleanWard, 10) || 0).padStart(3, '0'), boxes: 3 },
-                  { label: '\u0BB5\u0BC0\u0B9F\u0BCD\u0B9F\u0BC1 \u0BAA\u0B9F\u0BCD\u0B9F\u0BBF\u0BAF\u0BB2\u0BCD \u0BA4\u0BCA\u0B95\u0BC1\u0BA4\u0BBF \u0B8E\u0BA3\u0BCD', val: String(blockNo).replace(/\D/g, '').padStart(4, '0'), boxes: 4 },
-                ].map((row, i) => (
-                  <div key={i} className="a3OffAdminRow">
-                    <span className="a3OffAdminLbl">{row.label}</span>
-                    <div className="a3OffAdminBoxes">
-                      {Array.from({ length: row.boxes }).map((_, j) => (
-                        <span key={j} className="a3OffAdminBox">{(row.val || '')[j] || ''}</span>
+              {/* ── Section A: Administrative Hierarchy & Code Boxes ── */}
+              <div className="a3OffAdminHierarchy">
+                {/* 1. State */}
+                <div className="a3OffFieldBlock">
+                  <div className="a3OffFieldLabelRow">
+                    <span>{language === 'TAMIL' ? 'மாநிலம் / யூ.டி பெயர்' : 'Name of State/UT'}</span>
+                    <span className="a3OffDottedLine">...................................................</span>
+                  </div>
+                  <div className="a3OffCodeBoxRow">
+                    <span className="a3OffCodeLabel">{language === 'TAMIL' ? 'குறியீட்டு எண்' : 'Code No.'}</span>
+                    <div className="a3OffCodeBoxes">
+                      <span className="a3OffCodeBox">3</span>
+                      <span className="a3OffCodeBox">4</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. District */}
+                <div className="a3OffFieldBlock">
+                  <div className="a3OffFieldLabelRow">
+                    <span>{language === 'TAMIL' ? 'மாவட்டத்தின் பெயர்' : 'Name of District'}</span>
+                    <span className="a3OffDottedLine">...................................................</span>
+                  </div>
+                  <div className="a3OffCodeBoxRow">
+                    <span className="a3OffCodeLabel">{language === 'TAMIL' ? 'குறியீட்டு எண்' : 'Code No.'}</span>
+                    <div className="a3OffCodeBoxes">
+                      <span className="a3OffCodeBox">0</span>
+                      <span className="a3OffCodeBox">2</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Tahsil / Taluk / Circle */}
+                <div className="a3OffFieldBlock">
+                  <div className="a3OffFieldLabelRow">
+                    <span>{language === 'TAMIL' ? 'தாலுகாவின் பெயர்' : 'Name of Tahsil/ Taluk/ PS/ Dev. Block/ Circle/ Mandal etc.'}</span>
+                    <span className="a3OffDottedLine">..................</span>
+                  </div>
+                  <div className="a3OffCodeBoxRow">
+                    <span className="a3OffCodeLabel">{language === 'TAMIL' ? 'குறியீட்டு எண்' : 'Code No.'}</span>
+                    <div className="a3OffCodeBoxes">
+                      <span className="a3OffCodeBox">0</span>
+                      <span className="a3OffCodeBox">0</span>
+                      <span className="a3OffCodeBox">8</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Town / Village */}
+                <div className="a3OffFieldBlock">
+                  <div className="a3OffFieldLabelRow">
+                    <span>{language === 'TAMIL' ? 'நகரத்தின் / கிராமத்தின் பெயர்' : 'Name of Town/Village'}</span>
+                    <span className="a3OffDottedLine">...................................</span>
+                  </div>
+                  <div className="a3OffCodeBoxRow">
+                    <span className="a3OffCodeLabel">{language === 'TAMIL' ? 'குறியீட்டு எண்' : 'Code No.'}</span>
+                    <div className="a3OffCodeBoxes">
+                      {['7','0','1','6','0','0','0','0'].map((d, i) => (
+                        <span key={i} className="a3OffCodeBox">{d}</span>
                       ))}
                     </div>
                   </div>
-                ))}
-                <div className="a3OffAdminRow">
-                  <span className="a3OffAdminLbl">{'\u0BA4\u0BC7\u0BA4\u0BBF'}</span>
-                  <span className="a3OffDateLine">{new Date().toLocaleDateString('en-GB')} ............</span>
+                </div>
+
+                {/* 5. Ward Code */}
+                <div className="a3OffFieldBlock">
+                  <div className="a3OffFieldLabelRow">
+                    <span>{language === 'TAMIL' ? 'வார்டு குறியீட்டு எண் (நகரத்திற்கு மட்டும்)' : 'Ward Code No (Only for Town)'}</span>
+                    <span className="a3OffDottedLine">..................</span>
+                  </div>
+                  <div className="a3OffCodeBoxRow">
+                    <span className="a3OffCodeLabel">{language === 'TAMIL' ? 'குறியீட்டு எண்' : 'Code No.'}</span>
+                    <div className="a3OffCodeBoxes">
+                      {String(parseInt(cleanWard, 10) || 72).padStart(4, '0').split('').map((d, i) => (
+                        <span key={i} className="a3OffCodeBox">{d}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 6. Block & Sub-block */}
+                <div className="a3OffFieldBlock">
+                  <div className="a3OffFieldLabelRow" style={{ fontSize: '7.2px' }}>
+                    <span>{language === 'TAMIL' ? 'வீட்டுப்பட்டியல் பிளாக் எண் / கணக்கெடுப்பு பிளாக் எண் & சப்-பிளாக் எண்' : 'Houselisting Block No./ Enumeration Block No. & Sub-Block No.'}</span>
+                  </div>
+                  <div className="a3OffCodeBoxRow" style={{ justifyContent: 'flex-end', marginTop: '2px' }}>
+                    <div className="a3OffCodeBoxes">
+                      {String(blockNo).replace(/\D/g, '').padStart(4, '0').slice(-4).split('').map((d, i) => (
+                        <span key={i} className="a3OffCodeBox">{d}</span>
+                      ))}
+                    </div>
+                    <span style={{ fontWeight: 900, margin: '0 3px' }}>—</span>
+                    <div className="a3OffCodeBoxes">
+                      <span className="a3OffCodeBox">0</span>
+                      <span className="a3OffCodeBox">0</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="a3OffDivider" />
-              {/* Instructions */}
-              <div className="a3OffNote">
-                <strong>{'\u0B95\u0BC1\u0BB1\u0BBF\u0BAA\u0BCD\u0BAA\u0BC1\u0B95\u0BB3\u0BCD'}:</strong>
-                <p>{'\u0B95\u0BC0\u0BB4\u0BC7 \u0B95\u0BCA\u0B9F\u0BC1\u0B95\u0BCD\u0B95\u0BAA\u0BCD \u0BAA\u0B9F\u0BCD\u0B9F \u0BB5\u0BB0\u0BC8\u0BAA\u0BCD\u0BAA\u0B9F \u0B95\u0BC1\u0BB1\u0BBF\u0BAF\u0BC0\u0B9F\u0BC1\u0B95\u0BB3\u0BBF\u0BB2\u0BCD \u0B92\u0BB5\u0BCD\u0BB5\u0BCA\u0BB0\u0BC1 \u0B95\u0B9F\u0BCD\u0B9F\u0BBF\u0B9F\u0BA4\u0BCD\u0BA4\u0BC8\u0BAF\u0BC1\u0BAE\u0BCD \u0BB5\u0BB0\u0BC8\u0BA8\u0BCD\u0BA4\u0BC1 \u0BA4\u0BCA\u0B9F\u0BB0\u0BCD \u0B8E\u0BA3\u0BCD \u0B95\u0BC1\u0BB1\u0BBF\u0B95\u0BCD\u0B95\u0BB5\u0BC1\u0BAE\u0BCD.'}</p>
-              </div>
-              {/* Legend */}
-              <div className="a3OffLegend">
-                <div className="a3OffLegTitle">{'\u0BAA\u0B95\u0BCD\u0B95\u0BBE \u0B95\u0B9F\u0BCD\u0B9F\u0BBF\u0B9F\u0B99\u0BCD\u0B95\u0BB3\u0BCD'} (Pucca):</div>
-                <div className="a3OffLegRow"><span>{'\u0B95\u0BC1\u0B9F\u0BBF\u0BAF\u0BBF\u0BB0\u0BC1\u0BAA\u0BCD\u0BAA\u0BC1'}</span><span className="a3OffSymPucca" /></div>
-                <div className="a3OffLegRow"><span>{'\u0BB5\u0BC7\u0BB1\u0BC1 \u0B95\u0B9F\u0BCD\u0B9F\u0BBF\u0B9F\u0B99\u0BCD\u0B95\u0BB3\u0BCD'}</span><span className="a3OffSymPuccaOther" /></div>
-                <div className="a3OffLegTitle">{'\u0B95\u0BC1\u0B9A\u0BCD\u0B9A\u0BBE \u0B95\u0B9F\u0BCD\u0B9F\u0BBF\u0B9F\u0B99\u0BCD\u0B95\u0BB3\u0BCD'} (Kutcha):</div>
+
+              {/* ── Section B: Official Legend ── */}
+              <div className="a3OffLegendSection">
+                <div className="a3OffLegendHeader">
+                  <strong>{language === 'TAMIL' ? 'குறிப்புகள் (LEGEND)' : 'LEGEND'}</strong>
+                </div>
+
                 <div className="a3OffLegRow">
-                  <span>{'\u0B95\u0BC1\u0B9F\u0BBF\u0BAF\u0BBF\u0BB0\u0BC1\u0BAA\u0BCD\u0BAA\u0BC1'}</span>
-                  <svg width="18" height="16" style={{flexShrink:0}}><polygon points="9,1 17,15 1,15" fill="none" stroke="#1e293b" strokeWidth="1.5"/></svg>
+                  <span>{language === 'TAMIL' ? 'பிளாக் எல்லை' : 'Block Boundary'} . . .</span>
+                  <span className="a3OffBoundSample">— · · — · · —</span>
                 </div>
-                <div className="a3OffLegRow">
-                  <span>{'\u0BB5\u0BC7\u0BB1\u0BC1 \u0B95\u0B9F\u0BCD\u0B9F\u0BBF\u0B9F\u0B99\u0BCD\u0B95\u0BB3\u0BCD'}</span>
-                  <svg width="18" height="16" style={{flexShrink:0}}><polygon points="9,1 17,15 1,15" fill="rgba(245,158,11,0.3)" stroke="#b45309" strokeWidth="1.5" strokeDasharray="3,2"/></svg>
+
+                <div className="a3OffNeighborNote">
+                  {language === 'TAMIL' ? (
+                    <p><strong>குறிப்பு:</strong> கோட்டு வரைபடத்தின் நான்கு திசைகளுக்கும் (வடக்கு, கிழக்கு, தெற்கு மற்றும் மேற்கு) அருகிலுள்ள வீட்டுப்பட்டியல்/கணக்கெடுப்பு பிளாக்குகள் அல்லது கிராமங்களின் எண் அல்லது பெயரை கொடுக்கவும்.</p>
+                  ) : (
+                    <p><strong>Note:</strong> Please give the number or name of neighbouring Houselisting/Population Enumeration Blocks or Villages on all the four directions (North, East, South and West) of layout map.</p>
+                  )}
                 </div>
-                <div className="a3OffLegTitle" style={{marginTop:'3px'}}>{'\u0B9A\u0BBE\u0BB2\u0BC8\u0B95\u0BB3\u0BCD'}:</div>
-                <div className="a3OffLegRow"><span>{'\u0BAA\u0B95\u0BCD\u0B95\u0BBE \u0B9A\u0BBE\u0BB2\u0BC8'}</span><span className="a3OffLineSolid" /></div>
-                <div className="a3OffLegRow"><span>{'\u0B95\u0BC1\u0B9A\u0BCD\u0B9A\u0BBE \u0B9A\u0BBE\u0BB2\u0BC8'}</span><span className="a3OffLineDash" /></div>
-                <div className="a3OffLegRow"><span>{'\u0BA4\u0BBE\u0BB0\u0BCD \u0BAA\u0BBE\u0BA4\u0BC8'}</span><span className="a3OffLineTar" /></div>
-                <div className="a3OffLegRow"><span>{'\u0B87\u0BB0\u0BAF\u0BBF\u0BB2\u0BCD \u0BAA\u0BBE\u0BA4\u0BC8'}</span><span className="a3OffLineRail" /></div>
-                <div className="a3OffLegRow"><span>{'\u0B86\u0BB1\u0BC1'}</span><span className="a3OffLineRiver" /></div>
-                <div className="a3OffLegRow"><span>{'\u0B95\u0BBE\u0BB2\u0BCD\u0BB5\u0BBE\u0BAF\u0BCD'}</span><span className="a3OffLineCanal" /></div>
-                <div className="a3OffLegRow"><span>{'\u0B95\u0BBF\u0BA3\u0BB1\u0BC1 / \u0B95\u0BC1\u0BB3\u0BAE\u0BCD'}</span><span style={{fontSize:'12px'}}>{'\u2295'}</span></div>
-                <div className="a3OffLegRow"><span>{'\u0BB5\u0BC7\u0BB1\u0BC1 / \u0B95\u0BCB\u0BB5\u0BBF\u0BB2\u0BCD'}</span><span style={{fontSize:'11px'}}>{'\u2295 + \u271D'}</span></div>
+
+                {/* Pucca Building */}
+                <div className="a3OffLegGroup">
+                  <span className="a3OffLegGroupTitle">{language === 'TAMIL' ? 'உறுதியான கட்டிடம் (எண்ணுடன்)' : 'Pucca Building (with number)'}</span>
+                  <div className="a3OffLegItemRow">
+                    <span>{language === 'TAMIL' ? 'குடியிருப்பு' : 'Residential'} . . .</span>
+                    <svg width="18" height="15" style={{ flexShrink: 0 }}><rect x="2" y="1" width="14" height="12" fill="none" stroke="#0f172a" strokeWidth="1.5" /></svg>
+                  </div>
+                  <div className="a3OffLegItemRow">
+                    <span>{language === 'TAMIL' ? 'குடியிருப்பு அல்லாத' : 'Non-residential'} . . .</span>
+                    <svg width="18" height="15" style={{ flexShrink: 0 }}>
+                      <defs>
+                        <pattern id="legHatchP" width="4" height="4" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                          <line x1="0" y1="0" x2="0" y2="4" stroke="#0f172a" strokeWidth="1" />
+                        </pattern>
+                      </defs>
+                      <rect x="2" y="1" width="14" height="12" fill="url(#legHatchP)" stroke="#0f172a" strokeWidth="1.5" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Kutcha Building */}
+                <div className="a3OffLegGroup">
+                  <span className="a3OffLegGroupTitle">{language === 'TAMIL' ? 'உறுதியற்ற கட்டிடம் (எண்ணுடன்)' : 'Kutcha Building (with number)'}</span>
+                  <div className="a3OffLegItemRow">
+                    <span>{language === 'TAMIL' ? 'குடியிருப்பு' : 'Residential'} . . .</span>
+                    <svg width="18" height="15" style={{ flexShrink: 0 }}><polygon points="9,1 17,14 1,14" fill="none" stroke="#0f172a" strokeWidth="1.5" /></svg>
+                  </div>
+                  <div className="a3OffLegItemRow">
+                    <span>{language === 'TAMIL' ? 'குடியிருப்பு அல்லாத' : 'Non-residential'} . . .</span>
+                    <svg width="18" height="15" style={{ flexShrink: 0 }}>
+                      <polygon points="9,1 17,14 1,14" fill="url(#legHatchP)" stroke="#0f172a" strokeWidth="1.5" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Roads & Features */}
+                <div className="a3OffLegItemRow">
+                  <span>{language === 'TAMIL' ? 'உறுதியான சாலை' : 'Pucca Road'} . . .</span>
+                  <svg width="40" height="8" style={{ flexShrink: 0 }}>
+                    <line x1="0" y1="2" x2="40" y2="2" stroke="#0f172a" strokeWidth="1.5" />
+                    <line x1="0" y1="6" x2="40" y2="6" stroke="#0f172a" strokeWidth="1.5" />
+                  </svg>
+                </div>
+
+                <div className="a3OffLegItemRow">
+                  <span>{language === 'TAMIL' ? 'உறுதியற்ற சாலை' : 'Kutcha Road'} . . .</span>
+                  <svg width="40" height="8" style={{ flexShrink: 0 }}>
+                    <line x1="0" y1="2" x2="40" y2="2" stroke="#0f172a" strokeWidth="1.5" strokeDasharray="4,3" />
+                    <line x1="0" y1="6" x2="40" y2="6" stroke="#0f172a" strokeWidth="1.5" strokeDasharray="4,3" />
+                  </svg>
+                </div>
+
+                <div className="a3OffLegItemRow">
+                  <span>{language === 'TAMIL' ? 'நடைபாதை' : 'Pathway'} . . .</span>
+                  <svg width="40" height="6" style={{ flexShrink: 0 }}>
+                    <line x1="0" y1="3" x2="40" y2="3" stroke="#0f172a" strokeWidth="1.5" strokeDasharray="3,3" />
+                  </svg>
+                </div>
+
+                <div className="a3OffLegItemRow">
+                  <span>{language === 'TAMIL' ? 'இரயில் பாதை' : 'Railway Line'} . . .</span>
+                  <svg width="40" height="10" style={{ flexShrink: 0 }}>
+                    <line x1="0" y1="5" x2="40" y2="5" stroke="#0f172a" strokeWidth="1.5" />
+                    <line x1="6" y1="1" x2="6" y2="9" stroke="#0f172a" strokeWidth="1.5" />
+                    <line x1="14" y1="1" x2="14" y2="9" stroke="#0f172a" strokeWidth="1.5" />
+                    <line x1="22" y1="1" x2="22" y2="9" stroke="#0f172a" strokeWidth="1.5" />
+                    <line x1="30" y1="1" x2="30" y2="9" stroke="#0f172a" strokeWidth="1.5" />
+                    <line x1="38" y1="1" x2="38" y2="9" stroke="#0f172a" strokeWidth="1.5" />
+                  </svg>
+                </div>
+
+                <div className="a3OffLegItemRow">
+                  <span>{language === 'TAMIL' ? 'ஆறு' : 'River'} . . .</span>
+                  <svg width="40" height="8" style={{ flexShrink: 0 }}>
+                    <path d="M0,2 Q10,0 20,2 T40,2 M0,6 Q10,4 20,6 T40,6" fill="none" stroke="#0f172a" strokeWidth="1.2" />
+                  </svg>
+                </div>
+
+                <div className="a3OffLegItemRow">
+                  <span>{language === 'TAMIL' ? 'கால்வாய்' : 'Canal'} . . .</span>
+                  <svg width="40" height="8" style={{ flexShrink: 0 }}>
+                    <line x1="0" y1="1.5" x2="40" y2="1.5" stroke="#0f172a" strokeWidth="1.2" />
+                    <line x1="0" y1="6.5" x2="40" y2="6.5" stroke="#0f172a" strokeWidth="1.2" />
+                    <line x1="5" y1="1.5" x2="10" y2="6.5" stroke="#0f172a" strokeWidth="1" />
+                    <line x1="15" y1="1.5" x2="20" y2="6.5" stroke="#0f172a" strokeWidth="1" />
+                    <line x1="25" y1="1.5" x2="30" y2="6.5" stroke="#0f172a" strokeWidth="1" />
+                    <line x1="35" y1="1.5" x2="40" y2="6.5" stroke="#0f172a" strokeWidth="1" />
+                  </svg>
+                </div>
+
+                <div className="a3OffLegItemRow">
+                  <span>{language === 'TAMIL' ? 'குளம், குட்டை' : 'Pond'} . . .</span>
+                  <svg width="35" height="12" style={{ flexShrink: 0 }}>
+                    <ellipse cx="17" cy="6" rx="15" ry="5" fill="none" stroke="#0f172a" strokeWidth="1.4" />
+                  </svg>
+                </div>
+
+                <div className="a3OffLegItemRow">
+                  <span>{language === 'TAMIL' ? 'கிணறு / குழாய் / கை பம்பு' : 'Well, Tap, Handpump'} . . .</span>
+                  <span style={{ fontSize: '11px', letterSpacing: '2px' }}>⊙ 🚰 ⚲</span>
+                </div>
+
+                <div className="a3OffLegItemRow">
+                  <span>{language === 'TAMIL' ? 'கோயில், மசூதி, தேவாலயம், குருத்வாரா, முதலியன...' : 'Temple, Mosque, Church, Gurdwara, etc.'}</span>
+                  <span style={{ fontSize: '11px', letterSpacing: '2px' }}>🛕 🕌 ⛪ ☬</span>
+                </div>
+
+                <div className="a3OffLegItemRow">
+                  <span style={{ fontSize: '6.8px' }}>
+                    {language === 'TAMIL' ? 'பள்ளிக்கூடம் (ப), மருத்துவமனை (ம), ஊராட்சி மன்றம் (ஊ), தபால் நிலையம் (த), முதலியன...' : 'School, Dispensary, Panchayat Ghar, Post Office, etc.'}
+                  </span>
+                  <div className="a3OffInstBoxes">
+                    {language === 'TAMIL' ? (
+                      ['ப', 'ம', 'ஊ', 'த'].map((s, i) => <span key={i} className="a3OffInstBox">{s}</span>)
+                    ) : (
+                      ['S', 'D', 'P', 'PO'].map((s, i) => <span key={i} className="a3OffInstBox">{s}</span>)
+                    )}
+                  </div>
+                </div>
+
+                {/* Numbered Instruction Notes */}
+                <div className="a3OffInstrNotes">
+                  {language === 'TAMIL' ? (
+                    <>
+                      <p><strong>குறிப்பு:</strong> (i) பிளாக்கில் உள்ள முக்கிய சாலைகள், தெருக்கள் போன்றவற்றின் பெயரை எழுதவும். கோயில்கள், பள்ளிக்கூடங்கள், மருத்துவமனைகள், ஊராட்சி மன்றம், தபால் நிலையங்கள் போன்றவற்றின் பெயர்களையும் குறிப்பிடவும்.</p>
+                      <p>(ii) பிளாக்கில் கட்டிட எண்கள் கொடுக்கப்பட்ட திசையை அம்புக்குறி மூலம் குறிப்பிடவும்.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p><strong>Note:</strong> (i) Please write the name of prominent roads, streets, mohallas, etc. in the Block. Also indicate the names of institutions like Temples, Schools, Dispensaries, Panchayat Ghar, Post Offices, etc.</p>
+                      <p>(ii) Please indicate by an arrow the direction in which the numbering has been done in the block.</p>
+                    </>
+                  )}
+                </div>
               </div>
-              {/* Numbering example */}
-              <div className="a3OffNumRow">
-                {['1','2','3','A'].map(n => <span key={n} className="a3OffNumBox">{n}</span>)}
-              </div>
-              <p className="a3OffNumText">{'\u0BAA\u0BB2\u0BCD\u0BB5\u0BC7\u0BB1\u0BC1 \u0B95\u0B9F\u0BCD\u0B9F\u0BBF\u0B9F\u0B99\u0BCD\u0B95\u0BB3\u0BC1\u0B95\u0BCD\u0B95\u0BC1 \u0BB5\u0BC0\u0B9F\u0BCD\u0B9F\u0BC1\u0BAA\u0BCD\u0BAA\u0B9F\u0BBF \u0BA4\u0BCA\u0B9F\u0BB0\u0BCD \u0B8E\u0BA3\u0BCD\u0B95\u0BB3\u0BCD \u0B95\u0BCA\u0B9F\u0BC1\u0B95\u0BCD\u0B95\u0BC1\u0BAE\u0BCD \u0BB5\u0BB4\u0BBF\u0BAE\u0BC1\u0BB1\u0BC8.'}</p>
-              {/* Stats */}
-              <div className="a3OffStats">
-                <div className="a3OffStatsRow"><span>{'\u0BAE\u0BCA\u0BA4\u0BCD\u0BA4 \u0B95\u0B9F\u0BCD\u0B9F\u0BBF\u0B9F\u0B99\u0BCD\u0B95\u0BB3\u0BCD'}</span><b>{stats.total}</b></div>
-                <div className="a3OffStatsRow"><span>{'\u0B95\u0BC1\u0B9F\u0BBF\u0BAF\u0BBF\u0BB0\u0BC1\u0BAA\u0BCD\u0BAA\u0BC1'}</span><b>{stats.residential}</b></div>
-                <div className="a3OffStatsRow"><span>{'\u0BB5\u0BA3\u0BBF\u0B95'}</span><b>{stats.commercial}</b></div>
-              </div>
-              {/* Signatures */}
+
+              {/* ── Section C: Signatures ── */}
               <div className="a3OffSigs">
                 <div className="a3OffSigField">
-                  <span>{'\u0B95\u0BA3\u0B95\u0BCD\u0B95\u0BC6\u0B9F\u0BC1\u0BAA\u0BCD\u0BAA\u0BBE\u0BB3\u0BB0\u0BCD \u0BAA\u0BC6\u0BAF\u0BCD\u0BAF\u0BB0\u0BCD'}</span>
+                  <span>{language === 'TAMIL' ? 'கணக்கெடுப்பாளரின் பெயர்' : 'Name of Enumerator'}</span>
                   <input className="a3OffSigInput" value={enumeratorName} onChange={e => setEnumeratorName(e.target.value)} />
                 </div>
                 <div className="a3OffSigField">
-                  <span>{'\u0B95\u0BA3\u0B95\u0BCD\u0B95\u0BC6\u0B9F\u0BC1\u0BAA\u0BCD\u0BAA\u0BBE\u0BB3\u0BB0\u0BCD \u0B95\u0BC8\u0BAF\u0BCA\u0BAA\u0BCD\u0BAA\u0BAE\u0BCD'}</span>
+                  <span>{language === 'TAMIL' ? 'கணக்கெடுப்பாளரின் தேதியிட்ட கையொப்பம்' : 'Enumerator Signature with date'}</span>
                   <div className="a3OffSigLine" />
                 </div>
                 <div className="a3OffSigField">
-                  <span>{'\u0BAE\u0BC7\u0BB1\u0BCD\u0BAA\u0BBE\u0BB0\u0BCD\u0BB5\u0BC8\u0BAF\u0BBE\u0BB3\u0BB0\u0BCD \u0BAA\u0BC6\u0BAF\u0BCD\u0BAF\u0BB0\u0BCD'}</span>
+                  <span>{language === 'TAMIL' ? 'மேற்பார்வையாளரின் பெயர்' : 'Name of Supervisor'}</span>
                   <input className="a3OffSigInput" value={supervisorName} onChange={e => setSupervisorName(e.target.value)} />
                 </div>
                 <div className="a3OffSigField">
-                  <span>{'\u0BAE\u0BC7\u0BB1\u0BCD\u0BAA\u0BBE\u0BB0\u0BCD\u0BB5\u0BC8\u0BAF\u0BBE\u0BB3\u0BB0\u0BCD \u0B95\u0BC8\u0BAF\u0BCA\u0BAA\u0BCD\u0BAA\u0BAE\u0BCD'}</span>
+                  <span>{language === 'TAMIL' ? 'மேற்பார்வையாளரின் தேதியிட்ட கையொப்பம்' : 'Supervisor Signature with date'}</span>
                   <div className="a3OffSigLine" />
                 </div>
               </div>
-              <div className="a3OffTamilTag">TAMIL</div>
+
             </div>
 
             {/* RIGHT MAP PANEL */}
@@ -908,21 +1130,19 @@ export default function CensusBlockA3SketchModal({ block, onClose }) {
               {loading ? (
                 <div className="a3LoadingState">
                   <Sparkles size={32} className="spinning" />
-                  <p>{'\u0BB5\u0BB0\u0BC8\u0BAA\u0BCD\u0BAA\u0B9F\u0BAE\u0BCD \u0BA4\u0BAF\u0BBE\u0BB0\u0BBF\u0B95\u0BCD\u0BAA\u0BCD\u0BAA\u0B9F\u0BC1\u0B95\u0BBF\u0BB1\u0BA4\u0BC1...'}</p>
+                  <p>{language === 'TAMIL' ? 'வரைபடம் தயாரிக்கப்படுகிறது...' : 'Preparing Census Layout Map...'}</p>
                   <span>Block #{blockNo} loading...</span>
                 </div>
               ) : (
                 <>
-                  {/* North Arrow – top right corner */}
+                  {/* Official North Arrow – top right corner matching PDF */}
                   <div className="a3OffNorth">
-                    <svg width="20" height="38" viewBox="0 0 20 38">
-                      <line x1="10" y1="34" x2="10" y2="4" stroke="#1e293b" strokeWidth="1.5"/>
-                      <polygon points="10,0 5,12 10,8 15,12" fill="#1e293b"/>
+                    <span className="a3OffNorthLabel">{language === 'TAMIL' ? 'வடக்கு' : 'NORTH'}</span>
+                    <svg width="24" height="46" viewBox="0 0 24 46">
+                      <line x1="12" y1="42" x2="12" y2="4" stroke="#0f172a" strokeWidth="2" />
+                      <polygon points="12,0 6,14 12,10 18,14" fill="#0f172a" />
                     </svg>
-                    <span>{'\u0BB5.\u0B95\u0BBF'}</span>
                   </div>
-                  {/* Scale tag */}
-                  <div className="a3OffScaleTag">{'\u0B85\u0BB3\u0BB5\u0BC1\u0B95\u0BCB\u0BB2\u0BCD 1 : 1500'}</div>
 
                   {/* SVG Map — same vector engine, new container */}
                   <svg
