@@ -81,6 +81,8 @@ function CensusPublicSupervisorReportContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [hodTab, setHodTab] = useState('summary'); // 'summary' | 'expanded'
   const [expandedCircleIds, setExpandedCircleIds] = useState(new Set());
+  const [showSupervisorErrorBreakup, setShowSupervisorErrorBreakup] = useState(false);
+  const [showHodErrorBreakup, setShowHodErrorBreakup] = useState(false);
 
   // 1. Anti-Inspect & Security Protection
   useEffect(() => {
@@ -523,6 +525,32 @@ function CensusPublicSupervisorReportContent() {
     return [];
   }, [allotedRows, chargeRows, getHlbBlockNo, getMobileAndUsername, errorsMap]);
 
+  // Fast reverse lookup map: HLB Code -> { circleNo, supervisorName, enumName, enumMobile }
+  const hlbToSupervisorMap = useMemo(() => {
+    const map = new Map();
+    allCircles.forEach(c => {
+      c.enumerators.forEach(e => {
+        const rawCode = String(e.hlbCode || '').trim();
+        const padded = rawCode.padStart(4, '0');
+        const numOnly = rawCode.replace(/[^0-9]/g, '');
+        const unpadded = String(parseInt(padded, 10) || numOnly || rawCode);
+        const obj = {
+          circleNo: c.circleNo,
+          circleNumber: c.circleNumber,
+          supervisorName: c.supervisorName,
+          supervisorMobile: c.supervisorMobile,
+          supervisorId: c.supervisorId,
+          enumName: e.enumName,
+          enumId: e.enumId,
+          enumMobile: e.enumMobile,
+          hlbCode: padded
+        };
+        [rawCode, padded, unpadded, numOnly].filter(Boolean).forEach(k => map.set(k, obj));
+      });
+    });
+    return map;
+  }, [allCircles]);
+
   // Target Circle matching: circle number (e.g. 001) OR supervisor ID (e.g. sm_...)
   const targetCircleData = useMemo(() => {
     if (queryParams.isAdmin || queryParams.isHod) return null;
@@ -652,17 +680,20 @@ function CensusPublicSupervisorReportContent() {
   }, [allCircles, searchQuery]);
 
   return (
-    <div style={{
+    <div className="public-report-container" style={{
       minHeight: '100vh',
       background: '#0a0d14',
       color: '#f8fafc',
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      padding: '14px 10px',
+      padding: '16px 32px',
       userSelect: 'none',
       WebkitUserSelect: 'none'
     }}>
       <style>{`
         @media (max-width: 640px) {
+          .public-report-container {
+            padding: 10px 8px !important;
+          }
           .kpi-grid {
             grid-template-columns: repeat(2, 1fr) !important;
             gap: 6px !important;
@@ -696,6 +727,13 @@ function CensusPublicSupervisorReportContent() {
             margin: 4px !important;
             border-radius: 12px !important;
           }
+          .modal-table-scroll {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+          .modal-table-scroll table {
+            min-width: 720px !important;
+          }
           .brand-title {
             font-size: 13px !important;
           }
@@ -707,7 +745,7 @@ function CensusPublicSupervisorReportContent() {
             padding: 6px 10px !important;
           }
           .err-breakup-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
+            grid-template-columns: repeat(2, 1fr) !important;
             gap: 6px !important;
           }
           .err-breakup-card {
@@ -717,7 +755,7 @@ function CensusPublicSupervisorReportContent() {
             font-size: 16px !important;
           }
           .err-breakup-name {
-            font-size: 9px !important;
+            font-size: 9.5px !important;
           }
           .err-breakup-count {
             font-size: 15px !important;
@@ -755,6 +793,52 @@ function CensusPublicSupervisorReportContent() {
           box-shadow: 0 4px 14px var(--card-glow-sub, rgba(255,255,255,0.3)) !important;
         }
 
+        /* Interactive Active Errors Card (Tactile Button Feel) */
+        .kpi-card.interactive-error-card {
+          cursor: pointer !important;
+          animation: errorCardPulse 2.8s ease-in-out infinite alternate;
+        }
+        .kpi-card.interactive-error-card:hover {
+          transform: translateY(-6px) scale(1.035) !important;
+          box-shadow: 0 18px 36px -6px rgba(239, 68, 68, 0.5), 0 0 24px rgba(239, 68, 68, 0.35) !important;
+          border-color: #ef4444 !important;
+        }
+        .kpi-card.interactive-error-card:active {
+          transform: scale(0.97) !important;
+          box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4) !important;
+        }
+        .kpi-card.interactive-error-card.is-open {
+          border-color: #f87171 !important;
+          box-shadow: 0 0 22px rgba(239, 68, 68, 0.4), inset 0 0 14px rgba(239, 68, 68, 0.15) !important;
+          animation: none !important;
+        }
+
+        @keyframes errorCardPulse {
+          0% {
+            box-shadow: 0 4px 16px -4px rgba(239, 68, 68, 0.25), 0 0 10px rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.4);
+          }
+          100% {
+            box-shadow: 0 8px 24px -2px rgba(239, 68, 68, 0.45), 0 0 18px rgba(239, 68, 68, 0.28);
+            border-color: rgba(239, 68, 68, 0.85);
+          }
+        }
+
+        @keyframes errorSectionSlideDown {
+          0% {
+            opacity: 0;
+            transform: translateY(-12px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .err-breakup-section-animated {
+          animation: errorSectionSlideDown 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
         .err-breakup-card {
           transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease, opacity 0.28s ease !important;
           position: relative;
@@ -784,6 +868,63 @@ function CensusPublicSupervisorReportContent() {
         .err-breakup-card:hover .kpi-icon-badge {
           transform: scale(1.18) rotate(8deg) !important;
           box-shadow: 0 4px 14px var(--card-glow-sub, rgba(255,255,255,0.3)) !important;
+        }
+
+        /* Modal Spring & Backdrop Animations */
+        .modal-backdrop-anim {
+          animation: modalBackdropFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .modal-card-anim {
+          animation: modalSpringPopIn 0.38s cubic-bezier(0.34, 1.45, 0.7, 1) forwards;
+          transform-origin: center center;
+        }
+
+        @keyframes modalBackdropFadeIn {
+          from {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+          }
+          to {
+            opacity: 1;
+            backdrop-filter: blur(8px);
+          }
+        }
+
+        @keyframes modalSpringPopIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.86) translateY(28px);
+          }
+          70% {
+            transform: scale(1.015) translateY(-3px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        /* Staggered Card Entrance for Breakup Cards */
+        .err-breakup-grid .err-breakup-card {
+          animation: cardStaggerPop 0.38s cubic-bezier(0.34, 1.35, 0.64, 1) backwards;
+        }
+        .err-breakup-grid .err-breakup-card:nth-child(1) { animation-delay: 0.04s; }
+        .err-breakup-grid .err-breakup-card:nth-child(2) { animation-delay: 0.08s; }
+        .err-breakup-grid .err-breakup-card:nth-child(3) { animation-delay: 0.12s; }
+        .err-breakup-grid .err-breakup-card:nth-child(4) { animation-delay: 0.16s; }
+        .err-breakup-grid .err-breakup-card:nth-child(5) { animation-delay: 0.20s; }
+        .err-breakup-grid .err-breakup-card:nth-child(6) { animation-delay: 0.24s; }
+        .err-breakup-grid .err-breakup-card:nth-child(7) { animation-delay: 0.28s; }
+
+        @keyframes cardStaggerPop {
+          0% {
+            opacity: 0;
+            transform: translateY(18px) scale(0.92);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
 
         .kpi-icon-badge {
@@ -861,7 +1002,7 @@ function CensusPublicSupervisorReportContent() {
         <>
           {/* Top Brand Header */}
           <div style={{
-            maxWidth: '1200px',
+            maxWidth: '1440px',
             margin: '0 auto 16px auto',
             display: 'flex',
             alignItems: 'center',
@@ -980,7 +1121,7 @@ function CensusPublicSupervisorReportContent() {
           </div>
 
           {loading && (
-            <div style={{ maxWidth: '1200px', margin: '40px auto', textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ maxWidth: '1440px', margin: '40px auto', textAlign: 'center', color: '#94a3b8' }}>
               <div style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid rgba(255,255,255,0.2)', borderTopColor: '#e11d48', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
               <p style={{ marginTop: '12px', fontSize: '12px', fontWeight: 600 }}>Loading Census Records...</p>
             </div>
@@ -1021,7 +1162,7 @@ function CensusPublicSupervisorReportContent() {
 
       {/* SINGLE SUPERVISOR VIEW */}
       {!loading && targetCircleData && targetCircleData !== undefined && (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {/* Supervisor Card Header */}
           <div style={{
             background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
@@ -1087,27 +1228,52 @@ function CensusPublicSupervisorReportContent() {
                   { label: 'SE ID Used', value: se.toLocaleString(), color: '#d8b4fe', accent: '#c084fc', gradient: 'linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🆔', borderColor: '#7c3aed' },
                   { label: '🔒 Locked', value: lck.toLocaleString(), color: '#22d3ee', accent: '#06b6d4', gradient: 'linear-gradient(135deg, rgba(6,182,212,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🔒', borderColor: '#0891b2' },
                   { label: 'Population', value: pop.toLocaleString(), color: '#4ade80', accent: '#22c55e', gradient: 'linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '👤', borderColor: '#16a34a' },
-                  { label: 'Active Errors', value: String(err), color: err > 0 ? '#f87171' : '#4ade80', accent: err > 0 ? '#ef4444' : '#22c55e', gradient: err > 0 ? 'linear-gradient(135deg, rgba(239,68,68,0.22) 0%, rgba(15,23,42,0.7) 100%)' : 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(15,23,42,0.7) 100%)', icon: '⚠️', borderColor: err > 0 ? '#dc2626' : '#16a34a' },
+                  {
+                    label: 'Active Errors',
+                    value: String(err),
+                    color: err > 0 ? '#f87171' : '#4ade80',
+                    accent: err > 0 ? '#ef4444' : '#22c55e',
+                    gradient: err > 0
+                      ? (showSupervisorErrorBreakup
+                          ? 'linear-gradient(135deg, rgba(239,68,68,0.3) 0%, rgba(30,27,75,0.95) 100%)'
+                          : 'linear-gradient(135deg, rgba(239,68,68,0.22) 0%, rgba(15,23,42,0.85) 100%)')
+                      : 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(15,23,42,0.7) 100%)',
+                    icon: err > 0 ? (showSupervisorErrorBreakup ? '📂' : '⚠️') : '✅',
+                    borderColor: err > 0 ? (showSupervisorErrorBreakup ? '#f87171' : '#dc2626') : '#16a34a',
+                    isErrorCard: true,
+                    hasErrors: err > 0,
+                    isExpanded: showSupervisorErrorBreakup,
+                    onClick: () => {
+                      if (err > 0) setShowSupervisorErrorBreakup(prev => !prev);
+                    }
+                  },
                   { label: 'Status', value: `${comp}/${targetCircleData.enumerators.length}`, sub: 'Comp', color: comp === targetCircleData.enumerators.length ? '#4ade80' : '#fbbf24', accent: comp === targetCircleData.enumerators.length ? '#16a34a' : '#d97706', gradient: comp === targetCircleData.enumerators.length ? 'linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(15,23,42,0.7) 100%)' : 'linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: comp === targetCircleData.enumerators.length ? '🎉' : '⏳', borderColor: comp === targetCircleData.enumerators.length ? '#16a34a' : '#d97706' }
                 ].map((card, i) => (
-                  <div key={i} className="kpi-card" style={{
-                    background: card.gradient,
-                    borderRadius: '14px',
-                    padding: '12px 14px',
-                    border: `1px solid ${card.borderColor}35`,
-                    borderLeft: `3.5px solid ${card.borderColor}`,
-                    position: 'relative',
-                    backdropFilter: 'blur(12px)',
-                    boxShadow: `0 4px 16px -4px ${card.accent}15`,
-                    '--card-glow': `${card.accent}50`,
-                    '--card-glow-sub': `${card.accent}25`,
-                    '--card-border-hover': `${card.accent}90`,
-                    cursor: 'default',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: '85px'
-                  }}>
+                  <div
+                    key={i}
+                    className={`kpi-card ${card.isErrorCard && card.hasErrors ? 'interactive-error-card' : ''} ${card.isExpanded ? 'is-open' : ''}`}
+                    onClick={card.onClick}
+                    title={card.isErrorCard && card.hasErrors ? (card.isExpanded ? 'Click to hide error breakdown' : 'Tap to expand error categories') : undefined}
+                    style={{
+                      background: card.gradient,
+                      borderRadius: '14px',
+                      padding: '12px 14px',
+                      border: `1px solid ${card.borderColor}35`,
+                      borderLeft: `3.5px solid ${card.borderColor}`,
+                      position: 'relative',
+                      backdropFilter: 'blur(12px)',
+                      boxShadow: `0 4px 16px -4px ${card.accent}15`,
+                      '--card-glow': `${card.accent}50`,
+                      '--card-glow-sub': `${card.accent}25`,
+                      '--card-border-hover': `${card.accent}90`,
+                      cursor: card.onClick && card.hasErrors ? 'pointer' : 'default',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      minHeight: '85px',
+                      userSelect: 'none'
+                    }}
+                  >
                     {/* Top glow shine */}
                     <div style={{
                       position: 'absolute',
@@ -1139,32 +1305,93 @@ function CensusPublicSupervisorReportContent() {
                     <div className="kpi-value" style={{ fontSize: '21px', fontWeight: 900, color: card.color, letterSpacing: '-0.5px' }}>
                       {card.value}{card.sub && <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginLeft: '5px' }}>{card.sub}</span>}
                     </div>
+
+                    {/* Interactive Button / Tap Indicator for Error Card */}
+                    {card.isErrorCard && card.hasErrors && (
+                      <div style={{
+                        marginTop: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: card.isExpanded ? 'rgba(239,68,68,0.35)' : 'rgba(239,68,68,0.18)',
+                        border: `1px solid ${card.isExpanded ? 'rgba(239,68,68,0.7)' : 'rgba(239,68,68,0.4)'}`,
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '9.5px',
+                        fontWeight: 800,
+                        color: card.isExpanded ? '#ffffff' : '#fca5a5',
+                        boxShadow: card.isExpanded ? '0 0 10px rgba(239,68,68,0.4)' : 'none',
+                        transition: 'all 0.2s ease'
+                      }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {card.isExpanded ? '▲ Hide Breakup' : '👇 Tap for Error Types'}
+                        </span>
+                        <span style={{ fontSize: '10px' }}>{card.isExpanded ? '▲' : '▼'}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
-              {/* ERROR BREAKUP CARDS — Supervisor View */}
-              {err > 0 && (() => {
+              {/* ERROR BREAKUP CARDS — Supervisor View (Toggled on tap of Active Errors card) */}
+              {err > 0 && showSupervisorErrorBreakup && (() => {
                 const supAllErrors = targetCircleData.enumerators.flatMap(e => e.errorRecords || []);
                 const supBreakup = getErrorBreakup(supAllErrors);
                 return (
-                  <div style={{ marginTop: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                      <div style={{
-                        width: '26px',
-                        height: '26px',
-                        borderRadius: '7px',
-                        background: 'rgba(239,68,68,0.2)',
-                        border: '1px solid rgba(239,68,68,0.4)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <AlertTriangle size={14} color="#ef4444" />
+                  <div className="err-breakup-section-animated" style={{
+                    marginTop: '10px',
+                    background: 'linear-gradient(145deg, rgba(30, 27, 75, 0.45) 0%, rgba(15, 23, 42, 0.8) 100%)',
+                    border: '1.5px solid rgba(239, 68, 68, 0.4)',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    boxShadow: '0 12px 32px -8px rgba(239, 68, 68, 0.25), inset 0 0 20px rgba(239, 68, 68, 0.05)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '8px',
+                          background: 'rgba(239,68,68,0.25)',
+                          border: '1px solid rgba(239,68,68,0.5)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <AlertTriangle size={15} color="#ef4444" />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '13.5px', fontWeight: 900, color: '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                            Error Type Breakup
+                          </span>
+                          <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '8px', fontWeight: 600 }}>
+                            ({err} total errors in {targetCircleData.circleNo} · Tap card to inspect)
+                          </span>
+                        </div>
                       </div>
-                      <span style={{ fontSize: '13px', fontWeight: 900, color: '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Error Type Breakup</span>
-                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>({err} total errors in {targetCircleData.circleNo})</span>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowSupervisorErrorBreakup(false)}
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          color: '#fca5a5',
+                          padding: '5px 12px',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        ▲ Hide Breakup
+                      </button>
                     </div>
+
                     <div className="err-breakup-grid" style={{
                       display: 'grid',
                       gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
@@ -1172,26 +1399,45 @@ function CensusPublicSupervisorReportContent() {
                     }}>
                       {DEFAULT_ERRORS.map(def => {
                         const count = supBreakup[def.id] || 0;
+                        const matchingErrors = supAllErrors.filter(e => matchErrorType(e) === def.id);
                         return (
-                          <div key={def.id} className="err-breakup-card" style={{
-                            background: count > 0 
-                              ? `linear-gradient(145deg, ${def.color}18 0%, rgba(15,23,42,0.9) 100%)`
-                              : 'rgba(19,24,36,0.6)',
-                            border: `1px solid ${count > 0 ? def.color + '45' : 'rgba(255,255,255,0.06)'}`,
-                            borderLeft: `4px solid ${count > 0 ? def.color : 'rgba(255,255,255,0.1)'}`,
-                            borderRadius: '16px',
-                            padding: '14px 16px',
-                            backdropFilter: 'blur(12px)',
-                            opacity: count > 0 ? 1 : 0.45,
-                            '--card-glow': `${def.color}45`,
-                            '--card-glow-sub': `${def.color}20`,
-                            '--card-border-hover': `${def.color}90`,
-                            cursor: 'default',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            minHeight: '135px'
-                          }}>
+                          <div
+                            key={def.id}
+                            className="err-breakup-card"
+                            onClick={() => {
+                              if (count > 0) {
+                                setSelectedErrorModal({
+                                  circleNo: targetCircleData.circleNo,
+                                  supervisorName: targetCircleData.supervisorName,
+                                  enumName: `All Blocks (${def.name})`,
+                                  enumId: def.id.toUpperCase(),
+                                  enumMobile: targetCircleData.supervisorMobile,
+                                  hlbCode: 'ALL',
+                                  errors: matchingErrors
+                                });
+                              }
+                            }}
+                            title={count > 0 ? `Click to inspect all ${count} ${def.name} errors` : 'No errors of this type'}
+                            style={{
+                              background: count > 0 
+                                ? `linear-gradient(145deg, ${def.color}18 0%, rgba(15,23,42,0.9) 100%)`
+                                : 'rgba(19,24,36,0.6)',
+                              border: `1px solid ${count > 0 ? def.color + '45' : 'rgba(255,255,255,0.06)'}`,
+                              borderLeft: `4px solid ${count > 0 ? def.color : 'rgba(255,255,255,0.1)'}`,
+                              borderRadius: '16px',
+                              padding: '14px 16px',
+                              backdropFilter: 'blur(12px)',
+                              opacity: count > 0 ? 1 : 0.45,
+                              '--card-glow': `${def.color}45`,
+                              '--card-glow-sub': `${def.color}20`,
+                              '--card-border-hover': `${def.color}90`,
+                              cursor: count > 0 ? 'pointer' : 'default',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              minHeight: '135px'
+                            }}
+                          >
                             {/* Top specular line */}
                             {count > 0 && (
                               <div style={{
@@ -1226,79 +1472,105 @@ function CensusPublicSupervisorReportContent() {
                               <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
                                 {def.name}
                               </div>
-                              <div style={{
-                                display: 'inline-block',
-                                fontSize: '9.5px',
-                                color: count > 0 ? '#94a3b8' : '#475569',
-                                fontWeight: 600,
-                                background: 'rgba(255,255,255,0.05)',
-                                padding: '3px 8px',
-                                borderRadius: '6px',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                lineHeight: '1.3'
-                              }}>
-                                {def.nameTa}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', flexWrap: 'wrap' }}>
+                                <div style={{
+                                  display: 'inline-block',
+                                  fontSize: '9.5px',
+                                  color: count > 0 ? '#94a3b8' : '#475569',
+                                  fontWeight: 600,
+                                  background: 'rgba(255,255,255,0.05)',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid rgba(255,255,255,0.08)',
+                                  lineHeight: '1.3'
+                                }}>
+                                  {def.nameTa}
+                                </div>
+                                {count > 0 && (
+                                  <span style={{ fontSize: '9px', color: def.color, fontWeight: 800 }}>Inspect 🔍</span>
+                                )}
                               </div>
                             </div>
                           </div>
                         );
                       })}
-                      {supBreakup['other'] > 0 && (
-                        <div className="err-breakup-card" style={{
-                          background: 'linear-gradient(145deg, rgba(148,163,184,0.15) 0%, rgba(15,23,42,0.9) 100%)',
-                          border: '1px solid rgba(148,163,184,0.35)',
-                          borderLeft: '4px solid #94a3b8',
-                          borderRadius: '16px',
-                          padding: '14px 16px',
-                          backdropFilter: 'blur(12px)',
-                          '--card-glow': 'rgba(148,163,184,0.35)',
-                          '--card-glow-sub': 'rgba(148,163,184,0.15)',
-                          '--card-border-hover': 'rgba(148,163,184,0.8)',
-                          cursor: 'default',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          minHeight: '135px'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <div className="kpi-icon-badge" style={{
-                              width: '42px',
-                              height: '42px',
-                              borderRadius: '12px',
-                              background: 'rgba(148,163,184,0.22)',
-                              border: '1.5px solid rgba(148,163,184,0.5)',
+                      {supBreakup['other'] > 0 && (() => {
+                        const matchingOthers = supAllErrors.filter(e => matchErrorType(e) === null);
+                        return (
+                          <div
+                            className="err-breakup-card"
+                            onClick={() => {
+                              setSelectedErrorModal({
+                                circleNo: targetCircleData.circleNo,
+                                supervisorName: targetCircleData.supervisorName,
+                                enumName: `All Blocks (Other Errors)`,
+                                enumId: 'OTHER',
+                                enumMobile: targetCircleData.supervisorMobile,
+                                hlbCode: 'ALL',
+                                errors: matchingOthers
+                              });
+                            }}
+                            title={`Click to inspect all ${supBreakup['other']} other errors`}
+                            style={{
+                              background: 'linear-gradient(145deg, rgba(148,163,184,0.15) 0%, rgba(15,23,42,0.9) 100%)',
+                              border: '1px solid rgba(148,163,184,0.35)',
+                              borderLeft: '4px solid #94a3b8',
+                              borderRadius: '16px',
+                              padding: '14px 16px',
+                              backdropFilter: 'blur(12px)',
+                              '--card-glow': 'rgba(148,163,184,0.35)',
+                              '--card-glow-sub': 'rgba(148,163,184,0.15)',
+                              '--card-border-hover': 'rgba(148,163,184,0.8)',
+                              cursor: 'pointer',
                               display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '22px',
-                              boxShadow: '0 4px 12px rgba(148,163,184,0.2)'
-                            }}>
-                              ⚠️
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              minHeight: '135px'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <div className="kpi-icon-badge" style={{
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '12px',
+                                background: 'rgba(148,163,184,0.22)',
+                                border: '1.5px solid rgba(148,163,184,0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '22px',
+                                boxShadow: '0 4px 12px rgba(148,163,184,0.2)'
+                              }}>
+                                ⚠️
+                              </div>
+                              <div className="err-breakup-count" style={{ fontSize: '26px', fontWeight: 900, color: '#e2e8f0', letterSpacing: '-0.5px' }}>
+                                {supBreakup['other'].toLocaleString()}
+                              </div>
                             </div>
-                            <div className="err-breakup-count" style={{ fontSize: '26px', fontWeight: 900, color: '#e2e8f0', letterSpacing: '-0.5px' }}>
-                              {supBreakup['other'].toLocaleString()}
+                            <div>
+                              <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
+                                Other Errors
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', flexWrap: 'wrap' }}>
+                                <div style={{
+                                  display: 'inline-block',
+                                  fontSize: '9.5px',
+                                  color: '#94a3b8',
+                                  fontWeight: 600,
+                                  background: 'rgba(255,255,255,0.05)',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid rgba(255,255,255,0.08)',
+                                  lineHeight: '1.3'
+                                }}>
+                                  பிற பிழைகள்
+                                </div>
+                                <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 800 }}>Inspect 🔍</span>
+                              </div>
                             </div>
                           </div>
-                          <div>
-                            <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
-                              Other Errors
-                            </div>
-                            <div style={{
-                              display: 'inline-block',
-                              fontSize: '9.5px',
-                              color: '#94a3b8',
-                              fontWeight: 600,
-                              background: 'rgba(255,255,255,0.05)',
-                              padding: '3px 8px',
-                              borderRadius: '6px',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              lineHeight: '1.3'
-                            }}>
-                              பிற பிழைகள்
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 );
@@ -1427,7 +1699,7 @@ function CensusPublicSupervisorReportContent() {
 
       {/* HOD / ADMIN MASTER VIEW (ALL 75 CIRCLES) - only when not a supervisor request */}
       {!loading && targetCircleData === null && (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* HOD Master KPIs — Ultra Sleek Design */}
           <div className="kpi-grid" style={{
             display: 'grid',
@@ -1445,26 +1717,52 @@ function CensusPublicSupervisorReportContent() {
               { label: 'SE ID Used', value: hodStats.totalSeId.toLocaleString(), sub: null, color: '#d8b4fe', accent: '#c084fc', gradient: 'linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🆔', borderColor: '#7c3aed' },
               { label: '🔒 Locked', value: hodStats.totalLocked.toLocaleString(), sub: null, color: '#22d3ee', accent: '#06b6d4', gradient: 'linear-gradient(135deg, rgba(6,182,212,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '🔒', borderColor: '#0891b2' },
               { label: 'Total Population', value: hodStats.totalPopulation.toLocaleString(), sub: null, color: '#4ade80', accent: '#22c55e', gradient: 'linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(15,23,42,0.7) 100%)', icon: '👤', borderColor: '#16a34a' },
-              { label: 'Active Errors', value: hodStats.totalErrors.toLocaleString(), sub: null, color: hodStats.totalErrors > 0 ? '#f87171' : '#4ade80', accent: hodStats.totalErrors > 0 ? '#ef4444' : '#22c55e', gradient: hodStats.totalErrors > 0 ? 'linear-gradient(135deg, rgba(239,68,68,0.22) 0%, rgba(15,23,42,0.7) 100%)' : 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(15,23,42,0.7) 100%)', icon: '⚠️', borderColor: hodStats.totalErrors > 0 ? '#dc2626' : '#16a34a' }
+              {
+                label: 'Active Errors',
+                value: hodStats.totalErrors.toLocaleString(),
+                sub: null,
+                color: hodStats.totalErrors > 0 ? '#f87171' : '#4ade80',
+                accent: hodStats.totalErrors > 0 ? '#ef4444' : '#22c55e',
+                gradient: hodStats.totalErrors > 0
+                  ? (showHodErrorBreakup
+                      ? 'linear-gradient(135deg, rgba(239,68,68,0.3) 0%, rgba(30,27,75,0.95) 100%)'
+                      : 'linear-gradient(135deg, rgba(239,68,68,0.22) 0%, rgba(15,23,42,0.85) 100%)')
+                  : 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(15,23,42,0.7) 100%)',
+                icon: hodStats.totalErrors > 0 ? (showHodErrorBreakup ? '📂' : '⚠️') : '✅',
+                borderColor: hodStats.totalErrors > 0 ? (showHodErrorBreakup ? '#f87171' : '#dc2626') : '#16a34a',
+                isErrorCard: true,
+                hasErrors: hodStats.totalErrors > 0,
+                isExpanded: showHodErrorBreakup,
+                onClick: () => {
+                  if (hodStats.totalErrors > 0) setShowHodErrorBreakup(prev => !prev);
+                }
+              }
             ].map((card, i) => (
-              <div key={i} className="kpi-card" style={{
-                background: card.gradient,
-                borderRadius: '14px',
-                padding: '12px 14px',
-                border: `1px solid ${card.borderColor}35`,
-                borderLeft: `3.5px solid ${card.borderColor}`,
-                position: 'relative',
-                backdropFilter: 'blur(12px)',
-                boxShadow: `0 4px 16px -4px ${card.accent}15`,
-                '--card-glow': `${card.accent}50`,
-                '--card-glow-sub': `${card.accent}25`,
-                '--card-border-hover': `${card.accent}90`,
-                cursor: 'default',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                minHeight: '85px'
-              }}>
+              <div
+                key={i}
+                className={`kpi-card ${card.isErrorCard && card.hasErrors ? 'interactive-error-card' : ''} ${card.isExpanded ? 'is-open' : ''}`}
+                onClick={card.onClick}
+                title={card.isErrorCard && card.hasErrors ? (card.isExpanded ? 'Click to hide error breakdown' : 'Tap to expand error categories') : undefined}
+                style={{
+                  background: card.gradient,
+                  borderRadius: '14px',
+                  padding: '12px 14px',
+                  border: `1px solid ${card.borderColor}35`,
+                  borderLeft: `3.5px solid ${card.borderColor}`,
+                  position: 'relative',
+                  backdropFilter: 'blur(12px)',
+                  boxShadow: `0 4px 16px -4px ${card.accent}15`,
+                  '--card-glow': `${card.accent}50`,
+                  '--card-glow-sub': `${card.accent}25`,
+                  '--card-border-hover': `${card.accent}90`,
+                  cursor: card.onClick && card.hasErrors ? 'pointer' : 'default',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  minHeight: '85px',
+                  userSelect: 'none'
+                }}
+              >
                 {/* Top glow shine */}
                 <div style={{
                   position: 'absolute',
@@ -1497,29 +1795,90 @@ function CensusPublicSupervisorReportContent() {
                 <div className="kpi-value" style={{ fontSize: '21px', fontWeight: 900, color: card.color, letterSpacing: '-0.5px' }}>
                   {card.value}{card.sub && <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginLeft: '5px' }}>{card.sub}</span>}
                 </div>
+
+                {/* Interactive Button / Tap Indicator for Error Card */}
+                {card.isErrorCard && card.hasErrors && (
+                  <div style={{
+                    marginTop: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: card.isExpanded ? 'rgba(239,68,68,0.35)' : 'rgba(239,68,68,0.18)',
+                    border: `1px solid ${card.isExpanded ? 'rgba(239,68,68,0.7)' : 'rgba(239,68,68,0.4)'}`,
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    fontSize: '9.5px',
+                    fontWeight: 800,
+                    color: card.isExpanded ? '#ffffff' : '#fca5a5',
+                    boxShadow: card.isExpanded ? '0 0 10px rgba(239,68,68,0.4)' : 'none',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {card.isExpanded ? '▲ Hide Breakup' : '👇 Tap for Error Types'}
+                    </span>
+                    <span style={{ fontSize: '10px' }}>{card.isExpanded ? '▲' : '▼'}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
-          {/* ERROR BREAKUP CARDS — HOD/Admin View */}
-          {hodStats.totalErrors > 0 && (
-            <div style={{ marginTop: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <div style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '7px',
-                  background: 'rgba(239,68,68,0.2)',
-                  border: '1px solid rgba(239,68,68,0.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <AlertTriangle size={14} color="#ef4444" />
+          {/* ERROR BREAKUP CARDS — HOD/Admin View (Toggled on tap of Active Errors card) */}
+          {hodStats.totalErrors > 0 && showHodErrorBreakup && (
+            <div className="err-breakup-section-animated" style={{
+              marginTop: '10px',
+              background: 'linear-gradient(145deg, rgba(30, 27, 75, 0.45) 0%, rgba(15, 23, 42, 0.8) 100%)',
+              border: '1.5px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: '16px',
+              padding: '16px',
+              boxShadow: '0 12px 32px -8px rgba(239, 68, 68, 0.25), inset 0 0 20px rgba(239, 68, 68, 0.05)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '8px',
+                    background: 'rgba(239,68,68,0.25)',
+                    border: '1px solid rgba(239,68,68,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <AlertTriangle size={15} color="#ef4444" />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '13.5px', fontWeight: 900, color: '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      Error Type Breakup
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '8px', fontWeight: 600 }}>
+                      ({hodStats.totalErrors.toLocaleString()} total errors across all circles · Tap card to inspect)
+                    </span>
+                  </div>
                 </div>
-                <span style={{ fontSize: '13px', fontWeight: 900, color: '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Error Type Breakup</span>
-                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>({hodStats.totalErrors.toLocaleString()} total errors across all circles)</span>
+
+                <button
+                  type="button"
+                  onClick={() => setShowHodErrorBreakup(false)}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    color: '#fca5a5',
+                    padding: '5px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  ▲ Hide Breakup
+                </button>
               </div>
+
               <div className="err-breakup-grid" style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
@@ -1527,26 +1886,45 @@ function CensusPublicSupervisorReportContent() {
               }}>
                 {DEFAULT_ERRORS.map(def => {
                   const count = errorBreakupAll[def.id] || 0;
+                  const matchingErrors = censusErrorRows.filter(e => matchErrorType(e) === def.id);
                   return (
-                    <div key={def.id} className="err-breakup-card" style={{
-                      background: count > 0 
-                        ? `linear-gradient(145deg, ${def.color}18 0%, rgba(15,23,42,0.9) 100%)`
-                        : 'rgba(19,24,36,0.6)',
-                      border: `1px solid ${count > 0 ? def.color + '45' : 'rgba(255,255,255,0.06)'}`,
-                      borderLeft: `4px solid ${count > 0 ? def.color : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: '16px',
-                      padding: '14px 16px',
-                      backdropFilter: 'blur(12px)',
-                      opacity: count > 0 ? 1 : 0.45,
-                      '--card-glow': `${def.color}45`,
-                      '--card-glow-sub': `${def.color}20`,
-                      '--card-border-hover': `${def.color}90`,
-                      cursor: 'default',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      minHeight: '135px'
-                    }}>
+                    <div
+                      key={def.id}
+                      className="err-breakup-card"
+                      onClick={() => {
+                        if (count > 0) {
+                          setSelectedErrorModal({
+                            circleNo: 'ALL CIRCLES',
+                            supervisorName: `All Supervisors (${def.name})`,
+                            enumName: `Zone ${selectedZone}`,
+                            enumId: def.id.toUpperCase(),
+                            enumMobile: 'N/A',
+                            hlbCode: 'ALL',
+                            errors: matchingErrors
+                          });
+                        }
+                      }}
+                      title={count > 0 ? `Click to inspect all ${count} ${def.name} errors across all circles` : 'No errors of this type'}
+                      style={{
+                        background: count > 0 
+                          ? `linear-gradient(145deg, ${def.color}18 0%, rgba(15,23,42,0.9) 100%)`
+                          : 'rgba(19,24,36,0.6)',
+                        border: `1px solid ${count > 0 ? def.color + '45' : 'rgba(255,255,255,0.06)'}`,
+                        borderLeft: `4px solid ${count > 0 ? def.color : 'rgba(255,255,255,0.1)'}`,
+                        borderRadius: '16px',
+                        padding: '14px 16px',
+                        backdropFilter: 'blur(12px)',
+                        opacity: count > 0 ? 1 : 0.45,
+                        '--card-glow': `${def.color}45`,
+                        '--card-glow-sub': `${def.color}20`,
+                        '--card-border-hover': `${def.color}90`,
+                        cursor: count > 0 ? 'pointer' : 'default',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minHeight: '135px'
+                      }}
+                    >
                       {/* Top specular line */}
                       {count > 0 && (
                         <div style={{
@@ -1585,79 +1963,105 @@ function CensusPublicSupervisorReportContent() {
                         <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
                           {def.name}
                         </div>
-                        <div style={{
-                          display: 'inline-block',
-                          fontSize: '9.5px',
-                          color: count > 0 ? '#94a3b8' : '#475569',
-                          fontWeight: 600,
-                          background: 'rgba(255,255,255,0.05)',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          border: '1px solid rgba(255,255,255,0.08)',
-                          lineHeight: '1.3'
-                        }}>
-                          {def.nameTa}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', flexWrap: 'wrap' }}>
+                          <div style={{
+                            display: 'inline-block',
+                            fontSize: '9.5px',
+                            color: count > 0 ? '#94a3b8' : '#475569',
+                            fontWeight: 600,
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            lineHeight: '1.3'
+                          }}>
+                            {def.nameTa}
+                          </div>
+                          {count > 0 && (
+                            <span style={{ fontSize: '9px', color: def.color, fontWeight: 800 }}>Inspect 🔍</span>
+                          )}
                         </div>
                       </div>
                     </div>
                   );
                 })}
-                {errorBreakupAll['other'] > 0 && (
-                  <div className="err-breakup-card" style={{
-                    background: 'linear-gradient(145deg, rgba(148,163,184,0.15) 0%, rgba(15,23,42,0.9) 100%)',
-                    border: '1px solid rgba(148,163,184,0.35)',
-                    borderLeft: '4px solid #94a3b8',
-                    borderRadius: '16px',
-                    padding: '14px 16px',
-                    backdropFilter: 'blur(12px)',
-                    '--card-glow': 'rgba(148,163,184,0.35)',
-                    '--card-glow-sub': 'rgba(148,163,184,0.15)',
-                    '--card-border-hover': 'rgba(148,163,184,0.8)',
-                    cursor: 'default',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: '135px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <div className="kpi-icon-badge" style={{
-                        width: '42px',
-                        height: '42px',
-                        borderRadius: '12px',
-                        background: 'rgba(148,163,184,0.22)',
-                        border: '1.5px solid rgba(148,163,184,0.5)',
+                {errorBreakupAll['other'] > 0 && (() => {
+                  const matchingOthers = censusErrorRows.filter(e => matchErrorType(e) === null);
+                  return (
+                    <div
+                      className="err-breakup-card"
+                      onClick={() => {
+                        setSelectedErrorModal({
+                          circleNo: 'ALL CIRCLES',
+                          supervisorName: `All Supervisors (Other Errors)`,
+                          enumName: `Zone ${selectedZone}`,
+                          enumId: 'OTHER',
+                          enumMobile: 'N/A',
+                          hlbCode: 'ALL',
+                          errors: matchingOthers
+                        });
+                      }}
+                      title={`Click to inspect all ${errorBreakupAll['other']} other errors across all circles`}
+                      style={{
+                        background: 'linear-gradient(145deg, rgba(148,163,184,0.15) 0%, rgba(15,23,42,0.9) 100%)',
+                        border: '1px solid rgba(148,163,184,0.35)',
+                        borderLeft: '4px solid #94a3b8',
+                        borderRadius: '16px',
+                        padding: '14px 16px',
+                        backdropFilter: 'blur(12px)',
+                        '--card-glow': 'rgba(148,163,184,0.35)',
+                        '--card-glow-sub': 'rgba(148,163,184,0.15)',
+                        '--card-border-hover': 'rgba(148,163,184,0.8)',
+                        cursor: 'pointer',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '22px',
-                        boxShadow: '0 4px 12px rgba(148,163,184,0.2)'
-                      }}>
-                        ⚠️
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minHeight: '135px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div className="kpi-icon-badge" style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: '12px',
+                          background: 'rgba(148,163,184,0.22)',
+                          border: '1.5px solid rgba(148,163,184,0.5)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '22px',
+                          boxShadow: '0 4px 12px rgba(148,163,184,0.2)'
+                        }}>
+                          ⚠️
+                        </div>
+                        <div className="err-breakup-count" style={{ fontSize: '26px', fontWeight: 900, color: '#e2e8f0', letterSpacing: '-0.5px' }}>
+                          {errorBreakupAll['other'].toLocaleString()}
+                        </div>
                       </div>
-                      <div className="err-breakup-count" style={{ fontSize: '26px', fontWeight: 900, color: '#e2e8f0', letterSpacing: '-0.5px' }}>
-                        {errorBreakupAll['other'].toLocaleString()}
+                      <div>
+                        <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
+                          Other Errors
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', flexWrap: 'wrap' }}>
+                          <div style={{
+                            display: 'inline-block',
+                            fontSize: '9.5px',
+                            color: '#94a3b8',
+                            fontWeight: 600,
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            lineHeight: '1.3'
+                          }}>
+                            பிற பிழைகள்
+                          </div>
+                          <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 800 }}>Inspect 🔍</span>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <div className="err-breakup-name" style={{ fontSize: '11.5px', fontWeight: 800, color: '#f1f5f9', lineHeight: '1.3', marginBottom: '6px' }}>
-                        Other Errors
-                      </div>
-                      <div style={{
-                        display: 'inline-block',
-                        fontSize: '9.5px',
-                        color: '#94a3b8',
-                        fontWeight: 600,
-                        background: 'rgba(255,255,255,0.05)',
-                        padding: '3px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        lineHeight: '1.3'
-                      }}>
-                        பிற பிழைகள்
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -1993,36 +2397,37 @@ function CensusPublicSupervisorReportContent() {
 
       {/* INTERACTIVE ERROR DRILLDOWN MODAL FOR HOD / ADMIN */}
       {selectedErrorModal && (
-        <div style={{
+        <div className="modal-backdrop-anim" style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.75)',
-          backdropFilter: 'blur(4px)',
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '16px'
         }}>
-          <div style={{
-            background: '#0f172a',
-            border: '1px solid rgba(239,68,68,0.4)',
+          <div className="modal-card modal-card-anim" style={{
+            background: 'linear-gradient(145deg, #0f172a 0%, #090d16 100%)',
+            border: '1px solid rgba(239,68,68,0.45)',
             borderRadius: '16px',
-            maxWidth: '850px',
+            maxWidth: '1100px',
             width: '100%',
-            maxHeight: '85vh',
+            maxHeight: '88vh',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+            boxShadow: '0 24px 60px rgba(0,0,0,0.8), 0 0 30px rgba(239,68,68,0.2)'
           }}>
             {/* Modal Header */}
             <div style={{
-              padding: '14px 18px',
-              background: 'linear-gradient(135deg, #1e1b4b, #0f172a)',
+              padding: '14px 20px',
+              background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
               borderBottom: '1px solid rgba(255,255,255,0.1)',
               display: 'flex',
               alignItems: 'center',
@@ -2031,20 +2436,20 @@ function CensusPublicSupervisorReportContent() {
               gap: '10px'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ background: '#991b1b', color: '#fff', fontWeight: 900, fontSize: '10.5px', padding: '3px 8px', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ background: '#991b1b', color: '#fff', fontWeight: 900, fontSize: '11px', padding: '3px 9px', borderRadius: '6px', letterSpacing: '0.3px' }}>
                     {selectedErrorModal.circleNo}
                   </span>
-                  <span style={{ background: '#1e293b', color: '#38bdf8', fontWeight: 800, fontSize: '10.5px', padding: '3px 8px', borderRadius: '6px' }}>
+                  <span style={{ background: '#1e293b', color: '#38bdf8', fontWeight: 800, fontSize: '11px', padding: '3px 9px', borderRadius: '6px', border: '1px solid rgba(56,189,248,0.3)' }}>
                     HLB {String(selectedErrorModal.hlbCode).padStart(4, '0')}
                   </span>
-                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#ffffff' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 900, color: '#ffffff', letterSpacing: '0.2px' }}>
                     Active Errors Inspection ({selectedErrorModal.errors.length})
                   </span>
                 </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-                  <span>Enumerator: <b style={{ color: '#e2e8f0' }}>{selectedErrorModal.enumName}</b> ({selectedErrorModal.enumId})</span>
-                  <span>· Supervisor: <b style={{ color: '#e2e8f0' }}>{selectedErrorModal.supervisorName}</b></span>
+                <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '5px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                  <span>Enumerator: <b style={{ color: '#e2e8f0' }}>{selectedErrorModal.enumName}</b> {selectedErrorModal.enumId && selectedErrorModal.enumId !== 'N/A' && `(${selectedErrorModal.enumId})`}</span>
+                  <span>· Supervisor: <b style={{ color: '#38bdf8' }}>{selectedErrorModal.supervisorName}</b></span>
                 </div>
               </div>
 
@@ -2058,7 +2463,7 @@ function CensusPublicSupervisorReportContent() {
                       color: '#4ade80',
                       borderRadius: '8px',
                       padding: '6px 12px',
-                      fontSize: '12px',
+                      fontSize: '11.5px',
                       fontWeight: 800,
                       textDecoration: 'none',
                       display: 'flex',
@@ -2072,19 +2477,22 @@ function CensusPublicSupervisorReportContent() {
                   </a>
                 )}
                 <button
+                  type="button"
                   onClick={() => setSelectedErrorModal(null)}
                   style={{
                     background: 'rgba(255,255,255,0.1)',
-                    border: 'none',
+                    border: '1px solid rgba(255,255,255,0.15)',
                     color: '#fff',
                     borderRadius: '8px',
-                    width: '30px',
-                    height: '30px',
+                    width: '32px',
+                    height: '32px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
                   }}
+                  title="Close Inspection Modal"
                 >
                   <X size={16} />
                 </button>
@@ -2103,7 +2511,7 @@ function CensusPublicSupervisorReportContent() {
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: '6px',
-                    marginBottom: '12px',
+                    marginBottom: '14px',
                     padding: '10px 12px',
                     background: 'rgba(255,255,255,0.03)',
                     borderRadius: '10px',
@@ -2123,13 +2531,13 @@ function CensusPublicSupervisorReportContent() {
                           padding: '4px 10px'
                         }}>
                           <span style={{ fontSize: '13px' }}>{def.icon}</span>
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: def.color }}>{def.name}</span>
+                          <span style={{ fontSize: '10.5px', fontWeight: 700, color: def.color }}>{def.name}</span>
                           <span style={{
                             background: def.color,
                             color: '#ffffff',
-                            fontSize: '9px',
+                            fontSize: '9.5px',
                             fontWeight: 900,
-                            padding: '1px 6px',
+                            padding: '1px 7px',
                             borderRadius: '10px',
                             minWidth: '18px',
                             textAlign: 'center'
@@ -2148,13 +2556,13 @@ function CensusPublicSupervisorReportContent() {
                         padding: '4px 10px'
                       }}>
                         <span style={{ fontSize: '13px' }}>⚠️</span>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8' }}>Other</span>
+                        <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#94a3b8' }}>Other</span>
                         <span style={{
                           background: '#94a3b8',
                           color: '#0f172a',
-                          fontSize: '9px',
+                          fontSize: '9.5px',
                           fontWeight: 900,
-                          padding: '1px 6px',
+                          padding: '1px 7px',
                           borderRadius: '10px',
                           minWidth: '18px',
                           textAlign: 'center'
@@ -2164,15 +2572,19 @@ function CensusPublicSupervisorReportContent() {
                   </div>
                 );
               })()}
+
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ background: '#1e293b', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                    <th style={{ padding: '8px 10px', width: '70px', textAlign: 'center', fontWeight: 800 }}>Line No</th>
-                    <th style={{ padding: '8px 10px', width: '90px', textAlign: 'center', fontWeight: 800 }}>Building No</th>
-                    <th style={{ padding: '8px 10px', width: '90px', textAlign: 'center', fontWeight: 800 }}>House No</th>
-                    <th style={{ padding: '8px 10px', width: '140px', fontWeight: 800 }}>Head of House</th>
-                    <th style={{ padding: '8px 10px', width: '120px', fontWeight: 800 }}>📞 Mobile No</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 800 }}>Error Description &amp; Rule</th>
+                    <th style={{ padding: '9px 10px', width: '65px', textAlign: 'center', fontWeight: 800 }}>Line No</th>
+                    <th style={{ padding: '9px 8px', width: '70px', textAlign: 'center', fontWeight: 800 }}>Circle</th>
+                    <th style={{ padding: '9px 8px', width: '85px', textAlign: 'center', fontWeight: 800 }}>HLB No</th>
+                    <th style={{ padding: '9px 10px', width: '140px', fontWeight: 800 }}>Enumerator Mobile</th>
+                    <th style={{ padding: '9px 8px', width: '75px', textAlign: 'center', fontWeight: 800 }}>Bldg No</th>
+                    <th style={{ padding: '9px 8px', width: '75px', textAlign: 'center', fontWeight: 800 }}>House No</th>
+                    <th style={{ padding: '9px 10px', width: '125px', fontWeight: 800 }}>Head of House</th>
+                    <th style={{ padding: '9px 10px', width: '115px', fontWeight: 800 }}>📞 Head Mobile</th>
+                    <th style={{ padding: '9px 10px', fontWeight: 800 }}>Error Description &amp; Rule</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2182,6 +2594,20 @@ function CensusPublicSupervisorReportContent() {
                     const numOnly = lineStr.replace(/[^0-9]/g, '');
                     const formattedLine = numOnly ? numOnly.padStart(3, '0') : lineStr.padStart(3, '0');
 
+                    const rawHlb = String(err.hlb_code || err.hlb_no || err.hlb || err.full_hlb || err.hlb_serial_no || err.blk_no || '').trim();
+                    const blkNum = getHlbBlockNo(rawHlb) || rawHlb.padStart(4, '0');
+                    const hlbInfo = hlbToSupervisorMap.get(blkNum) || hlbToSupervisorMap.get(rawHlb) || {};
+
+                    const rowCircle = err.circle_no || err.circleNumber || err.circle || hlbInfo.circleNo || (selectedErrorModal.circleNo !== 'ALL CIRCLES' ? selectedErrorModal.circleNo : '-');
+                    const rowHlb = (blkNum && blkNum !== '0000' && blkNum !== '0001') 
+                      ? blkNum 
+                      : (selectedErrorModal.hlbCode && selectedErrorModal.hlbCode !== '0ALL' && selectedErrorModal.hlbCode !== 'ALL' 
+                          ? String(selectedErrorModal.hlbCode).padStart(4, '0') 
+                          : (blkNum || '-'));
+
+                    const rowEnumMobile = err.enum_mobile || err.enumerator_mobile || hlbInfo.enumMobile || (selectedErrorModal.enumMobile && selectedErrorModal.enumMobile !== 'N/A' ? selectedErrorModal.enumMobile : '');
+                    const rowEnumName = err.enum_name || err.enumerator_name || hlbInfo.enumName || (selectedErrorModal.enumName && selectedErrorModal.enumName !== 'ENUMERATOR' ? selectedErrorModal.enumName : '');
+
                     return (
                       <tr key={i} style={{
                         borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -2190,43 +2616,112 @@ function CensusPublicSupervisorReportContent() {
                         <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 800, color: '#f59e0b', fontFamily: 'monospace' }}>
                           #{formattedLine}
                         </td>
-                      <td style={{ padding: '8px 10px', textAlign: 'center', fontFamily: 'monospace', color: '#94a3b8' }}>
-                        {err.building_number || err.buildingNo || '-'}
-                      </td>
-                      <td style={{ padding: '8px 10px', textAlign: 'center', fontFamily: 'monospace', color: '#38bdf8' }}>
-                        {err.census_house_num || err.houseNo || '-'}
-                      </td>
-                      <td style={{ padding: '8px 10px', fontWeight: 700, color: '#ffffff' }}>
-                        {err.head_name || err.headName || '-'}
-                      </td>
-                      <td style={{ padding: '8px 10px', fontFamily: 'monospace' }}>
-                        {(err.head_mobile || err.headMobile) ? (
-                          <a
-                            href={`tel:${err.head_mobile || err.headMobile}`}
-                            style={{ color: '#4ade80', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <Phone size={10} />
-                            {err.head_mobile || err.headMobile}
-                          </a>
-                        ) : <span style={{ color: '#475569' }}>-</span>}
-                      </td>
-                      <td style={{ padding: '8px 10px' }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '10.5px',
-                          fontWeight: 700,
-                          background: 'rgba(239,68,68,0.15)',
-                          color: '#f87171',
-                          border: '1px solid rgba(239,68,68,0.3)'
-                        }}>
-                          ⚠️ {err.error_description || err.error_type || err.errType || 'Census Rule Violation'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        <td style={{ padding: '8px 8px', textAlign: 'center' }}>
+                          <span style={{
+                            background: '#991b1b',
+                            color: '#ffffff',
+                            fontWeight: 900,
+                            fontSize: '10.5px',
+                            padding: '3px 8px',
+                            borderRadius: '5px',
+                            letterSpacing: '0.2px',
+                            display: 'inline-block'
+                          }}>
+                            {rowCircle}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 8px', textAlign: 'center' }}>
+                          <span style={{
+                            background: '#1e293b',
+                            color: '#38bdf8',
+                            border: '1px solid rgba(56,189,248,0.25)',
+                            padding: '3px 7px',
+                            borderRadius: '5px',
+                            fontWeight: 800,
+                            fontFamily: 'monospace',
+                            fontSize: '10.5px',
+                            display: 'inline-block'
+                          }}>
+                            HLB {rowHlb}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 10px' }}>
+                          {rowEnumMobile && rowEnumMobile !== 'N/A' ? (
+                            <div>
+                              <a
+                                href={`tel:${rowEnumMobile}`}
+                                style={{
+                                  color: '#60a5fa',
+                                  textDecoration: 'none',
+                                  fontWeight: 800,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  background: 'rgba(59,130,246,0.12)',
+                                  border: '1px solid rgba(59,130,246,0.35)',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  fontFamily: 'monospace',
+                                  fontSize: '11px'
+                                }}
+                              >
+                                <Phone size={11} color="#60a5fa" />
+                                {rowEnumMobile}
+                              </a>
+                              {rowEnumName && (
+                                <div style={{ fontSize: '9.5px', color: '#94a3b8', marginTop: '2px', fontWeight: 600 }}>
+                                  {rowEnumName}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div>
+                              <span style={{ color: '#64748b', fontSize: '10.5px' }}>N/A</span>
+                              {rowEnumName && (
+                                <div style={{ fontSize: '9.5px', color: '#94a3b8', marginTop: '2px', fontWeight: 600 }}>
+                                  {rowEnumName}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: '8px 8px', textAlign: 'center', fontFamily: 'monospace', color: '#94a3b8' }}>
+                          {err.building_number || err.buildingNo || '-'}
+                        </td>
+                        <td style={{ padding: '8px 8px', textAlign: 'center', fontFamily: 'monospace', color: '#38bdf8', fontWeight: 700 }}>
+                          {err.census_house_num || err.houseNo || '-'}
+                        </td>
+                        <td style={{ padding: '8px 10px', fontWeight: 700, color: '#ffffff' }}>
+                          {err.head_name || err.headName || '-'}
+                        </td>
+                        <td style={{ padding: '8px 10px', fontFamily: 'monospace' }}>
+                          {(err.head_mobile || err.headMobile) ? (
+                            <a
+                              href={`tel:${err.head_mobile || err.headMobile}`}
+                              style={{ color: '#4ade80', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <Phone size={10} />
+                              {err.head_mobile || err.headMobile}
+                            </a>
+                          ) : <span style={{ color: '#475569' }}>-</span>}
+                        </td>
+                        <td style={{ padding: '8px 10px' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '10.5px',
+                            fontWeight: 700,
+                            background: 'rgba(239,68,68,0.15)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239,68,68,0.3)'
+                          }}>
+                            ⚠️ {err.error_description || err.error_type || err.errType || 'Census Rule Violation'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
