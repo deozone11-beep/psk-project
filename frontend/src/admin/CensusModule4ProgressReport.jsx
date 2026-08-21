@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle, Download } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle, Download, Link as LinkIcon, Share2 } from 'lucide-react';
 import hlbMapping from './hlbMapping.json';
+import { CensusZoneProvider, useCensusZone } from './CensusZoneContext.jsx';
+import CensusZoneSelector from './CensusZoneSelector.jsx';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -130,7 +132,8 @@ const DEFAULT_ERRORS = [
   }
 ];
 
-export default function CensusModule4ProgressReport({ onBack, creds }) {
+function CensusModule4ProgressReportContent({ onBack, creds }) {
+  const { selectedZone, selectedZoneObj } = useCensusZone();
   const [rows, setRows]               = useState([]);
   const [allotedRows, setAllotedRows] = useState([]);
   const [chargeRows, setChargeRows]   = useState([]);
@@ -231,22 +234,26 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     }
   }
 
-  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk) {
+  const fetchSeqRef = useRef(0);
+
+  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk, currentSeq) {
     let allRows = [];
     let totalCount = 0;
 
     let initialSuccess = false;
     let retries = 3;
     while (retries > 0 && !initialSuccess) {
+      if (fetchSeqRef.current !== currentSeq) return [];
       try {
-        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0`);
+        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0&zone=${selectedZone}`);
+        if (fetchSeqRef.current !== currentSeq) return [];
         const j = await r.json().catch(() => ({}));
         if (j.rows && Array.isArray(j.rows)) {
           allRows.push(...j.rows);
           totalCount = j.total || j.rows.length;
           if (j.limit && j.limit < chunkSize) chunkSize = j.limit;
           initialSuccess = true;
-          if (onChunk) onChunk(j.rows, allRows.length, totalCount);
+          if (onChunk && fetchSeqRef.current === currentSeq) onChunk(j.rows, allRows.length, totalCount);
         } else {
           retries--;
           if (retries > 0) await new Promise(res => setTimeout(res, 200));
@@ -257,7 +264,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       }
     }
 
-    if (!initialSuccess) return allRows;
+    if (!initialSuccess || fetchSeqRef.current !== currentSeq) return allRows;
 
     if (totalCount > chunkSize) {
       const remainingOffsets = [];
@@ -267,30 +274,34 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
 
       const BATCH_SIZE = 2;
       for (let i = 0; i < remainingOffsets.length; i += BATCH_SIZE) {
+        if (fetchSeqRef.current !== currentSeq) return [];
         const batchOffsets = remainingOffsets.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(
           batchOffsets.map(async (off) => {
             let chunkRetries = 2;
             while (chunkRetries > 0) {
+              if (fetchSeqRef.current !== currentSeq) return [];
               try {
-                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}`);
+                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}&zone=${selectedZone}`);
+                if (fetchSeqRef.current !== currentSeq) return [];
                 const data = await res.json().catch(() => ({}));
                 if (data.rows && Array.isArray(data.rows)) return data.rows;
                 chunkRetries--;
-                await new Promise(res => setTimeout(res, 150));
+                await new Promise(res => setTimeout(res, 200));
               } catch (err) {
                 chunkRetries--;
-                await new Promise(res => setTimeout(res, 150));
+                await new Promise(res => setTimeout(res, 200));
               }
             }
             return [];
           })
         );
 
+        if (fetchSeqRef.current !== currentSeq) return [];
         batchResults.forEach(rowsChunk => {
           if (rowsChunk.length > 0) {
             allRows.push(...rowsChunk);
-            if (onChunk) onChunk(rowsChunk, allRows.length, totalCount);
+            if (onChunk && fetchSeqRef.current === currentSeq) onChunk(rowsChunk, allRows.length, totalCount);
           }
         });
         await new Promise(res => setTimeout(res, 50));
@@ -301,34 +312,45 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
   }
 
   useEffect(() => {
+    const currentSeq = ++fetchSeqRef.current;
     async function loadData() {
       setLoading(true);
+      setRows([]);
+      setChargeRows([]);
+      setAllotedRows([]);
+      setUserRows([]);
+      setHlbMappingRows([]);
       try {
-        // Fetch summary tables FIRST including hlb_code_mapping and settings from DB
         const [rCharge, rAllot, rUser, rMap, rSettings] = await Promise.all([
-          db2Fetch('/table/charge_wise_report?limit=5000&offset=0'),
-          db2Fetch('/table/hlb_allotted?limit=5000&offset=0'),
-          db2Fetch('/table/user_details?limit=5000&offset=0'),
+          db2Fetch(`/table/charge_wise_report?limit=5000&offset=0&zone=${selectedZone}`),
+          db2Fetch(`/table/hlb_allotted?limit=5000&offset=0&zone=${selectedZone}`),
+          db2Fetch(`/table/user_details?limit=5000&offset=0&zone=${selectedZone}`),
           db2Fetch('/table/hlb_code_mapping?limit=1000&offset=0'),
           db2Fetch('/table/settings')
         ]);
 
+        if (fetchSeqRef.current !== currentSeq) return;
+
         const jCharge = await rCharge.json().catch(() => ({}));
-        if (jCharge.rows?.length) setChargeRows(jCharge.rows);
+        setChargeRows(jCharge.rows || []);
 
         const jAllot = await rAllot.json().catch(() => ({}));
         if (jAllot.rows?.length) setAllotedRows(jAllot.rows);
         else if (jCharge.rows?.length) setAllotedRows(jCharge.rows);
+        else setAllotedRows([]);
 
         let jUser = await rUser.json().catch(() => ({}));
-        if (!jUser.rows?.length) {
-          const rApp = await db2Fetch('/table/app_user?limit=5000&offset=0');
-          jUser = await rApp.json().catch(() => ({}));
+        let uRows = jUser.rows || [];
+        if (!uRows.length) {
+          const rApp = await db2Fetch(`/table/app_user?limit=5000&offset=0&zone=${selectedZone}`);
+          const jApp = await rApp.json().catch(() => ({}));
+          uRows = jApp.rows || [];
         }
-        if (jUser.rows?.length) setUserRows(jUser.rows);
+        if (fetchSeqRef.current !== currentSeq) return;
+        setUserRows(uRows);
 
         const jMap = await rMap.json().catch(() => ({}));
-        if (jMap.rows?.length) setHlbMappingRows(jMap.rows);
+        setHlbMappingRows(jMap.rows || []);
 
         const jSettings = await rSettings.json().catch(() => ({}));
         if (jSettings.rows?.length) {
@@ -344,9 +366,11 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         }
 
         let isFirstChunk = true;
+        setRows([]);
 
-        // Stream hlb_records progressively chunk by chunk
-        await fetchAllRowsInChunks('hlb_records', 3000, (chunk) => {
+        const targetTable = getZoneTable ? getZoneTable('hlb_records') : `hlb_records_zone_${selectedZone}`;
+        await fetchAllRowsInChunks(targetTable, 3000, (chunk) => {
+          if (fetchSeqRef.current !== currentSeq) return;
           if (chunk && chunk.length) {
             setRows(prev => (isFirstChunk ? chunk : [...prev, ...chunk]));
           }
@@ -354,14 +378,16 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
             isFirstChunk = false;
             setLoading(false);
           }
-        });
+        }, currentSeq);
       } catch (e) {
-        console.error('Data load error:', e);
-        setLoading(false);
+        if (fetchSeqRef.current === currentSeq) {
+          console.error('Data load error:', e);
+          setLoading(false);
+        }
       }
     }
     loadData();
-  }, []);
+  }, [selectedZone]);
 
   const recordMatchesErrorCard = (r, errCard) => {
     if (!r) return false;
@@ -826,19 +852,19 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     }
 
     return {
-      totalCircles: Math.min(abstractReport.length || 75, 75),
-      totalEnumerators: Math.min(allUniqueEnums.size || 450, 450),
-      totalHlbs: Math.min(totHlbs || 470, 470),
+      totalCircles: abstractReport.length,
+      totalEnumerators: allUniqueEnums.size,
+      totalHlbs: totHlbs,
       expectedHouses: expHouses,
       censusHouses: cenHouses,
       households: hhCount,
       verifiedBySup: verCount,
       totalSeIdUsed: seIdCount,
       totalPopulation: popCount,
-      errorCount: uniqueErrorCount,
+      errorCount: rows.length > 0 ? uniqueErrorCount : 0,
       completedCount: compCount
     };
-  }, [abstractReport, chargeRows, hlbErrorMap, uniqueErrorCount]);
+  }, [abstractReport, chargeRows, hlbErrorMap, uniqueErrorCount, rows]);
 
   const formatCsvCell = (val) => {
     if (val === null || val === undefined) return '""';
@@ -1319,7 +1345,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
 
       const now = new Date();
       const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
-      const filename = `Census_Supervisor_Detailed_Progress_Report_${dateStr}.pdf`;
+      const filename = `Census_Supervisor_Detailed_Progress_Report_Zone_${selectedZone}_${dateStr}.pdf`;
       const formattedDateTime = now.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
       // Dynamic height packing for A4 Landscape (Packs 3-5 cards per page up to 660px with 0 wasted empty space)
@@ -1343,7 +1369,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
       }
 
       const totalPages = pages.length;
-      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
       const pdfWidth = 297;
       const pdfHeight = 210;
 
@@ -1364,7 +1390,7 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
 
         pageContainer.innerHTML = `
           <div style="text-align: center; border-bottom: 2px solid #991b1b; padding-bottom: 4px; margin-bottom: 8px;">
-            <h2 style="font-size: 13px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">CENSUS WORK — SUPERVISOR &amp; ENUMERATOR DETAILED PROGRESS REPORT</h2>
+            <h2 style="font-size: 13px; font-weight: 900; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; margin: 0;">GREATER CHENNAI CORPORATION · ${selectedZoneObj ? selectedZoneObj.name.toUpperCase() : `ZONE ${selectedZone}`} · PROGRESS REPORT</h2>
             <table style="width: 100%; font-size: 8px; color: #64748b; margin-top: 2px; font-weight: 600; border: none; border-collapse: collapse;">
               <tr>
                 <td style="text-align: left; border: none; padding: 0;">Generated Date &amp; Time: ${formattedDateTime}</td>
@@ -1494,12 +1520,15 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     <div style={{ background: '#0b0f19', color: '#f8fafc', minHeight: '100vh', padding: '16px 14px' }}>
       {/* Top Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <button
-          onClick={onBack}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
-        >
-          <ArrowLeft size={16}/> Back to Dashboard
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={onBack}
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+          >
+            <ArrowLeft size={16}/> Back to Dashboard
+          </button>
+          <CensusZoneSelector compact={true} />
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
@@ -1541,8 +1570,13 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
         </div>
       </div>
 
-      <div style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 12, color: '#ffffff' }}>
-        Census Progress Report (Supervisor Base Report)
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#ffffff' }}>
+          Census Progress Report (Supervisor Base Report)
+        </div>
+        <div style={{ fontSize: '0.88rem', color: '#94a3b8', marginTop: 3 }}>
+          Greater Chennai Corporation · <span style={{ color: '#38bdf8', fontWeight: 700 }}>{selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}</span> (Wards: {selectedZoneObj?.wards || 'All'})
+        </div>
       </div>
 
       {/* OVERALL TOTAL SUMMARY CARDS GRID */}
@@ -1941,6 +1975,22 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
                   >
                     Print Circle
                   </button>
+                  <button
+                    onClick={() => {
+                      const padCirc = String(circle.circleNo || circle.circleNumber).replace(/[^0-9]/g, '').padStart(3, '0');
+                      const link = `${window.location.origin}/report?zone=${selectedZone}&circle=${padCirc}`;
+                      if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(link);
+                        alert(`📋 Public Link Copied for Supervisor ${circle.supervisorName} (Circle ${circle.circleNo}):\n\n${link}`);
+                      } else {
+                        prompt('Copy Public Link:', link);
+                      }
+                    }}
+                    style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#34d399', padding: '3px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}
+                    title="Copy Public Link with Zone & Circle"
+                  >
+                    📋 Copy Link
+                  </button>
                 </div>
               </div>
 
@@ -2162,3 +2212,12 @@ export default function CensusModule4ProgressReport({ onBack, creds }) {
     </div>
   );
 }
+
+export default function CensusModule4ProgressReport(props) {
+  return (
+    <CensusZoneProvider>
+      <CensusModule4ProgressReportContent {...props} />
+    </CensusZoneProvider>
+  );
+}
+

@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
   ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle, 
   ChevronDown, ChevronUp, Layers, Filter, Download, CheckCircle2, AlertCircle, RefreshCw, CheckSquare, Square 
 } from 'lucide-react';
 import hlbMapping from './hlbMapping.json';
+import { CensusZoneProvider, useCensusZone } from './CensusZoneContext.jsx';
+import CensusZoneSelector from './CensusZoneSelector.jsx';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -171,7 +173,8 @@ function getHlbBlockNo(codeStr) {
   return s;
 }
 
-export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
+function CensusModule3ErrorCustomReportContent({ onBack, creds }) {
+  const { selectedZone, selectedZoneObj, getZoneTable } = useCensusZone();
   const [rows, setRows]               = useState([]);
   const [allotedRows, setAllotedRows] = useState([]);
   const [chargeRows, setChargeRows]   = useState([]);
@@ -182,6 +185,7 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
   const [expandedCircles, setExpandedCircles] = useState(new Set());
   const [searchQuery, setSearchQuery]         = useState('');
   const [selectedEnumPopup, setSelectedEnumPopup] = useState(null);
+  const fetchSeqRef = useRef(0);
 
   const token = () => {
     if (creds?.token) return creds.token;
@@ -259,22 +263,24 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
     loadDbSettings();
   }, []);
 
-  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk) {
+  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk, currentSeq) {
     let allRows = [];
     let totalCount = 0;
 
     let initialSuccess = false;
     let retries = 3;
     while (retries > 0 && !initialSuccess) {
+      if (fetchSeqRef.current !== currentSeq) return [];
       try {
-        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0`);
+        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0&zone=${selectedZone}`);
+        if (fetchSeqRef.current !== currentSeq) return [];
         const j = await r.json().catch(() => ({}));
         if (j.rows && Array.isArray(j.rows)) {
           allRows.push(...j.rows);
           totalCount = j.total || j.rows.length;
           if (j.limit && j.limit < chunkSize) chunkSize = j.limit;
           initialSuccess = true;
-          if (onChunk) onChunk(j.rows, allRows.length, totalCount);
+          if (onChunk && fetchSeqRef.current === currentSeq) onChunk(j.rows, allRows.length, totalCount);
         } else {
           retries--;
           if (retries > 0) await new Promise(res => setTimeout(res, 150));
@@ -285,7 +291,7 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
       }
     }
 
-    if (!initialSuccess) return allRows;
+    if (!initialSuccess || fetchSeqRef.current !== currentSeq) return allRows;
 
     if (totalCount > chunkSize) {
       const remainingOffsets = [];
@@ -295,13 +301,16 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
 
       const BATCH_SIZE = 2;
       for (let i = 0; i < remainingOffsets.length; i += BATCH_SIZE) {
+        if (fetchSeqRef.current !== currentSeq) return [];
         const batchOffsets = remainingOffsets.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(
           batchOffsets.map(async (off) => {
             let chunkRetries = 2;
             while (chunkRetries > 0) {
+              if (fetchSeqRef.current !== currentSeq) return [];
               try {
-                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}`);
+                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}&zone=${selectedZone}`);
+                if (fetchSeqRef.current !== currentSeq) return [];
                 const data = await res.json().catch(() => ({}));
                 if (data.rows && Array.isArray(data.rows)) return data.rows;
                 chunkRetries--;
@@ -315,10 +324,11 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
           })
         );
 
+        if (fetchSeqRef.current !== currentSeq) return [];
         batchResults.forEach(rowsChunk => {
           if (rowsChunk.length > 0) {
             allRows.push(...rowsChunk);
-            if (onChunk) onChunk(rowsChunk, allRows.length, totalCount);
+            if (onChunk && fetchSeqRef.current === currentSeq) onChunk(rowsChunk, allRows.length, totalCount);
           }
         });
         await new Promise(res => setTimeout(res, 50));
@@ -329,26 +339,43 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
   }
 
   useEffect(() => {
+    const currentSeq = ++fetchSeqRef.current;
     async function loadData() {
       setLoading(true);
+      setRows([]);
+      setAllotedRows([]);
+      setChargeRows([]);
+      setUserRows([]);
       try {
         let isFirstChunk = true;
 
-        const pAllot = db2Fetch('/table/hlb_allotted?limit=5000&offset=0').then(r => r.json().catch(() => ({})));
-        const pCharge = db2Fetch('/table/charge_wise_report?limit=5000&offset=0').then(r => r.json().catch(() => ({})));
-        const pUser = db2Fetch('/table/user_details?limit=5000&offset=0').then(r => r.json().catch(() => ({})));
+        const pAllot = db2Fetch(`/table/hlb_allotted?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})));
+        const pCharge = db2Fetch(`/table/charge_wise_report?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})));
+        const pUser = db2Fetch(`/table/user_details?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})));
 
-        pAllot.then(jAllot => { if (jAllot.rows?.length) setAllotedRows(jAllot.rows); });
-        pCharge.then(jCharge => { if (jCharge.rows?.length) setChargeRows(jCharge.rows); });
+        pAllot.then(jAllot => {
+          if (fetchSeqRef.current !== currentSeq) return;
+          setAllotedRows(jAllot.rows || []);
+        });
+        pCharge.then(jCharge => {
+          if (fetchSeqRef.current !== currentSeq) return;
+          setChargeRows(jCharge.rows || []);
+        });
         pUser.then(async jUser => {
-          if (!jUser.rows?.length) {
-            const rApp = await db2Fetch('/table/app_user?limit=5000&offset=0');
-            jUser = await rApp.json().catch(() => ({}));
+          if (fetchSeqRef.current !== currentSeq) return;
+          let uRows = jUser.rows || [];
+          if (!uRows.length) {
+            const rApp = await db2Fetch(`/table/app_user?limit=5000&offset=0&zone=${selectedZone}`);
+            const jApp = await rApp.json().catch(() => ({}));
+            uRows = jApp.rows || [];
           }
-          if (jUser.rows?.length) setUserRows(jUser.rows);
+          if (fetchSeqRef.current !== currentSeq) return;
+          setUserRows(uRows);
         });
 
-        await fetchAllRowsInChunks('hlb_records', 5000, (chunk) => {
+        const targetTable = getZoneTable ? getZoneTable('hlb_records') : `hlb_records_zone_${selectedZone}`;
+        await fetchAllRowsInChunks(targetTable, 5000, (chunk) => {
+          if (fetchSeqRef.current !== currentSeq) return;
           if (chunk && chunk.length) {
             setRows(prev => (isFirstChunk ? chunk : [...prev, ...chunk]));
           }
@@ -356,15 +383,19 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
             isFirstChunk = false;
             setLoading(false);
           }
-        });
+        }, currentSeq);
       } catch (e) {
-        console.error('Data load error:', e);
+        if (fetchSeqRef.current === currentSeq) {
+          console.error('Data load error:', e);
+        }
       } finally {
-        setLoading(false);
+        if (fetchSeqRef.current === currentSeq) {
+          setLoading(false);
+        }
       }
     }
     loadData();
-  }, []);
+  }, [selectedZone]);
 
   const getMobileAndUsername = (userId, personName, isSupervisor = false) => {
     const uId = String(userId || '').trim().toLowerCase();
@@ -704,11 +735,11 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
     });
 
     return {
-      totalCircles: Math.min(abstractReport.length || 75, 75),
-      totalEnumerators: Math.min(allUniqueEnums.size || 450, 450),
-      totalHlbs: Math.min(totHlbs || 470, 470),
-      totalRecords: rows.length > 0 ? rows.length : (totRecs || 74906),
-      totalErrors: globalErrorTotals.total
+      totalCircles: abstractReport.length,
+      totalEnumerators: allUniqueEnums.size,
+      totalHlbs: totHlbs,
+      totalRecords: rows.length > 0 ? rows.length : totRecs,
+      totalErrors: rows.length > 0 ? globalErrorTotals.total : 0
     };
   }, [abstractReport, rows, globalErrorTotals]);
 
@@ -1094,7 +1125,8 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <CensusZoneSelector compact={true} />
           <button
             onClick={exportCSV}
             style={{
@@ -1585,3 +1617,12 @@ export default function CensusModule3ErrorCustomReport({ onBack, creds }) {
     </div>
   );
 }
+
+export default function CensusModule3ErrorCustomReport(props) {
+  return (
+    <CensusZoneProvider>
+      <CensusModule3ErrorCustomReportContent {...props} />
+    </CensusZoneProvider>
+  );
+}
+

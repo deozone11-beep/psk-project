@@ -7,6 +7,8 @@ import {
   Edit2, Plus, Trash2, Save, ChevronDown, ChevronUp
 } from 'lucide-react';
 import hlbMapping from './hlbMapping.json';
+import { CensusZoneProvider, useCensusZone } from './CensusZoneContext.jsx';
+import CensusZoneSelector from './CensusZoneSelector.jsx';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -212,7 +214,8 @@ function getHlbBlockNo(codeStr) {
   return s;
 }
 
-export default function CensusModule2({ onBack, hideHeader = false, creds, initialShowErrors = false, initialShowAbstract = false, reportMode = 'SUPERVISOR_MAIN', moduleTitle }) {
+function CensusModule2Content({ onBack, hideHeader = false, creds, initialShowErrors = false, initialShowAbstract = false, reportMode = 'SUPERVISOR_MAIN', moduleTitle }) {
+  const { selectedZone, selectedZoneObj, getZoneTable } = useCensusZone();
   const [tables, setTables]     = useState([]);
   const [table, setTable]       = useState('');
   const [rows, setRows]         = useState([]);
@@ -272,7 +275,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   const [page, setPage]         = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  useEffect(() => { ping(); }, []);
+  useEffect(() => { ping(); }, [selectedZone]);
 
   const token = () => {
     if (creds?.token) return creds.token;
@@ -320,15 +323,18 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
       const j = await r.json();
       if (j.tables?.length) {
         setTables(j.tables);
-        const pref = j.tables.find(t => t.toLowerCase() === 'hlb_records') || j.tables[0];
+        const zoneTbl = `hlb_records_zone_${selectedZone}`;
+        const pref = j.tables.find(t => t.toLowerCase() === zoneTbl.toLowerCase())
+                  || j.tables.find(t => t.toLowerCase() === 'hlb_records')
+                  || j.tables[0];
         setTable(pref);
         await fetchData(pref);
 
-        // Fetch exact Supabase tables: charge_wise_report & hlb_allotted, user_details, app_user (awaited!)
+        // Fetch exact Supabase tables: charge_wise_report & hlb_allotted, user_details, app_user (zone-aware!)
         try {
-          let rCharge = await db2Fetch('/table/charge_wise_report?limit=5000&offset=0');
+          let rCharge = await db2Fetch(`/table/charge_wise_report?limit=5000&offset=0&zone=${selectedZone}`);
           let jCharge = await rCharge.json().catch(() => ({}));
-          let rAllot = await db2Fetch('/table/hlb_allotted?limit=5000&offset=0');
+          let rAllot = await db2Fetch(`/table/hlb_allotted?limit=5000&offset=0&zone=${selectedZone}`);
           let jAllot = await rAllot.json().catch(() => ({}));
 
           const combined = [...(jCharge.rows || []), ...(jAllot.rows || [])];
@@ -336,12 +342,12 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
         } catch(e) { console.error('fetch allotments error:', e); }
 
         try {
-          let rUser = await db2Fetch('/table/user_details?limit=5000&offset=0');
+          let rUser = await db2Fetch(`/table/user_details?limit=5000&offset=0&zone=${selectedZone}`);
           let jUser = await rUser.json().catch(() => ({}));
           if (jUser.rows?.length) {
             setUserRows(jUser.rows);
           } else {
-            rUser = await db2Fetch('/table/app_user?limit=5000&offset=0');
+            rUser = await db2Fetch(`/table/app_user?limit=5000&offset=0&zone=${selectedZone}`);
             jUser = await rUser.json().catch(() => ({}));
             if (jUser.rows?.length) setUserRows(jUser.rows);
           }
@@ -361,7 +367,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
     let retries = 3;
     while (retries > 0 && !initialSuccess) {
       try {
-        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0`);
+        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0&zone=${selectedZone}`);
         const j = await r.json().catch(() => ({}));
         if (j.rows && Array.isArray(j.rows)) {
           allRows.push(...j.rows);
@@ -397,7 +403,7 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
             let chunkRetries = 2;
             while (chunkRetries > 0) {
               try {
-                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}`);
+                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}&zone=${selectedZone}`);
                 const data = await res.json().catch(() => ({}));
                 if (data.rows && Array.isArray(data.rows)) return data.rows;
                 chunkRetries--;
@@ -427,12 +433,17 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
   async function fetchData(t) {
     if (!t) return;
     setLoading(true); setError(''); setPage(0); setSel(new Set()); setLoadingProgress('Loading data...');
+    setRows([]);
+    setTotal(0);
+    setHlb(null);
+    setHlbRows([]);
 
     const seenIds = new Set();
     let isFirstChunk = true;
 
     try {
-      await fetchAllRowsInChunks(t, 3000, (loaded, total, chunk, cols) => {
+      const targetQueryTable = t.toLowerCase() === 'hlb_records' ? (getZoneTable ? getZoneTable() : `hlb_records_zone_${selectedZone}`) : t;
+      const res = await fetchAllRowsInChunks(targetQueryTable, 3000, (loaded, total, chunk, cols) => {
         setLoadingProgress(`Loading ${loaded.toLocaleString()} / ${total.toLocaleString()} rows...`);
 
         if (cols && cols.length > 0) {
@@ -460,8 +471,14 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
           setLoading(false); // UNBLOCK SCREEN IMMEDIATELY ON 1ST CHUNK!
         }
       });
+      if (!res || !res.rows || res.rows.length === 0) {
+        setRows([]);
+        setTotal(0);
+      }
     } catch(e) {
       setError('Data load failed: ' + e.message);
+      setRows([]);
+      setTotal(0);
     } finally {
       setLoading(false);
       setLoadingProgress('');
@@ -1688,11 +1705,33 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
           </div>
         </div>
 
-        <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
+          <CensusZoneSelector compact={true} />
           {(!creds || !creds.role || creds.role === 'ADMIN' || creds.role === 'OWNER') && (tables.length >= 1) && (
-            <select value={table || 'hlb_records'} onChange={e => { setTable(e.target.value); fetchData(e.target.value); setHlbView(false); setHlb(null); setHlbCardSearch(''); }}
-              style={{ background:'rgba(168, 85, 247, 0.25)', border:'1.5px solid #c084fc', color:'#ffffff', fontWeight:800, padding:'6px 12px', borderRadius:8, fontSize:'0.78rem', cursor:'pointer', outline:'none' }}>
-              {(tables.length > 0 ? tables : ['hlb_records', 'charge_wise_report', 'hlb_allotted']).map(t => <option key={t} value={t} style={{ background:'#1b182b', color:'#ffffff' }}>{t}</option>)}
+            <select
+              value={table || `hlb_records_zone_${selectedZone}`}
+              onChange={e => {
+                const newTbl = e.target.value;
+                setTable(newTbl);
+                fetchData(newTbl);
+                setHlbView(false);
+                setHlb(null);
+                setHlbCardSearch('');
+              }}
+              style={{ background:'rgba(168, 85, 247, 0.25)', border:'1.5px solid #c084fc', color:'#ffffff', fontWeight:800, padding:'6px 12px', borderRadius:8, fontSize:'0.78rem', cursor:'pointer', outline:'none' }}
+            >
+              {(() => {
+                const activeZoneTbl = `hlb_records_zone_${selectedZone}`;
+                const displayTables = [
+                  activeZoneTbl,
+                  ...tables.filter(t => !t.startsWith('hlb_records_zone_') && t !== 'hlb_records' && t !== activeZoneTbl)
+                ];
+                return displayTables.map(t => (
+                  <option key={t} value={t} style={{ background:'#1b182b', color:'#ffffff' }}>
+                    {t === activeZoneTbl ? `${t} (Active Zone ${selectedZone})` : t}
+                  </option>
+                ));
+              })()}
             </select>
           )}
           <button onClick={() => table ? fetchData(table) : ping()} style={bs('purple')} disabled={loading}>
@@ -3072,6 +3111,14 @@ export default function CensusModule2({ onBack, hideHeader = false, creds, initi
 
       <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
     </div>
+  );
+}
+
+export default function CensusModule2(props) {
+  return (
+    <CensusZoneProvider>
+      <CensusModule2Content {...props} />
+    </CensusZoneProvider>
   );
 }
 

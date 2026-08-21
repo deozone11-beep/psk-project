@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { User, Phone, CheckCircle2, Clock, Search, Shield, ChevronRight, Lock, AlertCircle, X, Sparkles, AlertTriangle } from 'lucide-react';
+import { User, Phone, CheckCircle2, Clock, Search, Shield, ChevronRight, Lock, AlertCircle, X, Sparkles, AlertTriangle, Link as LinkIcon, Share2 } from 'lucide-react';
 import hlbMapping from './hlbMapping.json';
+import { CensusZoneProvider, useCensusZone } from './CensusZoneContext.jsx';
+import CensusZoneSelector from './CensusZoneSelector.jsx';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -66,7 +68,8 @@ function matchErrorType(errRow) {
   return null;
 }
 
-export default function CensusPublicSupervisorReport() {
+function CensusPublicSupervisorReportContent() {
+  const { selectedZone, selectedZoneObj, changeZone } = useCensusZone();
   const [allotedRows, setAllotedRows] = useState([]);
   const [chargeRows, setChargeRows] = useState([]);
   const [userRows, setUserRows] = useState([]);
@@ -101,36 +104,53 @@ export default function CensusPublicSupervisorReport() {
     };
   }, []);
 
-  // 2. Query Params
+  // 2. Strict Query Params (Stop old URLs, enforce new KingMaker / Zone-based format)
   const queryParams = useMemo(() => {
-    if (typeof window === 'undefined') return { circle: '', id: '', role: 'hod', isAdmin: false, isHod: true, isSupervisorRequest: false, isInvalidCircle: false };
+    if (typeof window === 'undefined') return { circle: '', id: '', role: '', isAdmin: false, isTeamLead: false, isHod: false, isSupervisorRequest: false, isInvalidCircle: false, isOutdatedUrl: false, urlZone: '' };
     const sp = new URLSearchParams(window.location.search);
     const circle = (sp.get('circle') || sp.get('c') || '').trim();
     const id = (sp.get('id') || sp.get('supId') || sp.get('supervisor') || '').trim();
     const roleRaw = (sp.get('role') || sp.get('view') || '').toLowerCase().trim();
+    const urlZone = (sp.get('zone') || sp.get('z') || '').trim();
     
-    // Check if ID is 'admin' or 'hod'
-    const isAdmin = roleRaw === 'admin' || id.toLowerCase() === 'admin' || sp.has('admin');
-    const isHod = roleRaw === 'hod' || id.toLowerCase() === 'hod' || sp.has('hod') || (!circle && !id && !isAdmin);
+    // 1. KingMaker (Strict: 'kingmaker' only)
+    const isAdmin = roleRaw === 'kingmaker' || id.toLowerCase() === 'kingmaker' || sp.has('kingmaker');
     
-    // Validate circle number: must be 1-3 digits only, between 001-075
-    const isSupervisorRequest = !isAdmin && !isHod && !!(circle || id);
+    // 2. TeamLead (Strict: Requires zone + 'teamlead' / 'tl')
+    const isTeamLead = !isAdmin && !!urlZone && (roleRaw === 'teamlead' || roleRaw === 'tl' || id.toLowerCase() === 'teamlead' || id.toLowerCase() === 'tl' || sp.has('teamlead') || sp.has('tl'));
+    
+    // 3. HOD (Strict: Requires zone + 'hod')
+    const isHod = !isAdmin && !isTeamLead && !!urlZone && (roleRaw === 'hod' || id.toLowerCase() === 'hod' || sp.has('hod'));
+    
+    // 4. Single Supervisor (Strict: Requires zone + circle)
     let isInvalidCircle = false;
-    if (isSupervisorRequest && circle) {
+    let isSupervisorRequest = false;
+    if (!isAdmin && !isTeamLead && !isHod && !!urlZone && !!circle) {
+      isSupervisorRequest = true;
       const numOnly = circle.replace(/[^0-9]/g, '');
-      // Must be all digits, max 3 digits
-      if (numOnly !== circle || numOnly.length > 3 || numOnly.length === 0) {
+      if (numOnly !== circle || numOnly.length > 4 || numOnly.length === 0) {
         isInvalidCircle = true;
-      } else {
-        const num = parseInt(numOnly, 10);
-        if (num < 1 || num > 75) {
-          isInvalidCircle = true;
-        }
       }
     }
     
-    return { circle, id, role: isAdmin ? 'admin' : (isHod ? 'hod' : 'supervisor'), isAdmin, isHod, isSupervisorRequest, isInvalidCircle };
+    // 5. Old / Deprecated URL Check:
+    // (If someone tries old bare '/report', old '/report?circle=001' without zone, old '/report?id=admin', old '/report?id=hod' without zone)
+    const isOutdatedUrl = !isAdmin && !isTeamLead && !isHod && !isSupervisorRequest;
+    
+    const role = isAdmin ? 'kingMaker' : (isTeamLead ? 'teamlead' : (isHod ? 'hod' : (isSupervisorRequest ? 'supervisor' : 'invalid')));
+    return { circle, id, role, isAdmin, isTeamLead, isHod, isSupervisorRequest, isInvalidCircle, isOutdatedUrl, urlZone };
   }, []);
+
+  // Auto-sync Zone from URL Parameter
+  useEffect(() => {
+    if (queryParams.urlZone) {
+      const clean = queryParams.urlZone.replace(/[^0-9a-zA-Z]/g, '');
+      const padded = clean.length === 1 ? '0' + clean : clean;
+      if (padded && padded !== selectedZone) {
+        changeZone(padded);
+      }
+    }
+  }, [queryParams.urlZone, selectedZone, changeZone]);
 
   const dbHlbMap = useMemo(() => {
     const map = new Map();
@@ -191,27 +211,31 @@ export default function CensusPublicSupervisorReport() {
   }
 
   useEffect(() => {
+    if (queryParams.isOutdatedUrl) {
+      setLoading(false);
+      return;
+    }
     async function loadData() {
       setLoading(true);
       try {
         const [rAllot, rCharge, rUser, rAppUser, rMap, rCodeMap, rErrors] = await Promise.all([
-          publicFetch('/table/hlb_allotted?limit=5000&offset=0').then(r => r.json().catch(() => ({}))),
-          publicFetch('/table/charge_wise_report?limit=5000&offset=0').then(r => r.json().catch(() => ({}))),
-          publicFetch('/table/user_details?limit=5000&offset=0').then(r => r.json().catch(() => ({}))),
-          publicFetch('/table/app_user?limit=5000&offset=0').then(r => r.json().catch(() => ({}))),
-          publicFetch('/table/hlb_mapping?limit=5000&offset=0').then(r => r.json().catch(() => ({}))),
-          publicFetch('/table/hlb_code_mapping?limit=5000&offset=0').then(r => r.json().catch(() => ({}))),
-          publicFetch('/table/census_errors?limit=5000&offset=0').then(r => r.json().catch(() => ({})))
+          publicFetch(`/table/hlb_allotted?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({}))),
+          publicFetch(`/table/charge_wise_report?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({}))),
+          publicFetch(`/table/user_details?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({}))),
+          publicFetch(`/table/app_user?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({}))),
+          publicFetch(`/table/hlb_mapping?limit=5000&offset=0`).then(r => r.json().catch(() => ({}))),
+          publicFetch(`/table/hlb_code_mapping?limit=5000&offset=0`).then(r => r.json().catch(() => ({}))),
+          publicFetch(`/table/census_errors?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})))
         ]);
 
-        if (rAllot.rows?.length) setAllotedRows(rAllot.rows);
-        if (rCharge.rows?.length) setChargeRows(rCharge.rows);
-        if (rUser.rows?.length) setUserRows(rUser.rows);
-        if (rAppUser.rows?.length) setAppUserRows(rAppUser.rows);
-        if (rErrors.rows?.length) setCensusErrorRows(rErrors.rows);
+        setAllotedRows(rAllot.rows || []);
+        setChargeRows(rCharge.rows || []);
+        setUserRows(rUser.rows || []);
+        setAppUserRows(rAppUser.rows || []);
+        setCensusErrorRows(rErrors.rows || []);
 
         const mapsCombined = [...(rMap.rows || []), ...(rCodeMap.rows || [])];
-        if (mapsCombined.length) setHlbMappingRows(mapsCombined);
+        setHlbMappingRows(mapsCombined);
       } catch (err) {
         console.warn('Data load error:', err);
       } finally {
@@ -219,7 +243,7 @@ export default function CensusPublicSupervisorReport() {
       }
     }
     loadData();
-  }, []);
+  }, [selectedZone, queryParams.isOutdatedUrl]);
 
   // Map of Errors by HLB Code
   const errorsMap = useMemo(() => {
@@ -238,58 +262,135 @@ export default function CensusPublicSupervisorReport() {
     return map;
   }, [censusErrorRows]);
 
-  // Combined User Phone & Details Map
-  const combinedUserMap = useMemo(() => {
-    const map = new Map();
-    const allUsers = [...userRows, ...appUserRows];
+  // Helper to format clean display name from ID
+  const formatFromId = useCallback((str) => {
+    if (!str || str === 'n/a' || str === 'null' || str === 'undefined') return '';
+    const parts = str.split('_');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart && lastPart.length >= 2 && !/^\d+$/.test(lastPart)) {
+      return lastPart.toUpperCase();
+    }
+    return str.toUpperCase();
+  }, []);
 
-    allUsers.forEach(u => {
-      const mob = String(u.mobile_no || u.mobile || u.phone || u.phone_number || '').trim();
-      const name = String(u.name || u.user_name || u.full_name || '').trim();
-      const uname = String(u.username || u.user_id || '').trim();
+  // Robust Phone & Username & FullName Resolver with Strict Role Separation
+  const getMobileAndUsername = useCallback((userId, personName, isSupervisor = false) => {
+    const uId = String(userId || '').trim().toLowerCase();
+    const pName = String(personName || '').trim();
+    const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normPName = norm(pName);
+    const allUsers = [...(userRows || []), ...(appUserRows || [])];
 
-      const entry = {
-        mobile: mob && mob !== 'null' && mob !== 'undefined' ? mob : '',
-        name: name,
-        username: uname
-      };
+    if (allUsers && allUsers.length > 0) {
+      // 1. STRICT Role separation: Supervisors MUST have sm_ prefix or supervisor role. Enumerators MUST have em_/en_ or enumerator role.
+      const roleUsers = allUsers.filter(u => {
+        const un = String(u.username || u.user_id || '').trim().toLowerCase();
+        const role = String(u.role_code || u.role_name || '').toLowerCase();
+        if (isSupervisor) {
+          return un.startsWith('sm_') || role.includes('supervisor');
+        } else {
+          return un.startsWith('em_') || un.startsWith('en_') || role.includes('enumerator');
+        }
+      });
 
-      if (uname) {
-        map.set(uname.toLowerCase(), entry);
-        const parts = uname.split('_');
-        if (parts.length > 1) map.set(parts[parts.length - 1].toLowerCase(), entry);
+      const pool = roleUsers.length > 0 ? roleUsers : (isSupervisor ? [] : allUsers);
+
+      // 2. Direct exact username match inside role-filtered pool
+      if (uId && uId !== 'n/a' && uId !== 'undefined' && uId !== 'null') {
+        const direct = pool.find(u => {
+          const un = String(u.username || u.user_id || '').trim().toLowerCase();
+          return un === uId;
+        });
+        if (direct) {
+          const mob = String(direct.mobile_no || direct.mobile || direct.phone || direct.phone_number || '').trim();
+          const fn = String(direct.full_name || direct.name || direct.user_name || '').trim();
+          return {
+            mobile: mob && mob !== 'undefined' && mob !== 'null' && mob !== 'N/A' ? mob : 'N/A',
+            username: String(direct.username || direct.user_id || uId),
+            fullName: fn || formatFromId(uId)
+          };
+        }
       }
-      if (name) {
-        map.set(name.toLowerCase(), entry);
+
+      // 3. Exact full name match inside role-filtered pool
+      if (pName && pName.toLowerCase() !== 'supervisor' && pName.toLowerCase() !== 'enumerator' && pName !== 'n/a') {
+        const nameMatch = pool.find(u => {
+          const fn = String(u.full_name || u.name || '').trim().toLowerCase();
+          return fn === pName.toLowerCase();
+        });
+        if (nameMatch) {
+          const mob = String(nameMatch.mobile_no || nameMatch.mobile || nameMatch.phone || nameMatch.phone_number || '').trim();
+          const fn = String(nameMatch.full_name || nameMatch.name || nameMatch.user_name || '').trim();
+          return {
+            mobile: mob && mob !== 'undefined' && mob !== 'null' && mob !== 'N/A' ? mob : 'N/A',
+            username: String(nameMatch.username || nameMatch.user_id || uId || 'N/A'),
+            fullName: fn || formatFromId(pName)
+          };
+        }
       }
-    });
 
-    return map;
-  }, [userRows, appUserRows]);
+      // 4. Normalized full name match inside role-filtered pool
+      if (normPName && normPName !== 'supervisor' && normPName !== 'enumerator') {
+        const normMatch = pool.find(u => {
+          const fn = norm(u.full_name || u.name || u.user_name);
+          return fn === normPName;
+        });
+        if (normMatch) {
+          const mob = String(normMatch.mobile_no || normMatch.mobile || normMatch.phone || normMatch.phone_number || '').trim();
+          const fn = String(normMatch.full_name || normMatch.name || normMatch.user_name || '').trim();
+          return {
+            mobile: mob && mob !== 'undefined' && mob !== 'null' && mob !== 'N/A' ? mob : 'N/A',
+            username: String(normMatch.username || normMatch.user_id || uId || 'N/A'),
+            fullName: fn || formatFromId(pName)
+          };
+        }
+      }
 
-  // Robust Phone & Name Resolver
-  const resolveUser = useCallback((rawName, rawId, isSupervisor = false) => {
-    const n = String(rawName || '').trim();
-    const id = String(rawId || '').trim();
-
-    if (id && combinedUserMap.has(id.toLowerCase())) {
-      const u = combinedUserMap.get(id.toLowerCase());
-      if (u.mobile) return { mobile: u.mobile, name: u.name || n || id, username: u.username || id };
+      // 5. Partial / Contains match inside role-filtered pool
+      if (normPName && normPName !== 'supervisor' && normPName !== 'enumerator') {
+        const subMatch = pool.find(u => {
+          const un = norm(u.username || u.user_id);
+          const fn = norm(u.full_name || u.name || u.user_name);
+          return (un && un.includes(normPName)) || (fn && fn.includes(normPName)) || (normPName && fn.includes(normPName));
+        });
+        if (subMatch) {
+          const mob = String(subMatch.mobile_no || subMatch.mobile || subMatch.phone || subMatch.phone_number || '').trim();
+          const fn = String(subMatch.full_name || subMatch.name || subMatch.user_name || '').trim();
+          return {
+            mobile: mob && mob !== 'undefined' && mob !== 'null' && mob !== 'N/A' ? mob : 'N/A',
+            username: String(subMatch.username || subMatch.user_id || uId || 'N/A'),
+            fullName: fn || formatFromId(pName)
+          };
+        }
+      }
     }
 
-    if (n && combinedUserMap.has(n.toLowerCase())) {
-      const u = combinedUserMap.get(n.toLowerCase());
-      if (u.mobile) return { mobile: u.mobile, name: u.name || n, username: u.username || id };
-    }
-
-    for (const [k, u] of combinedUserMap.entries()) {
-      if ((n && k.includes(n.toLowerCase())) || (id && k.includes(id.toLowerCase()))) {
-        if (u.mobile) return { mobile: u.mobile, name: u.name || n, username: u.username || id };
+    // 6. Fallback to allotedRows if present
+    if (allotedRows && allotedRows.length > 0 && pName && pName !== 'n/a') {
+      const allotMatch = allotedRows.find(a => {
+        const aSup = String(a.supervisor_name || a.supervisor || a.sup_name || '').toLowerCase();
+        const aEnum = String(a.enumerator_name || a.enumerator || a.enum_name || '').toLowerCase();
+        return (isSupervisor && aSup && aSup.includes(pName.toLowerCase())) || (!isSupervisor && aEnum && aEnum.includes(pName.toLowerCase()));
+      });
+      if (allotMatch) {
+        const mob = String(
+          (isSupervisor ? (allotMatch.supervisor_mobile || allotMatch.sup_mobile) : (allotMatch.enumerator_mobile || allotMatch.enum_mobile)) ||
+          allotMatch.mobile_no || allotMatch.mobile || allotMatch.phone || allotMatch.user_mobile || ''
+        ).trim();
+        return {
+          mobile: mob && mob !== 'undefined' && mob !== 'null' && mob !== 'N/A' ? mob : 'N/A',
+          username: uId || 'N/A',
+          fullName: formatFromId(pName || uId)
+        };
       }
     }
 
-    return { mobile: 'N/A', name: n || (isSupervisor ? 'SUPERVISOR' : 'ENUMERATOR'), username: id || 'N/A' };
-  }, [combinedUserMap]);
+    return {
+      mobile: 'N/A',
+      username: uId || 'N/A',
+      fullName: (pName && pName.toLowerCase() !== 'supervisor' && pName.toLowerCase() !== 'enumerator') ? formatFromId(pName) : (isSupervisor ? 'SUPERVISOR' : 'ENUMERATOR')
+    };
+  }, [userRows, appUserRows, allotedRows, formatFromId]);
 
   // 4. Build Exact Supervisor & Enumerator Models
   const allCircles = useMemo(() => {
@@ -344,20 +445,32 @@ export default function CensusPublicSupervisorReport() {
         if (!allotList || allotList.length === 0) return;
 
         const firstRow = allotList[0];
-        const rawSupName = String(firstRow.supervisor_name || firstRow.supervisor || firstRow.supervisor_full_name || firstRow.sup_name || '').trim();
+        const rawSup = String(firstRow.supervisor_name || firstRow.supervisor || firstRow.supervisor_full_name || firstRow.sup_name || '').trim();
         const rawSupId = String(firstRow.supervisor_id || firstRow.sup_id || '').trim();
-        const supResolved = resolveUser(rawSupName, rawSupId, true);
+        const supKey = rawSupId || rawSup;
+        const supInfo = getMobileAndUsername(supKey, rawSup || rawSupId, true);
 
+        const supName = supInfo.fullName && supInfo.fullName !== 'SUPERVISOR' 
+          ? supInfo.fullName 
+          : (rawSup && !rawSup.toLowerCase().startsWith('sm_') ? rawSup : (supInfo.username !== 'N/A' && !supInfo.username.startsWith('sm_') ? supInfo.username : 'SUPERVISOR'));
+        
         const supMobFromAllot = String(firstRow.supervisor_mobile || firstRow.sup_mobile || firstRow.mobile_no || firstRow.mobile || firstRow.phone || '').trim();
-        const finalSupMobile = (supResolved.mobile && supResolved.mobile !== 'N/A') ? supResolved.mobile : (supMobFromAllot || 'N/A');
+        const finalSupMobile = (supInfo.mobile && supInfo.mobile !== 'N/A') ? supInfo.mobile : (supMobFromAllot && supMobFromAllot !== 'null' && supMobFromAllot !== 'undefined' ? supMobFromAllot : 'N/A');
+        
+        const supIdVal = (supInfo.username && supInfo.username !== 'N/A') ? supInfo.username : (rawSupId || (rawSup.toLowerCase().startsWith('sm_') ? rawSup : ''));
 
         const enumerators = allotList.map(a => {
-          const rawEnumName = String(a.enumerator_name || a.enumerator || a.enum_name || a.enumerator_full_name || a.user_name || '').trim();
-          const rawEnumId = String(a.user_id || a.enumerator_id || a.username || '').trim();
-          const enumResolved = resolveUser(rawEnumName, rawEnumId, false);
+          const rawEnum = String(a.enumerator_name || a.enumerator || a.enum_name || a.enumerator_full_name || a.user_name || '').trim();
+          const userId = String(a.user_id || a.enumerator_id || a.username || '').trim();
+          const enumKey = userId || rawEnum;
+          const enumInfo = getMobileAndUsername(enumKey, rawEnum || userId, false);
+
+          const resolvedEnumName = enumInfo.fullName && enumInfo.fullName !== 'ENUMERATOR'
+            ? enumInfo.fullName
+            : (rawEnum && !rawEnum.toLowerCase().startsWith('em_') ? rawEnum : (enumInfo.username !== 'N/A' && !enumInfo.username.startsWith('em_') ? enumInfo.username : 'ENUMERATOR'));
 
           const enumMobFromAllot = String(a.enumerator_mobile || a.enum_mobile || a.mobile || a.mobile_no || a.phone || a.user_mobile || '').trim();
-          const finalEnumMobile = (enumResolved.mobile && enumResolved.mobile !== 'N/A') ? enumResolved.mobile : (enumMobFromAllot || 'N/A');
+          const finalEnumMobile = (enumInfo.mobile && enumInfo.mobile !== 'N/A') ? enumInfo.mobile : (enumMobFromAllot && enumMobFromAllot !== 'null' && enumMobFromAllot !== 'undefined' ? enumMobFromAllot : 'N/A');
           
           const hlbSerial = String(a.hlb_serial_no || a.hlb_block_no || a.hlb_block_number || a.hlb_no || a.hlb_code || '').trim();
           const blkCode = getHlbBlockNo(hlbSerial) || hlbSerial.padStart(4, '0');
@@ -377,8 +490,8 @@ export default function CensusPublicSupervisorReport() {
           const isComp = cData.isComp || stAllot === '1' || stAllot === 'completed' || stAllot === 'true';
 
           return {
-            enumId: enumResolved.username !== 'N/A' ? enumResolved.username : (rawEnumId || `ENUM-${rawEnumName}`),
-            enumName: enumResolved.name || rawEnumName,
+            enumId: (enumInfo.username && enumInfo.username !== 'N/A') ? enumInfo.username : (userId || `ENUM-${resolvedEnumName}`),
+            enumName: resolvedEnumName,
             enumMobile: finalEnumMobile,
             hlbCode: padded,
             expectedHouses: expHouses,
@@ -397,8 +510,8 @@ export default function CensusPublicSupervisorReport() {
         circles.push({
           circleNo,
           circleNumber: parseInt(circleNo.replace(/[^0-9]/g, '')) || 0,
-          supervisorName: supResolved.name || rawSupName,
-          supervisorId: supResolved.username !== 'N/A' ? supResolved.username : (rawSupId || ''),
+          supervisorName: supName,
+          supervisorId: supIdVal,
           supervisorMobile: finalSupMobile,
           enumerators
         });
@@ -408,7 +521,7 @@ export default function CensusPublicSupervisorReport() {
     }
 
     return [];
-  }, [allotedRows, chargeRows, getHlbBlockNo, resolveUser, errorsMap]);
+  }, [allotedRows, chargeRows, getHlbBlockNo, getMobileAndUsername, errorsMap]);
 
   // Target Circle matching: circle number (e.g. 001) OR supervisor ID (e.g. sm_...)
   const targetCircleData = useMemo(() => {
@@ -480,9 +593,9 @@ export default function CensusPublicSupervisorReport() {
     }
 
     return {
-      totalCircles: Math.min(allCircles.length || 75, 75),
-      totalEnums: Math.min(uniqueEnums.size || 450, 450),
-      totalHlbs: Math.min(totHlbs || 470, 470),
+      totalCircles: allCircles.length,
+      totalEnums: uniqueEnums.size,
+      totalHlbs: totHlbs,
       expectedHouses: totExp,
       censusHouses: totCen,
       households: totHH,
@@ -706,18 +819,88 @@ export default function CensusPublicSupervisorReport() {
           </div>
           <div>
             <h1 className="brand-title" style={{ fontSize: '15px', fontWeight: 900, margin: 0, color: '#ffffff', letterSpacing: '0.5px' }}>
-              {targetCircleData ? `CENSUS SUPERVISOR PROGRESS REPORT` : (queryParams.isAdmin ? `CENSUS CENTRAL ADMIN MASTER PORTAL` : `CENSUS HEAD OF DEPARTMENT (HOD) PORTAL`)}
+              {targetCircleData 
+                ? `CENSUS SUPERVISOR PROGRESS REPORT` 
+                : (queryParams.isAdmin 
+                    ? `CENSUS KINGMAKER MASTER PORTAL` 
+                    : (queryParams.isTeamLead 
+                        ? `CENSUS TEAM LEAD MONITORING PORTAL` 
+                        : `CENSUS HEAD OF DEPARTMENT (HOD) PORTAL`))}
             </h1>
             <p className="brand-sub" style={{ fontSize: '11px', margin: 0, color: '#94a3b8' }}>
-              {targetCircleData ? `${targetCircleData.circleNo} — Supervisor Portal (${targetCircleData.supervisorId || targetCircleData.supervisorName})` : (queryParams.isAdmin ? 'Role: Central Administrator — All 75 Circles' : 'Role: Head of Department (HOD) — All 75 Circles')}
+              <span style={{ color: '#38bdf8', fontWeight: 700 }}>{selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}</span> · {
+                targetCircleData 
+                  ? `${targetCircleData.circleNo} — Supervisor Portal (${targetCircleData.supervisorId || targetCircleData.supervisorName})` 
+                  : (queryParams.isAdmin 
+                      ? `Role: KingMaker — All Circles (${allCircles.length})` 
+                      : (queryParams.isTeamLead 
+                          ? `Role: Team Lead (TL) — Zone Circles (${allCircles.length})` 
+                          : `Role: Head of Department (HOD) — Zone Circles (${allCircles.length})`))
+              }
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Zone Dropdown ONLY for KingMaker; HOD, TeamLead, and Supervisors see locked static zone badge */}
+          {queryParams.isAdmin ? (
+            <CensusZoneSelector compact={true} />
+          ) : (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(56, 189, 248, 0.1)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              padding: '5px 12px',
+              borderRadius: '8px',
+              fontSize: '11px',
+              color: '#38bdf8',
+              fontWeight: 800
+            }}>
+              📍 {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
+            </div>
+          )}
+          {(queryParams.isAdmin || queryParams.isTeamLead) && (
+            <button
+              type="button"
+              onClick={() => {
+                const padCirc = targetCircleData ? String(targetCircleData.circleNo || targetCircleData.circleNumber).replace(/[^0-9]/g, '').padStart(3, '0') : '';
+                const link = targetCircleData
+                  ? `${window.location.origin}/report?zone=${selectedZone}&circle=${padCirc}`
+                  : (queryParams.isTeamLead 
+                      ? `${window.location.origin}/report?zone=${selectedZone}&role=teamlead`
+                      : `${window.location.origin}/report?role=kingMaker`);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  navigator.clipboard.writeText(link);
+                  alert(`📋 Public Link Copied to Clipboard:\n\n${link}`);
+                } else {
+                  prompt('Copy Public Link:', link);
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(16, 185, 129, 0.15)',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                color: '#34d399',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.2)'
+              }}
+              title="Copy Public Link"
+            >
+              <Share2 size={13} />
+              {queryParams.isAdmin ? 'Copy KingMaker Link' : 'Copy TL Link'}
+            </button>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
-            <span style={{ fontSize: '10.5px', color: targetCircleData ? '#38bdf8' : (queryParams.isAdmin ? '#ec4899' : '#a855f7'), fontWeight: 800 }}>
-              {targetCircleData ? `${targetCircleData.circleNo}` : (queryParams.isAdmin ? 'ID: ADMIN' : 'ID: HOD')}
+            <span style={{ fontSize: '10.5px', color: targetCircleData ? '#38bdf8' : (queryParams.isAdmin ? '#ec4899' : (queryParams.isTeamLead ? '#10b981' : '#a855f7')), fontWeight: 800 }}>
+              {targetCircleData ? `${targetCircleData.circleNo}` : (queryParams.isAdmin ? 'ID: KINGMAKER' : (queryParams.isTeamLead ? 'ID: TEAM LEAD' : 'ID: HOD'))}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
@@ -734,8 +917,59 @@ export default function CensusPublicSupervisorReport() {
         </div>
       )}
 
-      {/* NOT FOUND PAGE - invalid circle number or out-of-range */}
-      {!loading && targetCircleData === undefined && (
+      {/* OUTDATED / STOPPED LINK BLOCK SCREEN */}
+      {!loading && queryParams.isOutdatedUrl && (
+        <div style={{
+          maxWidth: '580px',
+          margin: '60px auto',
+          textAlign: 'center',
+          padding: '36px 24px',
+          background: 'rgba(15, 23, 42, 0.85)',
+          border: '1px solid rgba(239, 68, 68, 0.4)',
+          borderRadius: '16px',
+          boxShadow: '0 16px 40px rgba(0,0,0,0.6)'
+        }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            background: 'rgba(239,68,68,0.12)',
+            border: '2px solid rgba(239,68,68,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px auto'
+          }}>
+            <Lock size={36} color="#ef4444" />
+          </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', margin: '0 0 8px 0' }}>
+            Outdated Link Format (பழைய Link நிறுத்தப்பட்டது)
+          </h2>
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 16px 0', lineHeight: 1.6 }}>
+            பாதுகாப்பு மற்றும் Zone Multi-Tenancy காரணங்களுக்காக பழைய URL வடிவம் முழுமையாக நிறுத்தப்பட்டுள்ளது.<br />
+            அனைத்து Supervisor, HOD மற்றும் TeamLead பக்கங்களுக்கும் <b>Zone</b> அளவுரு கட்டாயமாகும்.
+          </p>
+          <div style={{
+            background: 'rgba(239,68,68,0.08)',
+            border: '1px solid rgba(239,68,68,0.25)',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            fontSize: '12px',
+            color: '#fca5a5',
+            textAlign: 'left',
+            lineHeight: 1.8
+          }}>
+            <b style={{ color: '#ffffff' }}>அங்கீகரிக்கப்பட்ட புதிய URL வடிவங்கள் (Valid Authorized Formats):</b><br />
+            👑 <b>KingMaker:</b> <code style={{ color: '#38bdf8' }}>/report?role=kingMaker</code><br />
+            👔 <b>Team Lead:</b> <code style={{ color: '#34d399' }}>/report?zone=11&role=teamlead</code><br />
+            🏛️ <b>HOD:</b> <code style={{ color: '#c084fc' }}>/report?zone=11&id=hod</code><br />
+            👤 <b>Supervisor:</b> <code style={{ color: '#fbbf24' }}>/report?zone=11&circle=001</code>
+          </div>
+        </div>
+      )}
+
+      {/* NOT FOUND PAGE - invalid circle number or out-of-range for active zone */}
+      {!loading && !queryParams.isOutdatedUrl && targetCircleData === undefined && (
         <div style={{
           maxWidth: '500px',
           margin: '60px auto',
@@ -756,17 +990,17 @@ export default function CensusPublicSupervisorReport() {
             <AlertCircle size={36} color="#ef4444" />
           </div>
           <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', margin: '0 0 8px 0' }}>
-            Page Not Found
+            Supervisor Circle Not Found
           </h2>
           <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 6px 0' }}>
             The supervisor circle{' '}
             <b style={{ color: '#f87171', fontFamily: 'monospace' }}>
               {(queryParams.circle || queryParams.id) ? `"${queryParams.circle || queryParams.id}"` : ''}
             </b>{' '}
-            does not exist.
+            does not exist in <b style={{ color: '#38bdf8' }}>{selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}</b>.
           </p>
           <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 24px 0' }}>
-            Valid circle numbers are <b style={{ color: '#e2e8f0' }}>001 to 075</b> (3 digits only).
+            Valid circle numbers are 3 digits (e.g. <b style={{ color: '#e2e8f0' }}>001, 002...</b>).
           </p>
           <div style={{
             background: 'rgba(239,68,68,0.08)',
@@ -778,7 +1012,7 @@ export default function CensusPublicSupervisorReport() {
             lineHeight: 1.6
           }}>
             Example valid links:<br />
-            <code style={{ color: '#38bdf8' }}>/report?circle=001</code> · <code style={{ color: '#38bdf8' }}>/report?circle=025</code>
+            <code style={{ color: '#38bdf8' }}>/report?zone={selectedZone}&circle=001</code> · <code style={{ color: '#38bdf8' }}>/report?zone={selectedZone}&circle=025</code>
           </div>
         </div>
       )}
@@ -1586,9 +1820,9 @@ export default function CensusPublicSupervisorReport() {
                       <div><span style={{ color: '#64748b' }}>Progress:</span> <b style={{ color: comp === c.enumerators.length ? '#22c55e' : '#f59e0b' }}>{comp}/{c.enumerators.length}</b></div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: 'auto', flexWrap: 'wrap' }}>
                       <a
-                        href={`/report?circle=${String(c.circleNumber).padStart(3, '0')}`}
+                        href={`/report?zone=${selectedZone}&circle=${String(c.circleNumber).padStart(3, '0')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="single-circle-btn"
@@ -1609,6 +1843,40 @@ export default function CensusPublicSupervisorReport() {
                       >
                         Single Circle View <ChevronRight size={13} />
                       </a>
+
+                      {(queryParams.isAdmin || queryParams.isTeamLead) && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const padCirc = String(c.circleNumber || c.circleNo).replace(/[^0-9]/g, '').padStart(3, '0');
+                            const link = `${window.location.origin}/report?zone=${selectedZone}&circle=${padCirc}`;
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                              navigator.clipboard.writeText(link);
+                              alert(`📋 Public Link Copied for Supervisor ${c.supervisorName} (Circle ${c.circleNo}):\n\n${link}`);
+                            } else {
+                              prompt('Copy Public Link:', link);
+                            }
+                          }}
+                          style={{
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            border: '1px solid rgba(16, 185, 129, 0.4)',
+                            color: '#34d399',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.2)'
+                          }}
+                          title="Copy Public Link with Zone & Circle"
+                        >
+                          📋 Copy Link
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1966,3 +2234,12 @@ export default function CensusPublicSupervisorReport() {
     </div>
   );
 }
+
+export default function CensusPublicSupervisorReport() {
+  return (
+    <CensusZoneProvider>
+      <CensusPublicSupervisorReportContent />
+    </CensusZoneProvider>
+  );
+}
+

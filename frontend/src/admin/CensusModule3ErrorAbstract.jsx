@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle, ChevronDown, ChevronUp, Maximize2, Minimize2, Layers, Filter, Download, Sparkles, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { ArrowLeft, Search, X, User, Phone, FileText, Printer, AlertTriangle, ChevronDown, ChevronUp, Maximize2, Minimize2, Layers, Filter, Download, Sparkles, CheckCircle2, Link as LinkIcon, Share2 } from 'lucide-react';
 import hlbMapping from './hlbMapping.json';
+import { CensusZoneProvider, useCensusZone } from './CensusZoneContext.jsx';
+import CensusZoneSelector from './CensusZoneSelector.jsx';
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -130,7 +132,8 @@ const DEFAULT_ERRORS = [
   }
 ];
 
-export default function CensusModule3ErrorAbstract({ onBack, creds }) {
+function CensusModule3ErrorAbstractContent({ onBack, creds }) {
+  const { selectedZone, selectedZoneObj, getZoneTable } = useCensusZone();
   const [rows, setRows]               = useState([]);
   const [allotedRows, setAllotedRows] = useState([]);
   const [chargeRows, setChargeRows]   = useState([]);
@@ -144,6 +147,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
   const [activeViewTab, setActiveViewTab]     = useState('SUPERVISOR_TABLE'); // 'SUPERVISOR_TABLE' | 'DETAILED_ACCORDION'
   const [syncingErrors, setSyncingErrors]     = useState(false);
   const [syncSuccessMsg, setSyncSuccessMsg]   = useState('');
+  const fetchSeqRef = useRef(0);
 
   const toggleCircle = (circleNo) => {
     setExpandedCircles(prev => {
@@ -194,22 +198,24 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     }
   }
 
-  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk) {
+  async function fetchAllRowsInChunks(t, chunkSize = 3000, onChunk, currentSeq) {
     let allRows = [];
     let totalCount = 0;
 
     let initialSuccess = false;
     let retries = 3;
     while (retries > 0 && !initialSuccess) {
+      if (fetchSeqRef.current !== currentSeq) return [];
       try {
-        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0`);
+        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0&zone=${selectedZone}`);
+        if (fetchSeqRef.current !== currentSeq) return [];
         const j = await r.json().catch(() => ({}));
         if (j.rows && Array.isArray(j.rows)) {
           allRows.push(...j.rows);
           totalCount = j.total || j.rows.length;
           if (j.limit && j.limit < chunkSize) chunkSize = j.limit;
           initialSuccess = true;
-          if (onChunk) onChunk(j.rows, allRows.length, totalCount);
+          if (onChunk && fetchSeqRef.current === currentSeq) onChunk(j.rows, allRows.length, totalCount);
         } else {
           retries--;
           if (retries > 0) await new Promise(res => setTimeout(res, 150));
@@ -220,7 +226,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       }
     }
 
-    if (!initialSuccess) return allRows;
+    if (!initialSuccess || fetchSeqRef.current !== currentSeq) return allRows;
 
     if (totalCount > chunkSize) {
       const remainingOffsets = [];
@@ -230,13 +236,16 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
 
       const BATCH_SIZE = 2;
       for (let i = 0; i < remainingOffsets.length; i += BATCH_SIZE) {
+        if (fetchSeqRef.current !== currentSeq) return [];
         const batchOffsets = remainingOffsets.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(
           batchOffsets.map(async (off) => {
             let chunkRetries = 2;
             while (chunkRetries > 0) {
+              if (fetchSeqRef.current !== currentSeq) return [];
               try {
-                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}`);
+                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}&zone=${selectedZone}`);
+                if (fetchSeqRef.current !== currentSeq) return [];
                 const data = await res.json().catch(() => ({}));
                 if (data.rows && Array.isArray(data.rows)) return data.rows;
                 chunkRetries--;
@@ -250,10 +259,11 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
           })
         );
 
+        if (fetchSeqRef.current !== currentSeq) return [];
         batchResults.forEach(rowsChunk => {
           if (rowsChunk.length > 0) {
             allRows.push(...rowsChunk);
-            if (onChunk) onChunk(rowsChunk, allRows.length, totalCount);
+            if (onChunk && fetchSeqRef.current === currentSeq) onChunk(rowsChunk, allRows.length, totalCount);
           }
         });
         await new Promise(res => setTimeout(res, 50));
@@ -264,28 +274,45 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
   }
 
   useEffect(() => {
+    const currentSeq = ++fetchSeqRef.current;
     async function loadData() {
       setLoading(true);
+      setRows([]);
+      setAllotedRows([]);
+      setChargeRows([]);
+      setUserRows([]);
       try {
         let isFirstChunk = true;
 
-        // Fetch user metadata & allotments in parallel right away
-        const pAllot = db2Fetch('/table/hlb_allotted?limit=5000&offset=0').then(r => r.json().catch(() => ({})));
-        const pCharge = db2Fetch('/table/charge_wise_report?limit=5000&offset=0').then(r => r.json().catch(() => ({})));
-        const pUser = db2Fetch('/table/user_details?limit=5000&offset=0').then(r => r.json().catch(() => ({})));
+        // Fetch user metadata & allotments in parallel right away (zone-aware)
+        const pAllot = db2Fetch(`/table/hlb_allotted?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})));
+        const pCharge = db2Fetch(`/table/charge_wise_report?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})));
+        const pUser = db2Fetch(`/table/user_details?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})));
 
-        pAllot.then(jAllot => { if (jAllot.rows?.length) setAllotedRows(jAllot.rows); });
-        pCharge.then(jCharge => { if (jCharge.rows?.length) setChargeRows(jCharge.rows); });
+        pAllot.then(jAllot => {
+          if (fetchSeqRef.current !== currentSeq) return;
+          setAllotedRows(jAllot.rows || []);
+        });
+        pCharge.then(jCharge => {
+          if (fetchSeqRef.current !== currentSeq) return;
+          setChargeRows(jCharge.rows || []);
+        });
         pUser.then(async jUser => {
-          if (!jUser.rows?.length) {
-            const rApp = await db2Fetch('/table/app_user?limit=5000&offset=0');
-            jUser = await rApp.json().catch(() => ({}));
+          if (fetchSeqRef.current !== currentSeq) return;
+          let uRows = jUser.rows || [];
+          if (!uRows.length) {
+            const rApp = await db2Fetch(`/table/app_user?limit=5000&offset=0&zone=${selectedZone}`);
+            const jApp = await rApp.json().catch(() => ({}));
+            uRows = jApp.rows || [];
           }
-          if (jUser.rows?.length) setUserRows(jUser.rows);
+          if (fetchSeqRef.current !== currentSeq) return;
+          setUserRows(uRows);
         });
 
-        // Stream hlb_records chunks progressively
-        await fetchAllRowsInChunks('hlb_records', 5000, (chunk, loaded, total) => {
+        // Stream active zone table chunks progressively
+        const targetTable = getZoneTable ? getZoneTable('hlb_records') : `hlb_records_zone_${selectedZone}`;
+        await fetchAllRowsInChunks(targetTable, 5000, (chunk, loaded, total) => {
+          if (fetchSeqRef.current !== currentSeq) return;
           if (chunk && chunk.length) {
             setRows(prev => (isFirstChunk ? chunk : [...prev, ...chunk]));
           }
@@ -293,15 +320,19 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
             isFirstChunk = false;
             setLoading(false); // UNBLOCK SCREEN IMMEDIATELY ON 1ST CHUNK!
           }
-        });
+        }, currentSeq);
       } catch (e) {
-        console.error('Data load error:', e);
+        if (fetchSeqRef.current === currentSeq) {
+          console.error('Data load error:', e);
+        }
       } finally {
-        setLoading(false);
+        if (fetchSeqRef.current === currentSeq) {
+          setLoading(false);
+        }
       }
     }
     loadData();
-  }, []);
+  }, [selectedZone]);
 
   const getMobileAndUsername = (userId, personName, isSupervisor = false) => {
     const uId = String(userId || '').trim().toLowerCase();
@@ -640,11 +671,11 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       });
     });
     return {
-      totalCircles: Math.min(abstractReport.length || 75, 75),
-      totalEnumerators: Math.min(allUniqueEnums.size || 450, 450),
-      totalHlbs: Math.min(totHlbs || 470, 470),
-      totalRecords: rows.length > 0 ? rows.length : (totRecs || 74906),
-      totalErrors: uniqueErrorCount
+      totalCircles: abstractReport.length,
+      totalEnumerators: allUniqueEnums.size,
+      totalHlbs: totHlbs,
+      totalRecords: rows.length > 0 ? rows.length : totRecs,
+      totalErrors: rows.length > 0 ? uniqueErrorCount : 0
     };
   }, [abstractReport, rows, uniqueErrorCount]);
 
@@ -1052,7 +1083,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `Supervisor_Enumerator_Detailed_Report_${dateStr}.csv`;
+    a.download = `Supervisor_Enumerator_Detailed_Report_Zone_${selectedZone}_${dateStr}.csv`;
     a.click();
   };
 
@@ -1063,12 +1094,12 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Supervisor Error Abstract Report</title>
+        <title>Supervisor Error Abstract Report - Zone ${selectedZone}</title>
         <style>
           @page { size: A4 portrait; margin: 10mm; }
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e293b; margin: 0; padding: 0; background: #fff; }
           .report-header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px; }
-          .report-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+          .report-title { font-size: 16px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em; }
           .report-sub { font-size: 11px; color: #475569; font-weight: 600; }
           .circle-card { border: 1.5px solid #cbd5e1; border-radius: 10px; margin-bottom: 16px; page-break-inside: avoid !important; break-inside: avoid !important; overflow: hidden; }
           .circle-header { background: #f1f5f9; padding: 8px 12px; border-bottom: 1px solid #cbd5e1; display: flex; justify-space-between; align-items: center; }
@@ -1090,7 +1121,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       </head>
       <body>
         <div class="report-header">
-          <div class="report-title">CENSUS WORK — SUPERVISOR ERROR ABSTRACT REPORT</div>
+          <div class="report-title">GREATER CHENNAI CORPORATION · ${selectedZoneObj ? selectedZoneObj.name.toUpperCase() : `ZONE ${selectedZone}`} · ERROR ABSTRACT REPORT</div>
           <div class="report-sub">Generated on ${new Date().toLocaleString()} · Total Circles: ${circlesToPrint.length}</div>
         </div>
 
@@ -1177,6 +1208,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
               errorPayload.push({
                 circle_no: circle.circleNo,
                 hlb_code: enumItem.hlbCode,
+                zone_no: selectedZone,
                 enumerator_name: enumItem.enumName,
                 enumerator_id: enumItem.enumId,
                 building_number: rec.buildingNo || '',
@@ -1195,7 +1227,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      const res = await db2Fetch('/sync-errors', {
+      const res = await db2Fetch(`/sync-errors?zone=${selectedZone}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(errorPayload),
@@ -1205,7 +1237,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
 
       const data = await res.json().catch(() => ({}));
       if (res.ok && (data.status === 'success' || data.count >= 0)) {
-        setSyncSuccessMsg(`🎉 Successfully Synced ${errorPayload.length} Active Errors to Database!`);
+        setSyncSuccessMsg(`🎉 Successfully Synced ${errorPayload.length} Active Errors to Database for Zone ${selectedZone}!`);
         setTimeout(() => setSyncSuccessMsg(''), 5000);
       } else {
         alert(data.error || 'Sync command sent to server.');
@@ -1222,12 +1254,15 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     <div style={{ background: '#0b0f19', color: '#f8fafc', minHeight: '100vh', padding: '16px 14px' }}>
       {/* Top Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-        <button
-          onClick={onBack}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
-        >
-          <ArrowLeft size={16}/> Back to Sub-Modules
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={onBack}
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+          >
+            <ArrowLeft size={16}/> Back to Sub-Modules
+          </button>
+          <CensusZoneSelector compact={true} />
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <button
@@ -1310,8 +1345,13 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
         </div>
       )}
 
-      <div style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 12, color: '#ffffff' }}>
-        Supervisor &amp; Enumerator Error Abstract Report
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#ffffff' }}>
+          Supervisor &amp; Enumerator Error Abstract Report
+        </div>
+        <div style={{ fontSize: '0.88rem', color: '#94a3b8', marginTop: 3 }}>
+          Greater Chennai Corporation · <span style={{ color: '#38bdf8', fontWeight: 700 }}>{selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}</span> (Wards: {selectedZoneObj?.wards || 'All'})
+        </div>
       </div>
 
       {/* OVERALL TOTAL KPI SUMMARY CARDS */}
@@ -1649,7 +1689,7 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                     </span>
                   </div>
 
-                  {/* Right Action Group: Print Circle Button on Far Right */}
+                  {/* Right Action Group: Print Circle & Copy TinyURL Buttons */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <button
                       onClick={() => printSupervisorAbstractReport([circle])}
@@ -1670,6 +1710,36 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
                       }}
                     >
                       <Printer size={14} /> Print Circle
+                    </button>
+                    <button
+                      onClick={() => {
+                        const padCirc = String(circle.circleNo || circle.circleNumber).replace(/[^0-9]/g, '').padStart(3, '0');
+                        const link = `${window.location.origin}/report?zone=${selectedZone}&circle=${padCirc}`;
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                          navigator.clipboard.writeText(link);
+                          alert(`📋 Public Link Copied for Supervisor ${circle.supervisorName} (Circle ${circle.circleNo}):\n\n${link}`);
+                        } else {
+                          prompt('Copy Public Link:', link);
+                        }
+                      }}
+                      style={{
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        color: '#34d399',
+                        padding: '6px 16px',
+                        borderRadius: 8,
+                        fontSize: '0.76rem',
+                        fontWeight: 900,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 8px rgba(16,185,129,0.2)'
+                      }}
+                      title="Copy Public Link with Zone & Circle"
+                    >
+                      <Share2 size={14} /> Copy Link
                     </button>
                   </div>
                 </div>
@@ -1815,3 +1885,12 @@ export default function CensusModule3ErrorAbstract({ onBack, creds }) {
     </div>
   );
 }
+
+export default function CensusModule3ErrorAbstract(props) {
+  return (
+    <CensusZoneProvider>
+      <CensusModule3ErrorAbstractContent {...props} />
+    </CensusZoneProvider>
+  );
+}
+
