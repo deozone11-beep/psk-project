@@ -790,232 +790,234 @@ function CensusPublicSupervisorReportContent() {
           transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease !important;
         }
       `}</style>
-      {/* Top Brand Header */}
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto 16px auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '10px',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        paddingBottom: '12px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      {/* 1. OUTDATED LINK VIEW: Clean & Professional Message without exposing internal URLs */}
+      {queryParams.isOutdatedUrl ? (
+        <div style={{
+          minHeight: '75vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
           <div style={{
-            background: 'linear-gradient(135deg, #e11d48, #991b1b)',
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 900,
-            fontSize: '14px',
-            color: '#ffffff'
+            maxWidth: '520px',
+            width: '100%',
+            textAlign: 'center',
+            padding: '42px 30px',
+            background: 'linear-gradient(145deg, #111827 0%, #0b0f17 100%)',
+            border: '1px solid rgba(245, 158, 11, 0.35)',
+            borderRadius: '20px',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.7), 0 0 35px rgba(245,158,11,0.1)'
           }}>
-            PSK
-          </div>
-          <div>
-            <h1 className="brand-title" style={{ fontSize: '15px', fontWeight: 900, margin: 0, color: '#ffffff', letterSpacing: '0.5px' }}>
-              {targetCircleData 
-                ? `CENSUS SUPERVISOR PROGRESS REPORT` 
-                : (queryParams.isAdmin 
-                    ? `CENSUS KINGMAKER MASTER PORTAL` 
-                    : (queryParams.isTeamLead 
-                        ? `CENSUS TEAM LEAD MONITORING PORTAL` 
-                        : `CENSUS HEAD OF DEPARTMENT (HOD) PORTAL`))}
-            </h1>
-            <p className="brand-sub" style={{ fontSize: '11px', margin: 0, color: '#94a3b8' }}>
-              <span style={{ color: '#38bdf8', fontWeight: 700 }}>{selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}</span> · {
-                targetCircleData 
-                  ? `${targetCircleData.circleNo} — Supervisor Portal (${targetCircleData.supervisorId || targetCircleData.supervisorName})` 
-                  : (queryParams.isAdmin 
-                      ? `Role: KingMaker — All Circles (${allCircles.length})` 
-                      : (queryParams.isTeamLead 
-                          ? `Role: Team Lead (TL) — Zone Circles (${allCircles.length})` 
-                          : `Role: Head of Department (HOD) — Zone Circles (${allCircles.length})`))
-              }
-            </p>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* Zone Dropdown ONLY for KingMaker; HOD, TeamLead, and Supervisors see locked static zone badge */}
-          {queryParams.isAdmin ? (
-            <CensusZoneSelector compact={true} />
-          ) : (
             <div style={{
+              width: '84px',
+              height: '84px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.08))',
+              border: '2px solid rgba(245, 158, 11, 0.45)',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(56, 189, 248, 0.1)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              padding: '5px 12px',
-              borderRadius: '8px',
-              fontSize: '11px',
-              color: '#38bdf8',
-              fontWeight: 800
+              justifyContent: 'center',
+              margin: '0 auto 22px auto',
+              boxShadow: '0 8px 24px rgba(245, 158, 11, 0.2)'
             }}>
-              📍 {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
+              <Shield size={40} color="#fbbf24" />
             </div>
-          )}
-          {(queryParams.isAdmin || queryParams.isTeamLead) && (
-            <button
-              type="button"
-              onClick={() => {
-                const padCirc = targetCircleData ? String(targetCircleData.circleNo || targetCircleData.circleNumber).replace(/[^0-9]/g, '').padStart(3, '0') : '';
-                const link = targetCircleData
-                  ? `${window.location.origin}/report?zone=${selectedZone}&circle=${padCirc}`
-                  : (queryParams.isTeamLead 
-                      ? `${window.location.origin}/report?zone=${selectedZone}&role=teamlead`
-                      : `${window.location.origin}/report?role=kingMaker`);
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                  navigator.clipboard.writeText(link);
-                  alert(`📋 Public Link Copied to Clipboard:\n\n${link}`);
-                } else {
-                  prompt('Copy Public Link:', link);
-                }
-              }}
-              style={{
+
+            <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', margin: '0 0 8px 0', letterSpacing: '0.3px' }}>
+              Portal Link Updated
+            </h2>
+
+            <p style={{ fontSize: '13.5px', fontWeight: 700, color: '#fbbf24', margin: '0 0 16px 0' }}>
+              அணுகல் முகவரி புதுப்பிக்கப்பட்டுள்ளது
+            </p>
+
+            <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 20px 0', lineHeight: 1.7 }}>
+              The report portal link has been updated for system and security enhancements. <br />
+              Please contact the <b>Administrator</b> or your <b>Team Lead</b> to obtain the updated direct access link.
+            </p>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '12px',
+              padding: '14px 18px',
+              fontSize: '12px',
+              color: '#cbd5e1',
+              lineHeight: 1.6,
+              textAlign: 'center'
+            }}>
+              பாதுகாப்பு மேம்பாடுகள் காரணமாக இந்த பக்கத்திற்கான முகவரி புதுப்பிக்கப்பட்டுள்ளது. புதிய நேரடி இணைப்பைப் பெற <b>நிர்வாகி அல்லது Team Lead</b>-ஐத் தொடர்பு கொள்ளவும்.
+            </div>
+
+            <div style={{ marginTop: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '6px 16px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Lock size={13} color="#fbbf24" /> Please Contact Administration / Team Lead
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Top Brand Header */}
+          <div style={{
+            maxWidth: '1200px',
+            margin: '0 auto 16px auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            paddingBottom: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #e11d48, #991b1b)',
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                background: 'rgba(16, 185, 129, 0.15)',
-                border: '1px solid rgba(16, 185, 129, 0.4)',
-                color: '#34d399',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '11px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.2)'
-              }}
-              title="Copy Public Link"
-            >
-              <Share2 size={13} />
-              {queryParams.isAdmin ? 'Copy KingMaker Link' : 'Copy TL Link'}
-            </button>
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '14px',
+                color: '#ffffff'
+              }}>
+                PSK
+              </div>
+              <div>
+                <h1 className="brand-title" style={{ fontSize: '15px', fontWeight: 900, margin: 0, color: '#ffffff', letterSpacing: '0.5px' }}>
+                  {targetCircleData 
+                    ? `CENSUS SUPERVISOR PROGRESS REPORT` 
+                    : (queryParams.isAdmin 
+                        ? `CENSUS KINGMAKER MASTER PORTAL` 
+                        : (queryParams.isTeamLead 
+                            ? `CENSUS TEAM LEAD MONITORING PORTAL` 
+                            : `CENSUS HEAD OF DEPARTMENT (HOD) PORTAL`))}
+                </h1>
+                <p className="brand-sub" style={{ fontSize: '11px', margin: 0, color: '#94a3b8' }}>
+                  <span style={{ color: '#38bdf8', fontWeight: 700 }}>{selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}</span> · {
+                    targetCircleData 
+                      ? `${targetCircleData.circleNo} — Supervisor Portal (${targetCircleData.supervisorId || targetCircleData.supervisorName})` 
+                      : (queryParams.isAdmin 
+                          ? `Role: KingMaker — All Circles (${allCircles.length})` 
+                          : (queryParams.isTeamLead 
+                              ? `Role: Team Lead (TL) — Zone Circles (${allCircles.length})` 
+                              : `Role: Head of Department (HOD) — Zone Circles (${allCircles.length})`))
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {/* Zone Dropdown ONLY for KingMaker; HOD, TeamLead, and Supervisors see locked static zone badge */}
+              {queryParams.isAdmin ? (
+                <CensusZoneSelector compact={true} />
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'rgba(56, 189, 248, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  color: '#38bdf8',
+                  fontWeight: 800
+                }}>
+                  📍 {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
+                </div>
+              )}
+              {(queryParams.isAdmin || queryParams.isTeamLead) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const padCirc = targetCircleData ? String(targetCircleData.circleNo || targetCircleData.circleNumber).replace(/[^0-9]/g, '').padStart(3, '0') : '';
+                    const link = targetCircleData
+                      ? `${window.location.origin}/report?zone=${selectedZone}&circle=${padCirc}`
+                      : (queryParams.isTeamLead 
+                          ? `${window.location.origin}/report?zone=${selectedZone}&role=teamlead`
+                          : `${window.location.origin}/report?role=kingMaker`);
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      navigator.clipboard.writeText(link);
+                      alert(`📋 Public Link Copied to Clipboard:\n\n${link}`);
+                    } else {
+                      prompt('Copy Public Link:', link);
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    color: '#34d399',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.2)'
+                  }}
+                  title="Copy Public Link"
+                >
+                  <Share2 size={13} />
+                  {queryParams.isAdmin ? 'Copy KingMaker Link' : 'Copy TL Link'}
+                </button>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
+                <span style={{ fontSize: '10.5px', color: targetCircleData ? '#38bdf8' : (queryParams.isAdmin ? '#ec4899' : (queryParams.isTeamLead ? '#10b981' : '#a855f7')), fontWeight: 800 }}>
+                  {targetCircleData ? `${targetCircleData.circleNo}` : (queryParams.isAdmin ? 'ID: KINGMAKER' : (queryParams.isTeamLead ? 'ID: TEAM LEAD' : 'ID: HOD'))}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
+                <Lock size={12} color="#4ade80" />
+                <span style={{ fontSize: '10.5px', color: '#4ade80', fontWeight: 700 }}>Secure View-Only</span>
+              </div>
+            </div>
+          </div>
+
+          {loading && (
+            <div style={{ maxWidth: '1200px', margin: '40px auto', textAlign: 'center', color: '#94a3b8' }}>
+              <div style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid rgba(255,255,255,0.2)', borderTopColor: '#e11d48', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+              <p style={{ marginTop: '12px', fontSize: '12px', fontWeight: 600 }}>Loading Census Records...</p>
+            </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
-            <span style={{ fontSize: '10.5px', color: targetCircleData ? '#38bdf8' : (queryParams.isAdmin ? '#ec4899' : (queryParams.isTeamLead ? '#10b981' : '#a855f7')), fontWeight: 800 }}>
-              {targetCircleData ? `${targetCircleData.circleNo}` : (queryParams.isAdmin ? 'ID: KINGMAKER' : (queryParams.isTeamLead ? 'ID: TEAM LEAD' : 'ID: HOD'))}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
-            <Lock size={12} color="#4ade80" />
-            <span style={{ fontSize: '10.5px', color: '#4ade80', fontWeight: 700 }}>Secure View-Only</span>
-          </div>
-        </div>
-      </div>
 
-      {loading && (
-        <div style={{ maxWidth: '1200px', margin: '40px auto', textAlign: 'center', color: '#94a3b8' }}>
-          <div style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid rgba(255,255,255,0.2)', borderTopColor: '#e11d48', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-          <p style={{ marginTop: '12px', fontSize: '12px', fontWeight: 600 }}>Loading Census Records...</p>
-        </div>
-      )}
-
-      {/* OUTDATED / STOPPED LINK BLOCK SCREEN */}
-      {!loading && queryParams.isOutdatedUrl && (
-        <div style={{
-          maxWidth: '580px',
-          margin: '60px auto',
-          textAlign: 'center',
-          padding: '36px 24px',
-          background: 'rgba(15, 23, 42, 0.85)',
-          border: '1px solid rgba(239, 68, 68, 0.4)',
-          borderRadius: '16px',
-          boxShadow: '0 16px 40px rgba(0,0,0,0.6)'
-        }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            background: 'rgba(239,68,68,0.12)',
-            border: '2px solid rgba(239,68,68,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 20px auto'
-          }}>
-            <Lock size={36} color="#ef4444" />
-          </div>
-          <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', margin: '0 0 8px 0' }}>
-            Outdated Link Format (பழைய Link நிறுத்தப்பட்டது)
-          </h2>
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 16px 0', lineHeight: 1.6 }}>
-            பாதுகாப்பு மற்றும் Zone Multi-Tenancy காரணங்களுக்காக பழைய URL வடிவம் முழுமையாக நிறுத்தப்பட்டுள்ளது.<br />
-            அனைத்து Supervisor, HOD மற்றும் TeamLead பக்கங்களுக்கும் <b>Zone</b> அளவுரு கட்டாயமாகும்.
-          </p>
-          <div style={{
-            background: 'rgba(239,68,68,0.08)',
-            border: '1px solid rgba(239,68,68,0.25)',
-            borderRadius: '10px',
-            padding: '14px 16px',
-            fontSize: '12px',
-            color: '#fca5a5',
-            textAlign: 'left',
-            lineHeight: 1.8
-          }}>
-            <b style={{ color: '#ffffff' }}>அங்கீகரிக்கப்பட்ட புதிய URL வடிவங்கள் (Valid Authorized Formats):</b><br />
-            👑 <b>KingMaker:</b> <code style={{ color: '#38bdf8' }}>/report?role=kingMaker</code><br />
-            👔 <b>Team Lead:</b> <code style={{ color: '#34d399' }}>/report?zone=11&role=teamlead</code><br />
-            🏛️ <b>HOD:</b> <code style={{ color: '#c084fc' }}>/report?zone=11&id=hod</code><br />
-            👤 <b>Supervisor:</b> <code style={{ color: '#fbbf24' }}>/report?zone=11&circle=001</code>
-          </div>
-        </div>
-      )}
-
-      {/* NOT FOUND PAGE - invalid circle number or out-of-range for active zone */}
-      {!loading && !queryParams.isOutdatedUrl && targetCircleData === undefined && (
-        <div style={{
-          maxWidth: '500px',
-          margin: '60px auto',
-          textAlign: 'center',
-          padding: '40px 24px'
-        }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            background: 'rgba(239,68,68,0.12)',
-            border: '2px solid rgba(239,68,68,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 20px auto'
-          }}>
-            <AlertCircle size={36} color="#ef4444" />
-          </div>
-          <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', margin: '0 0 8px 0' }}>
-            Supervisor Circle Not Found
-          </h2>
-          <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 6px 0' }}>
-            The supervisor circle{' '}
-            <b style={{ color: '#f87171', fontFamily: 'monospace' }}>
-              {(queryParams.circle || queryParams.id) ? `"${queryParams.circle || queryParams.id}"` : ''}
-            </b>{' '}
-            does not exist in <b style={{ color: '#38bdf8' }}>{selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}</b>.
-          </p>
-          <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 24px 0' }}>
-            Valid circle numbers are 3 digits (e.g. <b style={{ color: '#e2e8f0' }}>001, 002...</b>).
-          </p>
-          <div style={{
-            background: 'rgba(239,68,68,0.08)',
-            border: '1px solid rgba(239,68,68,0.2)',
-            borderRadius: '10px',
-            padding: '12px 16px',
-            fontSize: '11.5px',
-            color: '#fca5a5',
-            lineHeight: 1.6
-          }}>
-            Example valid links:<br />
-            <code style={{ color: '#38bdf8' }}>/report?zone={selectedZone}&circle=001</code> · <code style={{ color: '#38bdf8' }}>/report?zone={selectedZone}&circle=025</code>
-          </div>
-        </div>
-      )}
+          {/* NOT FOUND PAGE - invalid circle number or out-of-range for active zone */}
+          {!loading && targetCircleData === undefined && (
+            <div style={{
+              maxWidth: '500px',
+              margin: '60px auto',
+              textAlign: 'center',
+              padding: '40px 24px'
+            }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: 'rgba(239,68,68,0.12)',
+                border: '2px solid rgba(239,68,68,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px auto'
+              }}>
+                <AlertCircle size={36} color="#ef4444" />
+              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', margin: '0 0 8px 0' }}>
+                Supervisor Circle Not Found
+              </h2>
+              <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 14px 0' }}>
+                The requested supervisor circle does not exist in <b style={{ color: '#38bdf8' }}>{selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}</b>.
+              </p>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 16px 0' }}>
+                Please contact your Administrator or Team Lead for the authorized access link.
+              </p>
+            </div>
+          )}
 
       {/* SINGLE SUPERVISOR VIEW */}
       {!loading && targetCircleData && targetCircleData !== undefined && (
@@ -2231,6 +2233,8 @@ function CensusPublicSupervisorReportContent() {
           </div>
         </div>
       )}
+      </>
+    )}
     </div>
   );
 }
