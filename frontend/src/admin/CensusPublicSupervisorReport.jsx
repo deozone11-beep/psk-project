@@ -241,12 +241,21 @@ function CensusPublicSupervisorReportContent() {
         const mapsCombined = [...(rMap.rows || []), ...(rCodeMap.rows || [])];
         setHlbMappingRows(mapsCombined);
 
-        const formatDateTime = (val) => {
+        const parseISTDateTime = (val) => {
           if (!val) return '';
+          let s = String(val).trim();
           try {
-            const d = new Date(val);
+            // Supabase/PostgreSQL timestamps are stored in UTC (e.g. '2026-08-21 16:12:30').
+            // If no timezone suffix, append 'Z' so Javascript parses as UTC and converts to Asia/Kolkata (IST +05:30).
+            let d;
+            if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(s) && !s.includes('Z') && !s.includes('+')) {
+              d = new Date(s.replace(' ', 'T') + 'Z');
+            } else {
+              d = new Date(s);
+            }
             if (!isNaN(d.getTime())) {
               return d.toLocaleString('en-IN', {
+                timeZone: 'Asia/Kolkata',
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric',
@@ -256,24 +265,24 @@ function CensusPublicSupervisorReportContent() {
               });
             }
           } catch {}
-          return String(val);
+          return s;
         };
 
-        const nowStr = formatDateTime(new Date());
+        const nowStr = parseISTDateTime(new Date());
 
-        // Extract last updated date & time from charge report data
+        // Extract last updated date & time from charge report data (IST)
         let repTimestamp = '';
         for (const r of (rCharge.rows || [])) {
           const t = r.created_at || r.updated_at || r.timestamp || r.upload_time || r.report_date || r.last_updated || r.date;
-          if (t) { repTimestamp = formatDateTime(t); break; }
+          if (t) { repTimestamp = parseISTDateTime(t); break; }
         }
         setLastReportSyncTime(repTimestamp || nowStr);
 
-        // Extract last updated date & time from census errors data
+        // Extract last updated date & time from census errors data (IST)
         let errTimestamp = '';
         for (const r of (rErrors.rows || [])) {
           const t = r.created_at || r.updated_at || r.timestamp || r.upload_time || r.error_date || r.last_updated || r.date;
-          if (t) { errTimestamp = formatDateTime(t); break; }
+          if (t) { errTimestamp = parseISTDateTime(t); break; }
         }
         setLastErrorSyncTime(errTimestamp || nowStr);
       } catch (err) {
@@ -1244,56 +1253,115 @@ function CensusPublicSupervisorReportContent() {
             </div>
             <div className="live-ticker-marquee">
               <div className="live-ticker-track">
-                <span className="live-ticker-item">
-                  📊 <b style={{ color: '#38bdf8', marginLeft: '5px', marginRight: '4px' }}>Progress Report Updated:</b> {lastReportSyncTime || 'Active'}
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  ⚠️ <b style={{ color: '#f87171', marginLeft: '5px', marginRight: '4px' }}>Census Errors Updated:</b> {lastErrorSyncTime || 'Active'}
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  📍 <b style={{ color: '#fbbf24', marginLeft: '5px', marginRight: '4px' }}>Active Zone:</b> {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  👥 <b style={{ color: '#4ade80', marginLeft: '5px', marginRight: '4px' }}>Total Allotted Blocks:</b> {hodStats.totalHlbs} HLBs
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  🏢 <b style={{ color: '#c084fc', marginLeft: '5px', marginRight: '4px' }}>Total Circles:</b> {allCircles.length} Circles
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  🔒 <b style={{ color: '#e2e8f0', marginLeft: '5px', marginRight: '4px' }}>PSK Real-Time Census Network</b>
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                {targetCircleData ? (
+                  // SINGLE SUPERVISOR VIEW SPECIFIC TICKER
+                  <>
+                    <span className="live-ticker-item">
+                      📊 <b style={{ color: '#38bdf8', marginLeft: '5px', marginRight: '4px' }}>Progress Report Updated:</b> {lastReportSyncTime || 'Active'}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      ⚠️ <b style={{ color: '#f87171', marginLeft: '5px', marginRight: '4px' }}>Census Errors Updated:</b> {lastErrorSyncTime || 'Active'}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      📍 <b style={{ color: '#fbbf24', marginLeft: '5px', marginRight: '4px' }}>Zone:</b> {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      🏢 <b style={{ color: '#c084fc', marginLeft: '5px', marginRight: '4px' }}>Supervisor Circle:</b> {targetCircleData.circleNo} ({targetCircleData.supervisorName})
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      👥 <b style={{ color: '#4ade80', marginLeft: '5px', marginRight: '4px' }}>Allotted Blocks:</b> {targetCircleData.enumerators.length} HLBs
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      🔒 <b style={{ color: '#e2e8f0', marginLeft: '5px', marginRight: '4px' }}>Supervisor Real-Time Monitoring Portal</b>
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
 
-                {/* Duplicated track for seamless infinite marquee loop */}
-                <span className="live-ticker-item">
-                  📊 <b style={{ color: '#38bdf8', marginLeft: '5px', marginRight: '4px' }}>Progress Report Updated:</b> {lastReportSyncTime || 'Active'}
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  ⚠️ <b style={{ color: '#f87171', marginLeft: '5px', marginRight: '4px' }}>Census Errors Updated:</b> {lastErrorSyncTime || 'Active'}
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  📍 <b style={{ color: '#fbbf24', marginLeft: '5px', marginRight: '4px' }}>Active Zone:</b> {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  👥 <b style={{ color: '#4ade80', marginLeft: '5px', marginRight: '4px' }}>Total Allotted Blocks:</b> {hodStats.totalHlbs} HLBs
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  🏢 <b style={{ color: '#c084fc', marginLeft: '5px', marginRight: '4px' }}>Total Circles:</b> {allCircles.length} Circles
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
-                <span className="live-ticker-item">
-                  🔒 <b style={{ color: '#e2e8f0', marginLeft: '5px', marginRight: '4px' }}>PSK Real-Time Census Network</b>
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    {/* Duplicate loop for Supervisor */}
+                    <span className="live-ticker-item">
+                      📊 <b style={{ color: '#38bdf8', marginLeft: '5px', marginRight: '4px' }}>Progress Report Updated:</b> {lastReportSyncTime || 'Active'}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      ⚠️ <b style={{ color: '#f87171', marginLeft: '5px', marginRight: '4px' }}>Census Errors Updated:</b> {lastErrorSyncTime || 'Active'}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      📍 <b style={{ color: '#fbbf24', marginLeft: '5px', marginRight: '4px' }}>Zone:</b> {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      🏢 <b style={{ color: '#c084fc', marginLeft: '5px', marginRight: '4px' }}>Supervisor Circle:</b> {targetCircleData.circleNo} ({targetCircleData.supervisorName})
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      👥 <b style={{ color: '#4ade80', marginLeft: '5px', marginRight: '4px' }}>Allotted Blocks:</b> {targetCircleData.enumerators.length} HLBs
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      🔒 <b style={{ color: '#e2e8f0', marginLeft: '5px', marginRight: '4px' }}>Supervisor Real-Time Monitoring Portal</b>
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                  </>
+                ) : (
+                  // HOD / MASTER VIEW SPECIFIC TICKER
+                  <>
+                    <span className="live-ticker-item">
+                      📊 <b style={{ color: '#38bdf8', marginLeft: '5px', marginRight: '4px' }}>Progress Report Updated:</b> {lastReportSyncTime || 'Active'}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      ⚠️ <b style={{ color: '#f87171', marginLeft: '5px', marginRight: '4px' }}>Census Errors Updated:</b> {lastErrorSyncTime || 'Active'}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      📍 <b style={{ color: '#fbbf24', marginLeft: '5px', marginRight: '4px' }}>Active Zone:</b> {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      👥 <b style={{ color: '#4ade80', marginLeft: '5px', marginRight: '4px' }}>Total Allotted Blocks:</b> {hodStats.totalHlbs} HLBs
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      🏢 <b style={{ color: '#c084fc', marginLeft: '5px', marginRight: '4px' }}>Total Circles:</b> {allCircles.length} Circles
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      🔒 <b style={{ color: '#e2e8f0', marginLeft: '5px', marginRight: '4px' }}>PSK Real-Time Census Network</b>
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+
+                    {/* Duplicate loop for HOD */}
+                    <span className="live-ticker-item">
+                      📊 <b style={{ color: '#38bdf8', marginLeft: '5px', marginRight: '4px' }}>Progress Report Updated:</b> {lastReportSyncTime || 'Active'}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      ⚠️ <b style={{ color: '#f87171', marginLeft: '5px', marginRight: '4px' }}>Census Errors Updated:</b> {lastErrorSyncTime || 'Active'}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      📍 <b style={{ color: '#fbbf24', marginLeft: '5px', marginRight: '4px' }}>Active Zone:</b> {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      👥 <b style={{ color: '#4ade80', marginLeft: '5px', marginRight: '4px' }}>Total Allotted Blocks:</b> {hodStats.totalHlbs} HLBs
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      🏢 <b style={{ color: '#c084fc', marginLeft: '5px', marginRight: '4px' }}>Total Circles:</b> {allCircles.length} Circles
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                    <span className="live-ticker-item">
+                      🔒 <b style={{ color: '#e2e8f0', marginLeft: '5px', marginRight: '4px' }}>PSK Real-Time Census Network</b>
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
