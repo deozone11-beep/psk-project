@@ -793,34 +793,38 @@ function CensusPublicSupervisorReportContent() {
           box-shadow: 0 4px 14px var(--card-glow-sub, rgba(255,255,255,0.3)) !important;
         }
 
-        /* Interactive Active Errors Card (Tactile Button Feel) */
+        /* Interactive Active Errors Card (Sleek Glowing Neon Breathing Aura) */
         .kpi-card.interactive-error-card {
           cursor: pointer !important;
-          animation: errorCardPulse 2.8s ease-in-out infinite alternate;
+          animation: errorCardPulse 2.2s ease-in-out infinite alternate;
+          position: relative;
         }
         .kpi-card.interactive-error-card:hover {
-          transform: translateY(-6px) scale(1.035) !important;
-          box-shadow: 0 18px 36px -6px rgba(239, 68, 68, 0.5), 0 0 24px rgba(239, 68, 68, 0.35) !important;
+          transform: translateY(-5px) scale(1.03) !important;
+          box-shadow: 0 16px 36px -6px rgba(239, 68, 68, 0.55), 0 0 28px rgba(239, 68, 68, 0.4) !important;
           border-color: #ef4444 !important;
         }
         .kpi-card.interactive-error-card:active {
           transform: scale(0.97) !important;
-          box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4) !important;
+          box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45) !important;
         }
         .kpi-card.interactive-error-card.is-open {
           border-color: #f87171 !important;
-          box-shadow: 0 0 22px rgba(239, 68, 68, 0.4), inset 0 0 14px rgba(239, 68, 68, 0.15) !important;
-          animation: none !important;
+          box-shadow: 0 0 24px rgba(239, 68, 68, 0.45), inset 0 0 16px rgba(239, 68, 68, 0.2) !important;
         }
 
         @keyframes errorCardPulse {
           0% {
-            box-shadow: 0 4px 16px -4px rgba(239, 68, 68, 0.25), 0 0 10px rgba(239, 68, 68, 0.1);
+            box-shadow: 0 4px 14px -4px rgba(239, 68, 68, 0.25), 0 0 8px rgba(239, 68, 68, 0.15);
             border-color: rgba(239, 68, 68, 0.4);
           }
+          50% {
+            box-shadow: 0 8px 24px -2px rgba(239, 68, 68, 0.52), 0 0 22px rgba(239, 68, 68, 0.35);
+            border-color: rgba(248, 113, 113, 0.95);
+          }
           100% {
-            box-shadow: 0 8px 24px -2px rgba(239, 68, 68, 0.45), 0 0 18px rgba(239, 68, 68, 0.28);
-            border-color: rgba(239, 68, 68, 0.85);
+            box-shadow: 0 12px 30px -2px rgba(239, 68, 68, 0.65), 0 0 30px rgba(239, 68, 68, 0.48);
+            border-color: #ef4444;
           }
         }
 
@@ -1305,30 +1309,6 @@ function CensusPublicSupervisorReportContent() {
                     <div className="kpi-value" style={{ fontSize: '21px', fontWeight: 900, color: card.color, letterSpacing: '-0.5px' }}>
                       {card.value}{card.sub && <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginLeft: '5px' }}>{card.sub}</span>}
                     </div>
-
-                    {/* Interactive Button / Tap Indicator for Error Card */}
-                    {card.isErrorCard && card.hasErrors && (
-                      <div style={{
-                        marginTop: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        background: card.isExpanded ? 'rgba(239,68,68,0.35)' : 'rgba(239,68,68,0.18)',
-                        border: `1px solid ${card.isExpanded ? 'rgba(239,68,68,0.7)' : 'rgba(239,68,68,0.4)'}`,
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '9.5px',
-                        fontWeight: 800,
-                        color: card.isExpanded ? '#ffffff' : '#fca5a5',
-                        boxShadow: card.isExpanded ? '0 0 10px rgba(239,68,68,0.4)' : 'none',
-                        transition: 'all 0.2s ease'
-                      }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          {card.isExpanded ? '▲ Hide Breakup' : '👇 Tap for Error Types'}
-                        </span>
-                        <span style={{ fontSize: '10px' }}>{card.isExpanded ? '▲' : '▼'}</span>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -1795,30 +1775,6 @@ function CensusPublicSupervisorReportContent() {
                 <div className="kpi-value" style={{ fontSize: '21px', fontWeight: 900, color: card.color, letterSpacing: '-0.5px' }}>
                   {card.value}{card.sub && <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginLeft: '5px' }}>{card.sub}</span>}
                 </div>
-
-                {/* Interactive Button / Tap Indicator for Error Card */}
-                {card.isErrorCard && card.hasErrors && (
-                  <div style={{
-                    marginTop: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: card.isExpanded ? 'rgba(239,68,68,0.35)' : 'rgba(239,68,68,0.18)',
-                    border: `1px solid ${card.isExpanded ? 'rgba(239,68,68,0.7)' : 'rgba(239,68,68,0.4)'}`,
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    fontSize: '9.5px',
-                    fontWeight: 800,
-                    color: card.isExpanded ? '#ffffff' : '#fca5a5',
-                    boxShadow: card.isExpanded ? '0 0 10px rgba(239,68,68,0.4)' : 'none',
-                    transition: 'all 0.2s ease'
-                  }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      {card.isExpanded ? '▲ Hide Breakup' : '👇 Tap for Error Types'}
-                    </span>
-                    <span style={{ fontSize: '10px' }}>{card.isExpanded ? '▲' : '▼'}</span>
-                  </div>
-                )}
               </div>
             ))}
           </div>
