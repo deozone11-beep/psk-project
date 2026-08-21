@@ -83,6 +83,8 @@ function CensusPublicSupervisorReportContent() {
   const [expandedCircleIds, setExpandedCircleIds] = useState(new Set());
   const [showSupervisorErrorBreakup, setShowSupervisorErrorBreakup] = useState(false);
   const [showHodErrorBreakup, setShowHodErrorBreakup] = useState(false);
+  const [lastReportSyncTime, setLastReportSyncTime] = useState('');
+  const [lastErrorSyncTime, setLastErrorSyncTime] = useState('');
 
   // 1. Anti-Inspect & Security Protection
   useEffect(() => {
@@ -238,6 +240,42 @@ function CensusPublicSupervisorReportContent() {
 
         const mapsCombined = [...(rMap.rows || []), ...(rCodeMap.rows || [])];
         setHlbMappingRows(mapsCombined);
+
+        const formatDateTime = (val) => {
+          if (!val) return '';
+          try {
+            const d = new Date(val);
+            if (!isNaN(d.getTime())) {
+              return d.toLocaleString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              });
+            }
+          } catch {}
+          return String(val);
+        };
+
+        const nowStr = formatDateTime(new Date());
+
+        // Extract last updated date & time from charge report data
+        let repTimestamp = '';
+        for (const r of (rCharge.rows || [])) {
+          const t = r.created_at || r.updated_at || r.timestamp || r.upload_time || r.report_date || r.last_updated || r.date;
+          if (t) { repTimestamp = formatDateTime(t); break; }
+        }
+        setLastReportSyncTime(repTimestamp || nowStr);
+
+        // Extract last updated date & time from census errors data
+        let errTimestamp = '';
+        for (const r of (rErrors.rows || [])) {
+          const t = r.created_at || r.updated_at || r.timestamp || r.upload_time || r.error_date || r.last_updated || r.date;
+          if (t) { errTimestamp = formatDateTime(t); break; }
+        }
+        setLastErrorSyncTime(errTimestamp || nowStr);
       } catch (err) {
         console.warn('Data load error:', err);
       } finally {
@@ -931,6 +969,77 @@ function CensusPublicSupervisorReportContent() {
           }
         }
 
+        /* Live Running Marquee Ticker Banner */
+        .live-ticker-wrap {
+          display: flex;
+          align-items: center;
+          background: linear-gradient(90deg, #0b0f19 0%, #111827 50%, #0b0f19 100%);
+          border: 1px solid rgba(56, 189, 248, 0.28);
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 14px;
+          box-shadow: 0 4px 18px rgba(0,0,0,0.5), inset 0 0 12px rgba(56, 189, 248, 0.08);
+          position: relative;
+        }
+        .live-ticker-badge {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: linear-gradient(135deg, #e11d48 0%, #991b1b 100%);
+          color: #ffffff;
+          padding: 7px 14px;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.6px;
+          text-transform: uppercase;
+          white-space: nowrap;
+          z-index: 2;
+          box-shadow: 4px 0 14px rgba(0,0,0,0.5);
+        }
+        .live-ticker-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #22c55e;
+          box-shadow: 0 0 8px #22c55e;
+          animation: liveDotPulse 1.2s infinite alternate;
+        }
+        @keyframes liveDotPulse {
+          0% { transform: scale(0.85); opacity: 0.6; }
+          100% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px #22c55e; }
+        }
+        .live-ticker-marquee {
+          flex: 1;
+          overflow: hidden;
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          padding: 6px 0;
+          mask-image: linear-gradient(90deg, transparent 0%, black 2%, black 98%, transparent 100%);
+          -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 2%, black 98%, transparent 100%);
+        }
+        .live-ticker-track {
+          display: inline-flex;
+          align-items: center;
+          white-space: nowrap;
+          animation: marqueeScroll 32s linear infinite;
+        }
+        .live-ticker-track:hover {
+          animation-play-state: paused;
+        }
+        @keyframes marqueeScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .live-ticker-item {
+          font-size: 11px;
+          color: #cbd5e1;
+          display: inline-flex;
+          align-items: center;
+          padding: 0 20px;
+          letter-spacing: 0.2px;
+        }
+
         .kpi-icon-badge {
           transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease !important;
         }
@@ -1120,6 +1229,71 @@ function CensusPublicSupervisorReportContent() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)' }}>
                 <Lock size={12} color="#4ade80" />
                 <span style={{ fontSize: '10.5px', color: '#4ade80', fontWeight: 700 }}>Secure View-Only</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Running Text Ticker Banner */}
+          <div className="live-ticker-wrap" style={{
+            maxWidth: '1440px',
+            margin: '0 auto 16px auto'
+          }}>
+            <div className="live-ticker-badge">
+              <div className="live-ticker-dot" />
+              <span>LIVE UPDATES</span>
+            </div>
+            <div className="live-ticker-marquee">
+              <div className="live-ticker-track">
+                <span className="live-ticker-item">
+                  📊 <b style={{ color: '#38bdf8', marginLeft: '5px', marginRight: '4px' }}>Progress Report Updated:</b> {lastReportSyncTime || 'Active'}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  ⚠️ <b style={{ color: '#f87171', marginLeft: '5px', marginRight: '4px' }}>Census Errors Updated:</b> {lastErrorSyncTime || 'Active'}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  📍 <b style={{ color: '#fbbf24', marginLeft: '5px', marginRight: '4px' }}>Active Zone:</b> {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  👥 <b style={{ color: '#4ade80', marginLeft: '5px', marginRight: '4px' }}>Total Allotted Blocks:</b> {hodStats.totalHlbs} HLBs
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  🏢 <b style={{ color: '#c084fc', marginLeft: '5px', marginRight: '4px' }}>Total Circles:</b> {allCircles.length} Circles
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  🔒 <b style={{ color: '#e2e8f0', marginLeft: '5px', marginRight: '4px' }}>PSK Real-Time Census Network</b>
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+
+                {/* Duplicated track for seamless infinite marquee loop */}
+                <span className="live-ticker-item">
+                  📊 <b style={{ color: '#38bdf8', marginLeft: '5px', marginRight: '4px' }}>Progress Report Updated:</b> {lastReportSyncTime || 'Active'}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  ⚠️ <b style={{ color: '#f87171', marginLeft: '5px', marginRight: '4px' }}>Census Errors Updated:</b> {lastErrorSyncTime || 'Active'}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  📍 <b style={{ color: '#fbbf24', marginLeft: '5px', marginRight: '4px' }}>Active Zone:</b> {selectedZoneObj ? selectedZoneObj.name : `Zone ${selectedZone}`}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  👥 <b style={{ color: '#4ade80', marginLeft: '5px', marginRight: '4px' }}>Total Allotted Blocks:</b> {hodStats.totalHlbs} HLBs
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  🏢 <b style={{ color: '#c084fc', marginLeft: '5px', marginRight: '4px' }}>Total Circles:</b> {allCircles.length} Circles
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
+                <span className="live-ticker-item">
+                  🔒 <b style={{ color: '#e2e8f0', marginLeft: '5px', marginRight: '4px' }}>PSK Real-Time Census Network</b>
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✦</span>
               </div>
             </div>
           </div>
