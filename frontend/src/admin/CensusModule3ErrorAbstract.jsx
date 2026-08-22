@@ -202,13 +202,37 @@ function CensusModule3ErrorAbstractContent({ onBack, creds }) {
     let allRows = [];
     let totalCount = 0;
 
+    // Helper: fetch with 429-aware exponential backoff
+    async function fetchWithBackoff(url, attempt = 0) {
+      if (fetchSeqRef.current !== currentSeq) return null;
+      try {
+        const r = await db2Fetch(url);
+        if (r.status === 429) {
+          // Rate limited – wait and retry (max 4 attempts)
+          if (attempt < 4) {
+            const wait = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s, 8s
+            await new Promise(res => setTimeout(res, wait));
+            return fetchWithBackoff(url, attempt + 1);
+          }
+          return null;
+        }
+        return r;
+      } catch (e) {
+        if (attempt < 3) {
+          await new Promise(res => setTimeout(res, 500 * (attempt + 1)));
+          return fetchWithBackoff(url, attempt + 1);
+        }
+        return null;
+      }
+    }
+
     let initialSuccess = false;
     let retries = 3;
     while (retries > 0 && !initialSuccess) {
       if (fetchSeqRef.current !== currentSeq) return [];
       try {
-        const r = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0&zone=${selectedZone}`);
-        if (fetchSeqRef.current !== currentSeq) return [];
+        const r = await fetchWithBackoff(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=0&zone=${selectedZone}`);
+        if (!r || fetchSeqRef.current !== currentSeq) { retries--; continue; }
         const j = await r.json().catch(() => ({}));
         if (j.rows && Array.isArray(j.rows)) {
           allRows.push(...j.rows);
@@ -218,11 +242,11 @@ function CensusModule3ErrorAbstractContent({ onBack, creds }) {
           if (onChunk && fetchSeqRef.current === currentSeq) onChunk(j.rows, allRows.length, totalCount);
         } else {
           retries--;
-          if (retries > 0) await new Promise(res => setTimeout(res, 150));
+          if (retries > 0) await new Promise(res => setTimeout(res, 300));
         }
       } catch (e) {
         retries--;
-        if (retries > 0) await new Promise(res => setTimeout(res, 150));
+        if (retries > 0) await new Promise(res => setTimeout(res, 300));
       }
     }
 
@@ -234,39 +258,28 @@ function CensusModule3ErrorAbstractContent({ onBack, creds }) {
         remainingOffsets.push(off);
       }
 
-      const BATCH_SIZE = 2;
-      for (let i = 0; i < remainingOffsets.length; i += BATCH_SIZE) {
+      // Sequential fetching (BATCH_SIZE=1) to avoid Supabase free-tier 429 rate limits
+      for (let i = 0; i < remainingOffsets.length; i++) {
         if (fetchSeqRef.current !== currentSeq) return [];
-        const batchOffsets = remainingOffsets.slice(i, i + BATCH_SIZE);
-        const batchResults = await Promise.all(
-          batchOffsets.map(async (off) => {
-            let chunkRetries = 2;
-            while (chunkRetries > 0) {
-              if (fetchSeqRef.current !== currentSeq) return [];
-              try {
-                const res = await db2Fetch(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}&zone=${selectedZone}`);
-                if (fetchSeqRef.current !== currentSeq) return [];
-                const data = await res.json().catch(() => ({}));
-                if (data.rows && Array.isArray(data.rows)) return data.rows;
-                chunkRetries--;
-                await new Promise(res => setTimeout(res, 150));
-              } catch (err) {
-                chunkRetries--;
-                await new Promise(res => setTimeout(res, 150));
-              }
-            }
-            return [];
-          })
-        );
-
-        if (fetchSeqRef.current !== currentSeq) return [];
-        batchResults.forEach(rowsChunk => {
-          if (rowsChunk.length > 0) {
-            allRows.push(...rowsChunk);
-            if (onChunk && fetchSeqRef.current === currentSeq) onChunk(rowsChunk, allRows.length, totalCount);
+        const off = remainingOffsets[i];
+        let chunkRetries = 3;
+        while (chunkRetries > 0) {
+          if (fetchSeqRef.current !== currentSeq) return [];
+          const res = await fetchWithBackoff(`/table/${encodeURIComponent(t)}?limit=${chunkSize}&offset=${off}&zone=${selectedZone}`);
+          if (!res) { chunkRetries--; await new Promise(r => setTimeout(r, 500)); continue; }
+          const data = await res.json().catch(() => ({}));
+          if (data.rows && Array.isArray(data.rows)) {
+            allRows.push(...data.rows);
+            if (onChunk && fetchSeqRef.current === currentSeq) onChunk(data.rows, allRows.length, totalCount);
+            break;
           }
-        });
-        await new Promise(res => setTimeout(res, 50));
+          chunkRetries--;
+          await new Promise(r => setTimeout(r, 300));
+        }
+        // 300ms gap between each chunk to respect Supabase rate limits
+        if (i < remainingOffsets.length - 1) {
+          await new Promise(res => setTimeout(res, 300));
+        }
       }
     }
 
@@ -284,32 +297,39 @@ function CensusModule3ErrorAbstractContent({ onBack, creds }) {
       try {
         let isFirstChunk = true;
 
-        // Fetch user metadata & allotments in parallel right away (zone-aware)
-        const pAllot = db2Fetch(`/table/hlb_allotted?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})));
-        const pCharge = db2Fetch(`/table/charge_wise_report?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})));
-        const pUser = db2Fetch(`/table/user_details?limit=5000&offset=0&zone=${selectedZone}`).then(r => r.json().catch(() => ({})));
+        // Fetch metadata sequentially with 200ms gap to avoid Supabase 429 rate limits
+        // Step 1: allotments
+        const rAllot = await db2Fetch(`/table/hlb_allotted?limit=5000&offset=0&zone=${selectedZone}`);
+        const jAllot = await rAllot.json().catch(() => ({}));
+        if (fetchSeqRef.current !== currentSeq) return;
+        setAllotedRows(jAllot.rows || []);
+        await new Promise(r => setTimeout(r, 200));
 
-        pAllot.then(jAllot => {
-          if (fetchSeqRef.current !== currentSeq) return;
-          setAllotedRows(jAllot.rows || []);
-        });
-        pCharge.then(jCharge => {
-          if (fetchSeqRef.current !== currentSeq) return;
-          setChargeRows(jCharge.rows || []);
-        });
-        pUser.then(async jUser => {
-          if (fetchSeqRef.current !== currentSeq) return;
-          let uRows = jUser.rows || [];
-          if (!uRows.length) {
-            const rApp = await db2Fetch(`/table/app_user?limit=5000&offset=0&zone=${selectedZone}`);
-            const jApp = await rApp.json().catch(() => ({}));
-            uRows = jApp.rows || [];
-          }
-          if (fetchSeqRef.current !== currentSeq) return;
-          setUserRows(uRows);
-        });
+        // Step 2: charge-wise report
+        if (fetchSeqRef.current !== currentSeq) return;
+        const rCharge = await db2Fetch(`/table/charge_wise_report?limit=5000&offset=0&zone=${selectedZone}`);
+        const jCharge = await rCharge.json().catch(() => ({}));
+        if (fetchSeqRef.current !== currentSeq) return;
+        setChargeRows(jCharge.rows || []);
+        await new Promise(r => setTimeout(r, 200));
 
-        // Stream active zone table chunks progressively
+        // Step 3: user details
+        if (fetchSeqRef.current !== currentSeq) return;
+        const rUser = await db2Fetch(`/table/user_details?limit=5000&offset=0&zone=${selectedZone}`);
+        const jUser = await rUser.json().catch(() => ({}));
+        if (fetchSeqRef.current !== currentSeq) return;
+        let uRows = jUser.rows || [];
+        if (!uRows.length) {
+          await new Promise(r => setTimeout(r, 200));
+          const rApp = await db2Fetch(`/table/app_user?limit=5000&offset=0&zone=${selectedZone}`);
+          const jApp = await rApp.json().catch(() => ({}));
+          uRows = jApp.rows || [];
+        }
+        if (fetchSeqRef.current !== currentSeq) return;
+        setUserRows(uRows);
+        await new Promise(r => setTimeout(r, 300));
+
+        // Step 4: Stream main HLB records chunks progressively
         const targetTable = getZoneTable ? getZoneTable('hlb_records') : `hlb_records_zone_${selectedZone}`;
         await fetchAllRowsInChunks(targetTable, 5000, (chunk, loaded, total) => {
           if (fetchSeqRef.current !== currentSeq) return;
